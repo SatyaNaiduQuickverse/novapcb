@@ -1,0 +1,44 @@
+# KiCad
+*-backups/
+_autosave-*
+*.kicad_pcb-bak
+*.kicad_sch-bak
+*.kicad_prl
+fp-info-cache
+
+# KiCad export artifacts (regenerate; don't commit unless tagged release)
+hardware/exports/**
+!hardware/exports/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Build / firmware
+build/
+*.elf
+*.bin
+*.hex
+*.map
+
+# Logs / runtime junk
+*.log
+*.tmp
+
+# Python (if any tooling lands here)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Hailo runtime log that was here at init
+hailort.log
+
+# Local Claude Code settings (per-machine permission grants)
+.claude/settings.local.json
