@@ -37,7 +37,7 @@ mechanical/    # mounting holes, stack-up, frame-fit references
 
 ## Workflow
 
-PCB work on this project is code-driven where it can be: sources in KiCad, exports automated, BOM diffable. The intent is to keep schematic/layout reviewable in PRs the same way firmware changes are. See `docs/WORKFLOW.md` (TBD).
+PCB work on this project is code-driven where it can be: sources in KiCad, exports automated, BOM diffable. The intent is to keep schematic/layout reviewable in PRs the same way firmware changes are. See `CLAUDE.md` §6 for the full workflow.
 
 ## Hardware host
 
