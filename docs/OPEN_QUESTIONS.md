@@ -24,6 +24,8 @@ Decisions not yet made on the FC. None of these block writing the README; all of
 
 4 / 6 / 8. Depends on the airframe — the current Nova drone is a quad (4 motors), but we may want headroom for a hex or for gimbal/payload PWM. 8 channels of DShot is cheap on H7 (timer-rich) so this is mostly a connector-real-estate question.
 
+**Recommendation:** 8 channels — DShot on H7 is timer-cheap; gives headroom for hex/gimbal/payload without a re-spin. Cost is connector real estate.
+
 ## 4. ELRS RX integration
 
 - **Off-board** (status quo): RP4TD on USB, ESP32-C6 bridge, FC consumes CRSF over UART from the bridge.
@@ -50,3 +52,5 @@ JST-GH (Pixhawk standard) vs JST-SH 1.0 vs solder pads. JST-GH is bulky but matc
 ## 8. PCB stack-up
 
 4-layer minimum for a clean ground plane under the IMU. 6-layer if RF gets integrated.
+
+**Recommendation:** 4-layer for v1; 6-layer only if RF integrates in v2.
