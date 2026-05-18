@@ -15,8 +15,8 @@ The hard pin-level / protocol constraints the FC must honor to drop into the exi
 
 | Field | Value | Notes |
 |---|---|---|
-| `USB_VID` | TBD | See OPEN_QUESTIONS #9. |
-| `USB_PID` | TBD | See OPEN_QUESTIONS #9. |
+| `USB_VID` | TBD (ArduPilot allocation) | See DECISIONS #9. |
+| `USB_PID` | TBD (ArduPilot allocation) | See DECISIONS #9. |
 | `USB_VENDOR_STRING` | TBD; **must start with `ArduPilot`** | udev composes `usb-{VENDOR}_{PRODUCT}_{SERIAL}` (spaces → underscores); the `ArduPilot_*` glob in drone-side scripts matches on this prefix. |
 | `USB_PRODUCT_STRING` | TBD | Concatenated after the vendor string in the by-id path. |
 | `USB_SERIAL` | non-empty, unique-per-unit | If two FCs share a serial (or one is empty), udev by-id symlinks alias and the wrong device opens. |
@@ -43,7 +43,7 @@ The RC link arrives via an ELRS RP4TD receiver. Today this is bridged through an
 
 | Property | Value |
 |---|---|
-| Channel count | TBD (4 minimum, 8 likely — see OPEN_QUESTIONS) |
+| Channel count | 8 (DShot300/600 preferred, PWM fallback) — see DECISIONS #3 |
 | Protocol | DShot300 / DShot600 preferred; PWM fallback |
 | Connector | TBD — JST-SH 1.0 or solder pads |
 

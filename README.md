@@ -4,7 +4,7 @@ Custom flight controller board for the Nova drone platform. **Status: scoping / 
 
 ## What this is
 
-A from-scratch FC PCB that drops into the existing Nova drone-Pi software stack. It must remain wire-compatible with the autopilot the system currently uses (a CubeOrange+/Pixhawk over USB-CDC MAVLink), because the rest of the stack — ELRS RC link, MAVROS, BLE pre-flight, Hailo vision, phone app — all assumes that contract and is already integrated end-to-end.
+A from-scratch FC PCB that drops into the existing Nova drone-Pi software stack. It must remain wire-compatible with the autopilot the system currently uses (a Holybro Pixhawk 6X over USB-CDC MAVLink), because the rest of the stack — ELRS RC link, MAVROS, BLE pre-flight, Hailo vision, phone app — all assumes that contract and is already integrated end-to-end. v1 = functional drop-in, single-PCB on a new tray. v2 = FMUv6X mechanical drop-in.
 
 This is not an attempt to write a new autopilot. The plan is to run an ArduPilot-compatible firmware (or MAVLink-shim equivalent) on a custom board sized and connectorized to fit the Nova frame, with sensors and IO chosen for our specific airframe.
 
@@ -23,7 +23,8 @@ hardware/
 docs/
   SYSTEM_CONTEXT.md       # where the FC sits in the Nova stack
   INTERFACE_CONTRACT.md   # exact pin / protocol contract with the rest of the system
-  OPEN_QUESTIONS.md       # decisions not yet made (MCU, form factor, channel count, …)
+  DECISIONS.md            # locked v1 scoping decisions (MCU, form factor, channels, …)
+  OPEN_QUESTIONS.md       # stub for future open questions (post-2026-05-18 lock)
 firmware/      # ArduPilot board definition + any board-bringup code
 bom/           # parts list, sourcing notes
 mechanical/    # mounting holes, stack-up, frame-fit references
@@ -33,7 +34,7 @@ mechanical/    # mounting holes, stack-up, frame-fit references
 
 1. `docs/SYSTEM_CONTEXT.md` — what the FC has to live with
 2. `docs/INTERFACE_CONTRACT.md` — the hard pin-level constraints
-3. `docs/OPEN_QUESTIONS.md` — what's undecided; pick one and propose an answer
+3. `docs/DECISIONS.md` — locked v1 scoping decisions and the reasoning that locked them
 
 ## Workflow
 
