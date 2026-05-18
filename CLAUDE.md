@@ -337,7 +337,7 @@ Phased, do not skip a phase:
 
 ### 6.5 Git / GitHub conventions for this repo
 
-- Remote: `https://github.com/SatyaNaiduQuickverse/novapcb` (PRIVATE).
+- Remote: `https://github.com/SatyaNaiduQuickverse/novapcb`. Currently public for cross-Pi setup; was initially private. Don't flip visibility without user confirmation (Rule 7).
 - Default branch: `main`.
 - Auth on the build host: `gh` CLI, HTTPS, token stored in keychain by gh.
 - Force-push to `main` is forbidden.
