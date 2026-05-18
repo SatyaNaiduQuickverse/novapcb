@@ -51,7 +51,7 @@
 
 ### Status
 
-- Last commit (as of 2026-05-18 review): bootstrap commit (`2bcdadc`) — docs + scaffolding only.
+- Last commit (as of 2026-05-18): `711c4d4` — added this CLAUDE.md on top of bootstrap `2bcdadc`.
 - No schematics, no PCB layout, no firmware.
 - MCU and form factor are *recommended but not yet locked* — see `docs/OPEN_QUESTIONS.md`.
 
