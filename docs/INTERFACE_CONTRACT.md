@@ -11,6 +11,18 @@ The hard pin-level / protocol constraints the FC must honor to drop into the exi
 | Protocol | MAVLink v2, ArduPilot dialect | MAVROS depends on this |
 | Identifier | Must enumerate as `usb-ArduPilot_*` for udev by-id pinning | drone_handoff/PROMPT.md serial pinning section |
 
+**USB descriptor fields (load-bearing for the udev by-id path above):**
+
+| Field | Value | Notes |
+|---|---|---|
+| `USB_VID` | TBD | See OPEN_QUESTIONS #9. |
+| `USB_PID` | TBD | See OPEN_QUESTIONS #9. |
+| `USB_VENDOR_STRING` | TBD; **must start with `ArduPilot`** | udev composes `usb-{VENDOR}_{PRODUCT}_{SERIAL}` (spaces → underscores); the `ArduPilot_*` glob in drone-side scripts matches on this prefix. |
+| `USB_PRODUCT_STRING` | TBD | Concatenated after the vendor string in the by-id path. |
+| `USB_SERIAL` | non-empty, unique-per-unit | If two FCs share a serial (or one is empty), udev by-id symlinks alias and the wrong device opens. |
+
+udev only requires the **strings** prefix to match — VID/PID are not part of the by-id name. They still matter for any downstream consumer (some GCSs) that filters on VID/PID.
+
 ## RC input — CRSF over UART
 
 The RC link arrives via an ELRS RP4TD receiver. Today this is bridged through an ESP32-C6 on USB; if the FC has a spare 5V-tolerant UART we may move CRSF directly onto the FC instead.
@@ -19,7 +31,7 @@ The RC link arrives via an ELRS RP4TD receiver. Today this is bridged through an
 |---|---|
 | Baud | 420 000 (8N1) |
 | Frame rate | ~150 Hz |
-| Telemetry ratio | 1:2 (uplink:downlink) |
+| Telemetry ratio | 1:2 (downlink:uplink — one telemetry slot per two RC frames) |
 | Channel range | u11, 172=−1, 992=centre, 1811=+1 |
 | Safety channels | CH5 arm, CH6 force-disarm, CH7 mode (6-pos today, 12-pos planned) |
 

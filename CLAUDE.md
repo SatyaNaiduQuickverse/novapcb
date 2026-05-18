@@ -51,7 +51,7 @@
 
 ### Status
 
-- Last commit (as of 2026-05-18 review): bootstrap commit (`2bcdadc`) — docs + scaffolding only.
+- Last commit (as of 2026-05-18): `711c4d4` — added this CLAUDE.md on top of bootstrap `2bcdadc`.
 - No schematics, no PCB layout, no firmware.
 - MCU and form factor are *recommended but not yet locked* — see `docs/OPEN_QUESTIONS.md`.
 
@@ -337,7 +337,7 @@ Phased, do not skip a phase:
 
 ### 6.5 Git / GitHub conventions for this repo
 
-- Remote: `https://github.com/SatyaNaiduQuickverse/novapcb` (PRIVATE).
+- Remote: `https://github.com/SatyaNaiduQuickverse/novapcb`. Currently public for cross-Pi setup; was initially private. Don't flip visibility without user confirmation (Rule 7).
 - Default branch: `main`.
 - Auth on the build host: `gh` CLI, HTTPS, token stored in keychain by gh.
 - Force-push to `main` is forbidden.

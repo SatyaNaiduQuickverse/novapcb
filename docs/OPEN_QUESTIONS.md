@@ -24,6 +24,8 @@ Decisions not yet made on the FC. None of these block writing the README; all of
 
 4 / 6 / 8. Depends on the airframe — the current Nova drone is a quad (4 motors), but we may want headroom for a hex or for gimbal/payload PWM. 8 channels of DShot is cheap on H7 (timer-rich) so this is mostly a connector-real-estate question.
 
+**Recommendation:** 8 channels — DShot on H7 is timer-cheap; gives headroom for hex/gimbal/payload without a re-spin. Cost is connector real estate.
+
 ## 4. ELRS RX integration
 
 - **Off-board** (status quo): RP4TD on USB, ESP32-C6 bridge, FC consumes CRSF over UART from the bridge.
@@ -50,3 +52,18 @@ JST-GH (Pixhawk standard) vs JST-SH 1.0 vs solder pads. JST-GH is bulky but matc
 ## 8. PCB stack-up
 
 4-layer minimum for a clean ground plane under the IMU. 6-layer if RF gets integrated.
+
+**Recommendation:** 4-layer for v1; 6-layer only if RF integrates in v2.
+
+## 9. USB VID/PID for the FC
+
+The FC's USB descriptor must include strings that produce `/dev/serial/by-id/usb-ArduPilot_*-if00` on the drone Pi (see INTERFACE_CONTRACT.md §3.1). udev does not require a specific VID/PID, but some ground-station / downstream consumers filter on VID/PID, so we should pick deliberately rather than re-use a random vendor's allocation.
+
+**Options:**
+
+- **(a) ArduPilot allocation** — ask on the ArduPilot forum / dev channel for a VID/PID assigned to this board. Matches the convention used by CubeOrange+ and other Pixhawk-family boards; downstream filters that whitelist ArduPilot-family devices will accept it without changes.
+- **(b) pid.codes free pool** — request a PID under the `0x1209` (pid.codes) free VID for open-source hardware. Fast, no permission needed beyond a PR to pid.codes, but downstream Ardu-family VID/PID filters won't recognise it.
+
+**Recommendation:** (a). Aligning with the ArduPilot allocation keeps us inside the family that downstream tools already expect; pid.codes is a fine fallback only if the ArduPilot path stalls.
+
+Note: udev by-id resolution only requires the *string* prefix to match (`USB_VENDOR_STRING` starting with `ArduPilot`), not the VID/PID. So even before VID/PID is locked, firmware bring-up that depends only on the by-id symlink will work.
