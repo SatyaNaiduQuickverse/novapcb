@@ -15,7 +15,7 @@ ground bridge Pi (novabridge)
    ▼  RF
 drone-side Pi 5 (running ~/novaros docker stack)
    ├─ ELRS RX (RP4TD) on USB-CDC, 420 kbaud CRSF
-   ├─ Pixhawk / CubeOrange+ on USB-CDC, 115200 MAVLink   ← THIS IS WHAT novapcb REPLACES
+   ├─ Holybro Pixhawk 6X on USB-CDC, 115200 MAVLink     ← THIS IS WHAT novapcb REPLACES
    ├─ Hailo-8 NPU (vision-detect container)
    ├─ Pi camera (pi-cam container)
    └─ BLE peripheral (GATT to phone)

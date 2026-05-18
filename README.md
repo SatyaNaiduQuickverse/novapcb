@@ -4,7 +4,7 @@ Custom flight controller board for the Nova drone platform. **Status: scoping / 
 
 ## What this is
 
-A from-scratch FC PCB that drops into the existing Nova drone-Pi software stack. It must remain wire-compatible with the autopilot the system currently uses (a CubeOrange+/Pixhawk over USB-CDC MAVLink), because the rest of the stack — ELRS RC link, MAVROS, BLE pre-flight, Hailo vision, phone app — all assumes that contract and is already integrated end-to-end.
+A from-scratch FC PCB that drops into the existing Nova drone-Pi software stack. It must remain wire-compatible with the autopilot the system currently uses (a Holybro Pixhawk 6X over USB-CDC MAVLink), because the rest of the stack — ELRS RC link, MAVROS, BLE pre-flight, Hailo vision, phone app — all assumes that contract and is already integrated end-to-end. v1 = functional drop-in, single-PCB on a new tray. v2 = FMUv6X mechanical drop-in.
 
 This is not an attempt to write a new autopilot. The plan is to run an ArduPilot-compatible firmware (or MAVLink-shim equivalent) on a custom board sized and connectorized to fit the Nova frame, with sensors and IO chosen for our specific airframe.
 

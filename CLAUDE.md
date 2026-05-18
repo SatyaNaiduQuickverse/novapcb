@@ -16,7 +16,7 @@
 
 **This repo (`novapcb`) is a from-scratch custom Flight Controller PCB for the Nova drone.** Greenfield. No schematics committed yet. Three things you should know before you do anything:
 
-1. **The FC is a Pixhawk/CubeOrange+ replacement, not a new autopilot.** It must run an ArduPilot-compatible firmware and present as a stock ArduPilot autopilot to the rest of the Nova drone-side stack over USB-CDC MAVLink. Breaking that contract throws away ~6 months of integration work on the surrounding services.
+1. **The FC is a Holybro Pixhawk 6X replacement, not a new autopilot.** It must run an ArduPilot-compatible firmware and present as a stock ArduPilot autopilot to the rest of the Nova drone-side stack over USB-CDC MAVLink. Breaking that contract throws away ~6 months of integration work on the surrounding services. For v1 we replace the 6X **functionally** (same electrical + software interface); a true FMUv6X mechanical drop-in is deferred to v2 — see `docs/DECISIONS.md §2`.
 
 2. **The user is hardware-curious, not a deep EE.** They will not review your technical details for correctness. You must self-validate (build, run, test, read your own diff) before declaring anything done. If you skipped a check, say so.
 
@@ -36,10 +36,10 @@
 ### What this repo IS
 
 - A custom Flight Controller (FC) PCB design + firmware-config repo.
-- Target: drop-in replacement for the off-the-shelf autopilot (currently a CubeOrange+/Pixhawk) used in the Nova drone.
+- Target: drop-in replacement for the off-the-shelf autopilot (currently a Holybro Pixhawk 6X) used in the Nova drone.
 - Software contract: must speak ArduPilot MAVLink v2 over USB-CDC at 115200 baud and enumerate as `usb-ArduPilot_*` for udev pinning.
 - Tooling intent: code-driven PCB workflow — KiCad sources in git, exports automated, BOM diffable in PRs.
-- Form factor target (v1): Pixhawk-standard 30.5 × 30.5 mm with M3 mounting holes, so A/B comparison against the CubeOrange+ during bring-up is mechanical-swap-only.
+- Form factor target (v1): Pixhawk-standard 30.5 × 30.5 mm with M3 mounting holes — **functional** drop-in (electrical + software identical to the 6X), single-PCB, requires a new mounting tray on the airframe. **FMUv6X mechanical drop-in is v2** (separate FMU + isolated-IMU boards, exact 6X mechanical match); deferred until v1 flies.
 
 ### What this repo IS NOT
 
@@ -90,7 +90,7 @@ The FC does not exist in isolation. The surrounding system is fully built and fl
 │  ├─ AUTOPILOT on USB-CDC      ────► /dev/serial/by-id/usb-ArduPilot_…        │
 │  │     115200 baud, MAVLink v2, ArduPilot dialect                            │
 │  │     ◄══════ THIS IS WHAT novapcb REPLACES ══════                          │
-│  │     (Currently a CubeOrange+/Pixhawk running ArduCopter v4.6.3)           │
+│  │     (Currently a Holybro Pixhawk 6X running ArduCopter v4.6.3)            │
 │  │                                                                           │
 │  ├─ Hailo-8 NPU (vision-detect container, on port 8081)                      │
 │  ├─ Pi Camera (pi-cam container, rpicam-vid)                                 │
@@ -325,7 +325,7 @@ Phased, do not skip a phase:
 2. **Sensor I²C/SPI roll-call** — every sensor responds to its ID register.
 3. **USB-CDC enumeration** — host sees `usb-ArduPilot_*` (with our descriptor — even before ArduPilot itself runs, the bootloader's CDC suffices).
 4. **ArduPilot port** — flash ArduCopter built with our hwdef, run on bench (props off!), MAVROS connects.
-5. **A/B against CubeOrange+** — swap mechanical, ensure all drone-side services come up unchanged, both APMs report identical (within tolerance) param values.
+5. **A/B against the Holybro Pixhawk 6X** — **functional** swap (not mechanical in v1): unplug 6X from the drone Pi's USB, plug in novapcb on a bench tray, ensure all drone-side services come up unchanged, both APMs report identical (within tolerance) param values.
 6. **Tethered hover** — first flight is tethered, props on, low throttle, RTL armed.
 7. **Free flight** — after telemetry digests look clean for ≥10 min tethered.
 
@@ -582,7 +582,7 @@ These are *not* part of this repo but are referenced by docs. If you're on a dif
 Authoritative copy is `docs/DECISIONS.md`. Summarized here so a cold Claude doesn't have to context-switch. All 9 v1 scoping decisions signed off 2026-05-18.
 
 1. **MCU** — STM32H743VIT6.
-2. **Form factor** — Pixhawk-standard 30.5 × 30.5 mm with M3 mounting holes.
+2. **Form factor** — v1: Pixhawk-standard 30.5 × 30.5 mm M3 single-PCB (functional drop-in; airframe gets a new tray). v2: FMUv6X mechanical drop-in (deferred — see `docs/OPEN_QUESTIONS.md`).
 3. **ESC channels** — 8 (DShot300/600 preferred, PWM fallback).
 4. **ELRS RX integration** — external RX module + on-board CRSF UART; no on-board RF in v1.
 5. **Voltage / current monitoring** — external Mauch power module via FC ADC input.
@@ -604,7 +604,8 @@ Domain-specific terms used throughout the docs.
 - **BEC** — Battery Eliminator Circuit; 5 V regulator off the main battery, usually inside an ESC.
 - **BLE GATT** — Bluetooth Low Energy Generic Attribute Profile; the protocol the drone Pi uses to expose pre-flight RPC to the phone.
 - **CRSF** — Crossfire/ELRS serial protocol; 420 kbaud half-duplex RC + telemetry.
-- **CubeOrange+** — Pixhawk-family autopilot, H743-based; what novapcb replaces.
+- **Holybro Pixhawk 6X** — FMUv6X-family autopilot, STM32H743-based, two-board (FMU + isolated IMU); what novapcb replaces. ArduPilot hwdef: `Pixhawk6X`.
+- **CubeOrange+** — Cube-family autopilot, STM32H757-based; not the active reference, mentioned historically.
 - **DRC / ERC** — Design Rule Check / Electrical Rule Check in KiCad.
 - **DShot** — digital ESC protocol (300/600/1200 kbit/s); preferred over PWM.
 - **ELRS** — ExpressLRS; long-range RC link, 868/915 MHz, sub-GHz.

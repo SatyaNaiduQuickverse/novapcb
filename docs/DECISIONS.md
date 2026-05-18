@@ -4,11 +4,11 @@ All 9 scoping decisions for the v1 FC, signed off 2026-05-18. Each section shows
 
 ## 1. MCU
 
-**Resolved 2026-05-18:** STM32H743VIT6 — the existing ArduPilot reference path (CubeOrange, MatekH743 hwdefs forkable) is the lowest-risk way to preserve the ArduCopter parity the surrounding stack assumes.
+**Resolved 2026-05-18:** STM32H743VIT6 — the **Holybro Pixhawk 6X (the autopilot currently flying)** uses STM32H743xx per the `Pixhawk6X` ArduPilot hwdef, so H743 keeps full ArduCopter parity with what the surrounding stack already talks to. MatekH743 is the closest single-PCB H743 reference to fork for v1's functional-drop-in scope; Pixhawk6X hwdef is the reference for v2.
 
 **Options on the table:**
 
-- **STM32H743VIT6** — what most modern ArduPilot boards use (CubeOrange, MatekH743). Highest software path-of-least-resistance; existing board defs to fork.
+- **STM32H743VIT6** — what the Holybro Pixhawk 6X uses (and MatekH743, Pixhawk 6C, and several others). Highest software path-of-least-resistance; existing board defs to fork. Note: CubeOrange/CubeOrangePlus are H757 (dual-core); not the right reference for novapcb.
 - **STM32H753** — cryptographic peripherals; nice if we ever want signed firmware, otherwise overkill.
 - **STM32H723** — cheaper, smaller flash; tight for ArduCopter.
 - **RP2350** — interesting because we're already a Pi house, dual-core M33, but ArduPilot doesn't target it; would need a non-ArduPilot firmware path (INAV / Betaflight / custom MAVLink shim). Punts on ArduCopter parity.
@@ -17,12 +17,13 @@ All 9 scoping decisions for the v1 FC, signed off 2026-05-18. Each section shows
 
 ## 2. Form factor
 
-**Resolved 2026-05-18:** Pixhawk-standard 30.5 × 30.5 mm M3 — bring-up becomes a literal mechanical swap against the CubeOrange+ on the existing airframe, which is the A/B test §6.3 phase 5 of CLAUDE.md calls for.
+**Resolved 2026-05-18:** **v1 = Pixhawk-standard 30.5 × 30.5 mm M3 single-PCB** (functional drop-in against the Holybro Pixhawk 6X — same electrical + software interface, airframe gets a new mounting tray; **not** a mechanical drop-in). **v2 = FMUv6X mechanical drop-in** (FMU + isolated IMU on vibration mounts, exact 6X footprint and connectors), deferred until v1 flies — see `OPEN_QUESTIONS.md` for the v2 mechanical questions still to settle.
 
-- **Pixhawk standard 30.5×30.5 mm with M3 holes** — drops into existing frames; easy to swap with the CubeOrange+ during bring-up to A/B test.
-- **Custom outline** — only if there's a frame-fit problem with standard.
+- **Pixhawk standard 30.5×30.5 mm M3, single-PCB** (chosen for v1) — well-trodden form factor; closest reference design is MatekH743. Functional swap only; the airframe needs a new tray since the Pixhawk 6X uses the FMUv6X pattern, not 30.5×30.5.
+- **FMUv6X form factor, two-board (FMU + isolated IMU)** (chosen for v2) — true mechanical drop-in against the 6X. Significantly more complex (vibration isolation, exact connector pin-out, dual-board assembly); not worth blocking v1 on.
+- **Custom outline** — only if there's a frame-fit problem with both of the above.
 
-**Recommendation:** Pixhawk standard for v1. Custom is a v2 conversation.
+**Recommendation:** v1 = Pixhawk standard for fastest path to a flying custom FC; v2 = FMUv6X once v1 proves out.
 
 ## 3. ESC channel count
 
@@ -79,7 +80,7 @@ The FC's USB descriptor must include strings that produce `/dev/serial/by-id/usb
 
 **Options:**
 
-- **(a) ArduPilot allocation** — ask on the ArduPilot forum / dev channel for a VID/PID assigned to this board. Matches the convention used by CubeOrange+ and other Pixhawk-family boards; downstream filters that whitelist ArduPilot-family devices will accept it without changes.
+- **(a) ArduPilot allocation** — ask on the ArduPilot forum / dev channel for a VID/PID assigned to this board. Matches the convention used by the Pixhawk 6X and other Pixhawk-family boards; downstream filters that whitelist ArduPilot-family devices will accept it without changes.
 - **(b) pid.codes free pool** — request a PID under the `0x1209` (pid.codes) free VID for open-source hardware. Fast, no permission needed beyond a PR to pid.codes, but downstream Ardu-family VID/PID filters won't recognise it.
 
 **Recommendation:** (a). Aligning with the ArduPilot allocation keeps us inside the family that downstream tools already expect; pid.codes is a fine fallback only if the ArduPilot path stalls.
