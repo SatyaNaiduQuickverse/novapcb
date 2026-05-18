@@ -19,7 +19,7 @@ The RC link arrives via an ELRS RP4TD receiver. Today this is bridged through an
 |---|---|
 | Baud | 420 000 (8N1) |
 | Frame rate | ~150 Hz |
-| Telemetry ratio | 1:2 (uplink:downlink) |
+| Telemetry ratio | 1:2 (downlink:uplink — one telemetry slot per two RC frames) |
 | Channel range | u11, 172=−1, 992=centre, 1811=+1 |
 | Safety channels | CH5 arm, CH6 force-disarm, CH7 mode (6-pos today, 12-pos planned) |
 
