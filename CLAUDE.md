@@ -26,7 +26,7 @@
 1. This file (rules + system context).
 2. `docs/SYSTEM_CONTEXT.md` — the wider Nova stack the FC plugs into.
 3. `docs/INTERFACE_CONTRACT.md` — pin-level constraints.
-4. `docs/OPEN_QUESTIONS.md` — what's not yet decided + recommendations.
+4. `docs/DECISIONS.md` — locked v1 scoping decisions + reasoning (was `OPEN_QUESTIONS.md` until 2026-05-18; `OPEN_QUESTIONS.md` now holds only future open questions).
 5. `README.md` — short orientation (mostly redundant with this file).
 
 ---
@@ -53,7 +53,7 @@
 
 - Last commit (as of 2026-05-18): `711c4d4` — added this CLAUDE.md on top of bootstrap `2bcdadc`.
 - No schematics, no PCB layout, no firmware.
-- MCU and form factor are *recommended but not yet locked* — see `docs/OPEN_QUESTIONS.md`.
+- All 9 v1 scoping decisions locked on 2026-05-18 — see `docs/DECISIONS.md`. MCU = STM32H743VIT6; form factor = Pixhawk-standard 30.5 × 30.5 mm M3.
 
 ---
 
@@ -186,7 +186,7 @@ If you stop seeing CRSF frames for >300 ms, you **must stop sending MANUAL_CONTR
 
 | Property | Value |
 |---|---|
-| Channel count | TBD, 4 minimum / 8 likely — `docs/OPEN_QUESTIONS.md` #3 |
+| Channel count | 8 (DShot300/600, PWM fallback) — `docs/DECISIONS.md` #3 |
 | Protocol | DShot300 / DShot600 preferred; PWM fallback |
 | Connector | TBD — JST-SH 1.0 or solder pads (#7) |
 | Logic level | 3.3 V (most modern ESCs accept) |
@@ -275,7 +275,8 @@ novapcb/
 ├── docs/
 │   ├── SYSTEM_CONTEXT.md           where the FC sits in the wider Nova stack
 │   ├── INTERFACE_CONTRACT.md       pin/protocol constraints (mirrors §3 here)
-│   └── OPEN_QUESTIONS.md           unresolved scoping decisions
+│   ├── DECISIONS.md               locked v1 scoping decisions (2026-05-18)
+│   └── OPEN_QUESTIONS.md           stub for future open questions
 ├── hardware/
 │   ├── kicad/                      KiCad 8 schematic + PCB sources
 │   └── exports/                    gerbers, drill, pick-and-place — generated, gitignored
@@ -576,20 +577,21 @@ These are *not* part of this repo but are referenced by docs. If you're on a dif
 
 ---
 
-## 11. Open questions — current state (2026-05-18)
+## 11. Locked decisions (2026-05-18)
 
-Authoritative copy is `docs/OPEN_QUESTIONS.md`. Summarized here so a cold Claude doesn't have to context-switch.
+Authoritative copy is `docs/DECISIONS.md`. Summarized here so a cold Claude doesn't have to context-switch. All 9 v1 scoping decisions signed off 2026-05-18.
 
-1. **MCU** — STM32H743VIT6 recommended (ArduPilot reference). Alternatives: H753 (crypto, overkill), H723 (cheap, tight flash), RP2350 (interesting but punts on ArduCopter parity).
-2. **Form factor** — Pixhawk 30.5 × 30.5 mm M3 recommended for v1.
-3. **ESC channels** — 4 / 6 / 8. 8 recommended for headroom.
-4. **ELRS RX integration** — external module + on-board CRSF UART recommended; skip integrated RF for v1.
-5. **Voltage / current monitoring** — external Mauch power module via ADC input; matches existing airframe.
-6. **microSD logging** — yes, standard slot for ArduPilot `.bin` logs.
-7. **Connector standard** — JST-GH (Pixhawk standard) for v1; matches existing harnesses.
-8. **PCB stack-up** — 4-layer minimum; 6-layer if RF gets integrated (not v1).
+1. **MCU** — STM32H743VIT6.
+2. **Form factor** — Pixhawk-standard 30.5 × 30.5 mm with M3 mounting holes.
+3. **ESC channels** — 8 (DShot300/600 preferred, PWM fallback).
+4. **ELRS RX integration** — external RX module + on-board CRSF UART; no on-board RF in v1.
+5. **Voltage / current monitoring** — external Mauch power module via FC ADC input.
+6. **microSD logging** — yes; standard slot for ArduPilot `.bin` logs.
+7. **Connector standard** — JST-GH (Pixhawk family).
+8. **PCB stack-up** — 4-layer for v1; 6-layer reserved for v2 if on-board RF lands.
+9. **USB VID/PID** — ArduPilot allocation (request via forum when needed); meanwhile `USB_VENDOR_STRING` starts with `ArduPilot` for udev by-id resolution.
 
-None of these are locked. Don't treat the recommendations as decisions until the user signs off in `OPEN_QUESTIONS.md`.
+For new questions that arise from here on, use `docs/OPEN_QUESTIONS.md` per Rule 8.
 
 ---
 

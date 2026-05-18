@@ -23,7 +23,8 @@ hardware/
 docs/
   SYSTEM_CONTEXT.md       # where the FC sits in the Nova stack
   INTERFACE_CONTRACT.md   # exact pin / protocol contract with the rest of the system
-  OPEN_QUESTIONS.md       # decisions not yet made (MCU, form factor, channel count, …)
+  DECISIONS.md            # locked v1 scoping decisions (MCU, form factor, channels, …)
+  OPEN_QUESTIONS.md       # stub for future open questions (post-2026-05-18 lock)
 firmware/      # ArduPilot board definition + any board-bringup code
 bom/           # parts list, sourcing notes
 mechanical/    # mounting holes, stack-up, frame-fit references
@@ -33,7 +34,7 @@ mechanical/    # mounting holes, stack-up, frame-fit references
 
 1. `docs/SYSTEM_CONTEXT.md` — what the FC has to live with
 2. `docs/INTERFACE_CONTRACT.md` — the hard pin-level constraints
-3. `docs/OPEN_QUESTIONS.md` — what's undecided; pick one and propose an answer
+3. `docs/DECISIONS.md` — locked v1 scoping decisions and the reasoning that locked them
 
 ## Workflow
 
