@@ -4,7 +4,7 @@
 
 ## Topology
 
-- **novaedge1** (Tailscale name `raspberrypi`, 100.81.21.121) — the user's supervisor / orchestration Pi. Runs the drone-side stack (drone-control, vision-detect, etc. — see CLAUDE.md §2). Does NOT do novapcb execution.
+- **novaedge1** (Tailscale name `raspberrypi`, 100.81.21.121) — the user's master / orchestration Pi. Runs the drone-side stack (drone-control, vision-detect, etc. — see CLAUDE.md §2). Does NOT do novapcb execution.
 - **novarobotics64** (Tailscale name `novarobotics64`, 100.91.55.18) — the worker Pi. Owns all novapcb execution: clones, hwdef edits, builds, schematic, layout, fab files.
 
 Both Pis are powered 24×7 and on the user's Tailscale tailnet.
@@ -13,7 +13,7 @@ Both Pis are powered 24×7 and on the user's Tailscale tailnet.
 
 | Component | Host | Purpose |
 |---|---|---|
-| Claude session — supervisor | novaedge1 | reviews PRs, drafts sub-phase prompts, hourly retrospectives |
+| Claude session — master | novaedge1 | reviews PRs, drafts sub-phase prompts, hourly retrospectives |
 | Claude session — worker | novarobotics64 | does the actual novapcb work |
 | `nova-coord` dashboard | novaedge1 | tails worker's JSONL transcript over SSH; injects messages via `tmux send-keys`; HTTP on Tailscale 8765 |
 | ArduPilot tree | novarobotics64 | `~/ardupilot`, MatekH743 baseline verified |
