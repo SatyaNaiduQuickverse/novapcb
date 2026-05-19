@@ -27,8 +27,10 @@
 2. `docs/SYSTEM_CONTEXT.md` — the wider Nova stack the FC plugs into.
 3. `docs/INTERFACE_CONTRACT.md` — pin-level constraints.
 4. `docs/DESIGN_PHASES.md` — canonical execution plan (Phase 0…9). Tells a cold Claude what to *do*.
-5. `docs/DECISIONS.md` — locked v1 scoping decisions + reasoning (was `OPEN_QUESTIONS.md` until 2026-05-18; `OPEN_QUESTIONS.md` now holds only future open questions). Tells a cold Claude what was *picked*.
-6. `README.md` — short orientation (mostly redundant with this file).
+5. `docs/COORDINATION.md` — cross-Pi coordinator setup, SSH pubkey pin, the worker's three on-chain verifying checks.
+6. `docs/COMMUNICATION.md` — master ↔ worker conversational protocol over nova-coord `/send/{name}`; what /send does and doesn't authorize.
+7. `docs/DECISIONS.md` — locked v1 scoping decisions + reasoning (was `OPEN_QUESTIONS.md` until 2026-05-18; `OPEN_QUESTIONS.md` now holds only future open questions). Tells a cold Claude what was *picked*.
+8. `README.md` — short orientation (mostly redundant with this file).
 
 ---
 
