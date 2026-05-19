@@ -32,7 +32,7 @@ PA12 OTG_FS_DP OTG1
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
-# SPI1 for IMU1 (MPU6000)
+# SPI1 for IMU1 (ICM-42688-P) — novapcb-v1 primary IMU (Phase 2a, 2026-05-18)
 PA5 SPI1_SCK SPI1
 PA6 SPI1_MISO SPI1
 PD7 SPI1_MOSI SPI1
@@ -52,15 +52,6 @@ PB5 SPI3_MOSI SPI3
 # external CS pins
 PD4 EXT_CS1 CS
 PE2 EXT_CS2 CS
-
-# SPI4 for IMU2 (ICM20602)
-PE11 IMU2_CS CS
-PE12 SPI4_SCK SPI4
-PE13 SPI4_MISO SPI4
-PE14 SPI4_MOSI SPI4
-
-# add ICM42605 on SPI4 as a backup to replace ICM20602
-PC13 IMU3_CS CS
 
 # two I2C bus
 I2C_ORDER I2C2 I2C1
@@ -186,13 +177,10 @@ STORAGE_FLASH_PAGE 14
 
 # spi devices
 SPIDEV icm42688  SPI1 DEVID1 IMU1_CS      MODE3  2*MHZ 16*MHZ   # Clock is 100Mhz so highest clock <= 24Mhz is 100Mhz/8
-SPIDEV mpu6000   SPI1 DEVID1 IMU1_CS      MODE3  1*MHZ  4*MHZ
-SPIDEV icm20602  SPI4 DEVID1 IMU2_CS      MODE3  1*MHZ  4*MHZ
-SPIDEV icm42605  SPI4 DEVID1 IMU3_CS      MODE3  2*MHZ 16*MHZ
 SPIDEV osd       SPI2 DEVID4 MAX7456_CS   MODE0 10*MHZ 10*MHZ
 
 
-DMA_NOSHARE SPI1* SPI4*
+DMA_NOSHARE SPI1*
 
 # SPI3 external connections
 SPIDEV pixartflow   SPI3 DEVID1  EXT_CS1  MODE3   2*MHZ  2*MHZ
@@ -204,14 +192,12 @@ define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
-# two IMUs
-# H743-V1,      ICM20602, MPU6000
-# H743-V1.5/V2, ICM42605, MPU6000
-# H743-V3,      ICM42688P, ICM42605
+# IMU — novapcb-v1 primary: ICM-42688-P on SPI1, polled mode
+# DRDY pin deferred (Pixhawk6X uses PA10, which conflicts with our USART1_RX;
+# see docs/OPEN_QUESTIONS.md "IMU DRDY pin").
+# Rotation inherited from MatekH743; revisit at Phase 4 (PCB layout) when
+# chip orientation on the board is fixed.
 IMU Invensensev3 SPI:icm42688 ROTATION_YAW_180
-IMU Invensensev3 SPI:icm42605 ROTATION_YAW_270
-IMU Invensense SPI:icm20602 ROTATION_ROLL_180_YAW_270
-IMU Invensense SPI:mpu6000 ROTATION_ROLL_180_YAW_270
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
 # DPS310 integrated on I2C2 bus, multiple possible choices for external barometer

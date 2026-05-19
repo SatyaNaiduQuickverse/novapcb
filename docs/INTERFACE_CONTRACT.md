@@ -51,10 +51,11 @@ The RC link arrives via an ELRS RP4TD receiver. Today this is bridged through an
 
 | Sensor | Notes |
 |---|---|
-| IMU | Dual-redundant preferred; ICM-42688-P is the current ArduPilot favorite |
-| Barometer | DPS310 or BMP388 |
-| Magnetometer | External via I²C (IST8310 / RM3100) — internal mag is usually too noisy |
-| GPS | UART, plus I²C for compass |
+| IMU (primary) | **ICM-42688-P on SPI1**, MODE3, 2 MHz init / 16 MHz operational. CS = `IMU1_CS` (PC15). Polled (DRDY pin deferred — see `OPEN_QUESTIONS.md` "IMU DRDY pin"). Driver: ArduPilot `Invensensev3`. Locked Phase 2a 2026-05-18 — `DECISIONS #5 / CLAUDE.md §3.5`. |
+| IMU (secondary) | Parked. CLAUDE.md §3.5 allows "ICM-42688-P or BMI088"; sub-phase TBD. Don't add a second IMU until that decision lands. |
+| Barometer | DPS310 or BMP388 (Phase 2b, not yet locked) |
+| Magnetometer | External via I²C (IST8310 / RM3100) — internal mag is usually too noisy (Phase 2c) |
+| GPS | UART, plus I²C for compass (Phase 2d) |
 
 ## Power
 
