@@ -200,10 +200,12 @@ define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 IMU Invensensev3 SPI:icm42688 ROTATION_YAW_180
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
-# DPS310 integrated on I2C2 bus, multiple possible choices for external barometer
-BARO MS5611 I2C:0:0x77
+# Barometer — novapcb-v1 primary: DPS310 on I2C2 (bus index 0 in I2C_ORDER) at 0x76 (Phase 2b, 2026-05-20)
+# CLAUDE.md §3.5 selection: DPS310 preferred per noise floor over BMP388 alternative.
+# SOTA cite: MatekH743 hwdef.dat:214 — DPS310 at this same bus + addr.
+# Pixhawk6X uses BMP388 / BMP581 / ICP201XX (NOT DPS310) — divergence intentional per noise-floor lock.
+# Address 0x76: MatekH743's DPS310 board ties SDO to GND; novapcb v1 follows.
 BARO DPS310 I2C:0:0x76
-BARO BMP280 I2C:0:0x76
 
 define HAL_OS_FATFS_IO 1
 

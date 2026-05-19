@@ -6,8 +6,11 @@ Recorded ArduCopter build results per sub-phase. Each section is self-contained:
 |---|---:|---:|---|
 | Phase 1 (identity fork) | 1,545,872 | 158,060 | `7f3cfc25…95bc1297` |
 | Phase 2a (IMU → ICM-42688-P only) | 1,534,644 | 169,284 | `b34eb835…b685c6fa` |
+| Phase 2b (baro → DPS310 only) | 1,534,572 | 169,356 | `12a4d50d…d7444aa8` |
 
 Phase 2a delta from Phase 1: text −11,228 B, BSS −1,860 B → total flash used **−11,224 B**, free flash **+11,224 B**. Drop comes from un-linking the three legacy IMU drivers (`mpu6000`, `icm20602`, `icm42605`) we removed.
+
+Phase 2b delta from Phase 2a: text **−72 B**, BSS 0 → total flash used **−72 B**, free flash **+72 B**. Tiny because MS5611 + BMP280 baro drivers share probe-loop infrastructure with the DPS310 driver we kept.
 
 ---
 
@@ -174,3 +177,71 @@ sha256  b34eb8350f5304fc2769e5284537f4813313810fc938e72e60c190dcb685c6fa  arduco
 - Still not flight-validated. The IMU is now correctly *declared* as ICM-42688-P, but the chip is not physically on a board yet.
 - Polled mode means we may need to revisit if Phase 9 (bring-up) shows IMU-thread jitter. Tracked as `docs/OPEN_QUESTIONS.md` "IMU DRDY pin".
 - Rotation (`ROTATION_YAW_180`) inherited from MatekH743 unchanged. The correct rotation depends on the chip's physical orientation on the novapcb PCB, which is a Phase 4 (layout) decision.
+
+---
+
+## Phase 2b — Barometer lock to DPS310 (2026-05-20)
+
+Phase 2b drops MatekH743's multi-revision baro support (MS5611 + DPS310 + BMP280 probed at I²C2 addresses 0x76/0x77) and locks novapcb-v1 to a single primary: **DPS310 on I²C2 at 0x76**. Address 0x76 because MatekH743's DPS310 board ties SDO to GND; novapcb v1 follows. Bus is I²C2 (index 0 in I2C_ORDER).
+
+**Reference-design grounding:** MatekH743 uses DPS310 on this same bus + address (hwdef.dat:214). Pixhawk6X does NOT use DPS310 — it uses BMP388/BMP581/ICP201XX (hwdef.dat:284-294 baros for various 6X variants). The "MatekH743 + Pixhawk6X consensus on DPS310" framing in the task contract dispatch was a master-side Rule-3 slip caught + corrected mid-PR; criterion #6 in `tasks/phase-2b-baro.yaml` updated to reflect the actual reference-design state. DPS310 is selected per `CLAUDE.md §3.5` (preferred over BMP388 per noise floor) — a single-reference decision, not a multi-reference consensus.
+
+### hwdef identity (unchanged from Phase 2a)
+
+| Field | Value |
+|---|---|
+| `APJ_BOARD_ID` | `5350` |
+| `USB_STRING_MANUFACTURER` | `"ArduPilot"` |
+| `USB_STRING_PRODUCT` | `"novapcb-v1"` |
+
+### Build identity
+
+| Field | Value |
+|---|---|
+| Date | 2026-05-20 |
+| ArduPilot commit | `4379c5b82df2b333ba956887a8c7861c03775326` (unchanged) |
+| Toolchain | `gcc-arm-none-eabi-10-2020-q4-major` (unchanged) |
+| Builder | `./waf configure --board novapcb-v1 && ./waf copter` |
+
+### Build wall-clock
+
+| Step | Time |
+|---|---|
+| `./waf configure --board novapcb-v1` | 2.047 s |
+| `./waf copter` | **3 min 42.6 s** (hwdef.h regenerated for the new BARO directive list → ccache invalidated for TUs that include it; same pattern as Phase 2a's regen) |
+| Real / user / sys | 3m43.253s / 7m36.808s / 1m11.720s |
+| Compiler warnings | **0** (Werror build) |
+
+### Flash budget (`bin/arducopter`)
+
+| Section | Bytes | Δ vs Phase 2a |
+|---|---:|---:|
+| Text | 1,529,964 | −72 |
+| Data | 4,608 | 0 |
+| BSS | 136,200 | 0 |
+| **Total flash used** | **1,534,572** | **−72** |
+| **Free flash** | **169,356** | **+72** |
+| External flash used | Not Applicable | — |
+
+Tiny delta because MS5611 and BMP280 drivers share probe-loop infrastructure with the DPS310 driver that stays. Master's contract note ("may be a near-no-op flash-delta-wise") proven correct.
+
+### Checksums
+
+```
+sha256  12a4d50d0fc3d4cb548c6b17c05eefa8678bade162e625569a280b1dd7444aa8  arducopter.bin
+```
+
+### Verification
+
+- `board_id` in `arducopter.apj` = `5350` ✓ (preserved through Phase 2b hwdef changes).
+- `image_size: 1534580`, `image_maxsize: 1703936` ✓ (well within H743 partition).
+- Exit code from `./waf copter` = `0`.
+- Single `BARO DPS310 I2C:0:0x76` line in hwdef.dat; `BARO MS5611` and `BARO BMP280` lines removed. Grep-confirmed.
+- `No APP_DESCRIPTOR found` informational line at step 1255 (unchanged from prior phases).
+
+### What this Phase 2b build is NOT
+
+- Not flight-validated. The baro is now correctly *declared* as DPS310 on I²C2 at 0x76, but the chip is not physically on a board yet.
+- I²C pull-up sizing not analyzed; deferred to Phase 6d (`SIMULATION_PLAN.md §6d` — pull-up sizing for 400 kHz, rise time vs total bus cap).
+- DPS310 INT pin (data-ready interrupt, equivalent to IMU DRDY) not wired or referenced. DPS310 driver in ArduPilot polls by default; ArduPilot does not currently require an INT line for the baro. If Phase 9 bring-up shows baro-thread jitter, this becomes an open question similar to `phase2a-1 IMU DRDY pin`.
+- Rotation N/A for baro.

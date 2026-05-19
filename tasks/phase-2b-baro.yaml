@@ -1,0 +1,58 @@
+id: phase-2b-baro
+phase: 2
+subphase: 2b
+title: "Swap barometer to DPS310"
+status: in_progress
+depends_on:
+  - phase-2a-imu-primary
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - firmware/hwdef-novapcb/hwdef-bl.dat
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md
+    - docs/CONFIDENCE_MAP.md
+    - docs/DECISIONS.md
+  refs:
+    - "DPS310 datasheet (Infineon)"
+    - "MatekH743 hwdef.dat baro section (~/ardupilot/libraries/AP_HAL_ChibiOS/hwdef/MatekH743/hwdef.dat)"
+    - "Pixhawk6X hwdef.dat baro section (cross-reference)"
+    - "DECISIONS.md §5 sensor selection (DPS310 preferred per noise floor)"
+    - "CONFIDENCE_MAP.md row 5 (DPS310 MEDIUM-HIGH currently)"
+
+outputs:
+  files_created:
+    - tasks/phase-2b-baro.yaml  # this file
+  files_modified:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md  # append Phase 2b section
+    - docs/INTERFACE_CONTRACT.md  # if sensor row needs an update
+    - docs/OPEN_QUESTIONS.md  # if any DRDY/INT pin or addr question defers
+    - docs/CONFIDENCE_MAP.md  # row 5 evidence note (Rule 3, point to source)
+  pr:
+    title: "Phase 2b: barometer to DPS310"
+    branch: fw/hwdef-phase2b-baro-2026-05-20
+
+pass_criteria:
+  - "./waf copter exits 0, zero warnings"
+  - "board_id 5350 preserved (arducopter.apj cross-check)"
+  - "DPS310 driver line present in hwdef.dat with correct I²C address"
+  - "Legacy baro driver lines (MS5611 / BMP280 / BMP388 / etc.) removed if MatekH743 had them"
+  - "BUILD_BASELINE.md appended with Phase 2b section: hwdef state diff summary, build wall-clock, sha256, flash delta vs 2a"
+  - "I²C bus + address choice matches MatekH743 (cite hwdef.dat line as SOTA source). Pixhawk6X uses different baros (BMP388/BMP581/ICP201XX) so no cross-design consensus on DPS310 — DPS310 is selected per CLAUDE.md §3.5 (preferred for noise floor) + DECISIONS.md sensor selection."
+
+estimated_context_kb: 35
+estimated_wallclock: "30-90 minutes"
+
+notes: |
+  DPS310 lives on the internal I²C bus on both MatekH743 and Pixhawk6X.
+  Address selection (0x76 vs 0x77) depends on SDO-pin tie-off — pick
+  per reference-design consensus and document in PR body if they
+  disagree.
+
+  Drop legacy baro driver lines from the inherited MatekH743 hwdef.
+  Phase 2a left only IMU drivers pruned; this is the baro pass.
+
+  If MatekH743 already uses DPS310 as primary, this sub-phase may be
+  a near-no-op flash-delta-wise. That's fine — pass criteria are still
+  required, BUILD_BASELINE still appends, contract still tracks.

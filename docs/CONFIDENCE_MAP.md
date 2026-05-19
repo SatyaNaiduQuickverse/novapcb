@@ -19,7 +19,7 @@ Per-subsystem confidence tracking. Each row updates over the lifecycle — confi
 | 2 | USB-CDC interface | HIGH (~97%) | USB diff pair routing well-documented; CDC class is standard | 3.5, 6b |
 | 3 | 5 V → 3.3 V LDO + decoupling | HIGH (~95%) | Pixhawk-family power tree published and widely copied | 3.5, 6a |
 | 4 | IMU SPI bus (ICM-42688-P) | HIGH (~92%) | Single-IMU SPI is textbook; ArduPilot driver mature | 3.5, 6c |
-| 5 | Barometer I²C (DPS310) | MEDIUM-HIGH (~88%) | Single I²C device on clean bus; worker flagged minor uncertainty re: I²C addr selection on SDO pin | 6d |
+| 5 | Barometer I²C (DPS310) | MEDIUM-HIGH (~88%) → MEDIUM-HIGH (~90%) | Phase 2b 2026-05-20: locked to DPS310 on I²C2 at 0x76, single driver line (legacy MS5611+BMP280 probes removed). SOTA cite: MatekH743 hwdef.dat:214 (same chip, bus, addr). Pixhawk6X uses BMP388/BMP581/ICP201XX, not DPS310 — divergence intentional per CLAUDE.md §3.5 (noise-floor preference). Addr 0x76 confirmed per SDO-tied-GND convention. | 6d |
 | 6 | External mag + GPS I²C/UART | HIGH (~93%) | Pixhawk-standard pin header; well-documented | 3.5, 6d, 6e |
 | 7 | microSD via SDMMC (SDR25 target) | MEDIUM (~80%) | SDR25 at 50 MHz has real SI requirements; faster speeds skipped per ENGINEERING_RIGOR.md | 6f |
 | 8 | 8-channel ESC outputs (DShot300/600) | MEDIUM (~75%) | Worker flagged: per-pin DShot/BIDIR capability must be verified against H743 alt-func table before Phase 4 layout | 2e, 6g |
