@@ -26,8 +26,9 @@
 1. This file (rules + system context).
 2. `docs/SYSTEM_CONTEXT.md` — the wider Nova stack the FC plugs into.
 3. `docs/INTERFACE_CONTRACT.md` — pin-level constraints.
-4. `docs/DECISIONS.md` — locked v1 scoping decisions + reasoning (was `OPEN_QUESTIONS.md` until 2026-05-18; `OPEN_QUESTIONS.md` now holds only future open questions).
-5. `README.md` — short orientation (mostly redundant with this file).
+4. `docs/DESIGN_PHASES.md` — canonical execution plan (Phase 0…9). Tells a cold Claude what to *do*.
+5. `docs/DECISIONS.md` — locked v1 scoping decisions + reasoning (was `OPEN_QUESTIONS.md` until 2026-05-18; `OPEN_QUESTIONS.md` now holds only future open questions). Tells a cold Claude what was *picked*.
+6. `README.md` — short orientation (mostly redundant with this file).
 
 ---
 
@@ -329,14 +330,18 @@ Phased, do not skip a phase:
 6. **Tethered hover** — first flight is tethered, props on, low throttle, RTL armed.
 7. **Free flight** — after telemetry digests look clean for ≥10 min tethered.
 
-### 6.4 PR conventions
+### 6.4 Design phases
+
+**Design phases:** see `docs/DESIGN_PHASES.md`. That doc is the canonical execution plan from Phase 0 (toolchain) through Phase 9 (bring-up hand-off back to §6.3). Chat-only phase labels do not count until they land there.
+
+### 6.5 PR conventions
 
 - Branch per change (`hw/imu-section`, `doc/connector-pinout`, `fw/hwdef-h743`).
 - Commit messages: imperative mood, why-not-what, ≤72 char subject.
 - Co-author trailer when Claude wrote the change.
 - Never amend a pushed commit. Make a new one.
 
-### 6.5 Git / GitHub conventions for this repo
+### 6.6 Git / GitHub conventions for this repo
 
 - Remote: `https://github.com/SatyaNaiduQuickverse/novapcb`. Currently public for cross-Pi setup; was initially private. Don't flip visibility without user confirmation (Rule 7).
 - Default branch: `main`.

@@ -34,7 +34,8 @@ mechanical/    # mounting holes, stack-up, frame-fit references
 
 1. `docs/SYSTEM_CONTEXT.md` — what the FC has to live with
 2. `docs/INTERFACE_CONTRACT.md` — the hard pin-level constraints
-3. `docs/DECISIONS.md` — locked v1 scoping decisions and the reasoning that locked them
+3. `docs/DESIGN_PHASES.md` — canonical execution plan (Phase 0…9)
+4. `docs/DECISIONS.md` — locked v1 scoping decisions and the reasoning that locked them
 
 ## Workflow
 
