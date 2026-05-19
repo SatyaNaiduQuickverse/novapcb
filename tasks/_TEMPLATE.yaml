@@ -1,0 +1,30 @@
+# Task contract template — copy to tasks/<id>.yaml before use.
+# See docs/TASK_CONTRACTS.md for field semantics.
+
+id: phase-X-slug                    # required, kebab-case
+phase: X                            # 0..9 + 0.5 + 2.5 + 3.5 + 6.5
+subphase: Xa                        # optional, e.g. 6c
+title: ""                           # one-line human-readable
+status: not_started                 # not_started | in_progress | in_review | done | failed
+
+depends_on: []                      # list of other task IDs
+
+inputs:
+  files: []                         # absolute repo paths
+  refs: []                          # datasheets, doc sections, external URLs
+
+outputs:
+  files_created: []
+  files_modified: []                # with optional "section X only" comment
+  pr:
+    title: ""
+    branch: ""
+
+pass_criteria: []                   # objective; checked per-item in final report
+
+estimated_context_kb: 0             # rough — helps choose between full or restricted reads
+estimated_wallclock: ""             # e.g. "1-2 hours"
+
+notes: |
+  Free-form. Use sparingly — anything load-bearing goes in a real
+  field above.

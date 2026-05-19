@@ -32,10 +32,17 @@ mechanical/    # mounting holes, stack-up, frame-fit references
 
 ## Where to start reading
 
-1. `docs/SYSTEM_CONTEXT.md` — what the FC has to live with
-2. `docs/INTERFACE_CONTRACT.md` — the hard pin-level constraints
-3. `docs/DESIGN_PHASES.md` — canonical execution plan (Phase 0…9)
-4. `docs/DECISIONS.md` — locked v1 scoping decisions and the reasoning that locked them
+1. `docs/SYSTEM_CONTEXT.md` — the wider Nova stack the FC plugs into.
+2. `docs/INTERFACE_CONTRACT.md` — pin-level constraints.
+3. `docs/DESIGN_PHASES.md` — canonical execution plan (Phase 0..9 + 0.5/2.5/3.5/6.5).
+4. `docs/CONFIDENCE_MAP.md` — subsystem confidence + evidence.
+5. `docs/ENGINEERING_RIGOR.md` — non-negotiable commitments.
+6. `docs/SIMULATION_PLAN.md` — Phase 6 sim detail.
+7. `docs/TASK_CONTRACTS.md` — input/output contracts per sub-phase.
+8. `docs/RETROSPECTIVES.md` — hourly self-review framework.
+9. `docs/COORDINATION.md` — supervisor + nova-coord setup.
+10. `docs/COMMUNICATION.md` — master ↔ worker protocol.
+11. `docs/DECISIONS.md` — locked v1 scoping decisions.
 
 ## Workflow
 

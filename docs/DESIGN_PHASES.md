@@ -16,6 +16,14 @@ Everything from Phase 2 onward unstarted.
 - ArduPilot cloned at `~/ardupilot` with submodules.
 - MatekH743 reference builds clean (Task 3, 2026-05-18) — baseline.
 
+## Phase 0.5 — Sim toolchain (DEFERRED — install just-in-time before Phase 6)
+
+Per ENGINEERING_RIGOR.md and worker recommendation 2026-05-19, the sim toolchain install is deferred from Phase 0 until just before Phase 6 starts. This avoids paying apt/pip cost (and OpenEMS install-flakiness risk) for tools that won't be used for many hours of Phase 2-5 work.
+
+Full tool list and acceptance criteria live in `docs/SIMULATION_PLAN.md` "Stage 0.5 prerequisite — sim toolchain install" section.
+
+Acceptance: every tool's hello-world produces expected output; results committed to `sims/TOOLCHAIN.md`.
+
 ## Phase 1 — Identity fork (IN REVIEW)
 
 - `firmware/hwdef-novapcb/` exists, forked from MatekH743.
@@ -48,6 +56,23 @@ Acceptance for the whole Phase 2: every sub-phase PR merged; final
 hwdef.dat reflects v1's actual design (not MatekH743); cumulative
 flash delta tracked in BUILD_BASELINE.md.
 
+## Phase 2.5 — Footprint reality check (NEW, before Phase 3)
+
+Per worker recommendation 2026-05-19. Doc-only KiCad sketch — placement only, no schematic. Catches "do all selected peripherals + connectors actually fit on 30.5 × 30.5 mm with M3 mounting holes?" CHEAP, before Phase 3 schematic decisions cascade.
+
+Scope:
+- Initialize a throwaway KiCad project (`hardware/kicad/footprint-check/` — gitignored once Phase 3 starts, only for this check)
+- Drop footprints for: STM32H743V (LQFP-100), ICM-42688-P, DPS310, IST8310 (off-board via GPS header), USB-C connector, microSD socket, 4× JST-GH (per DECISIONS.md §7) for power/GPS/CRSF/I²C compass, 8× ESC pads (or JST-SH if connectorized), debug header
+- Verify all fit within 30.5 × 30.5 mm outline with M3 mounting hole pattern preserved
+- Document findings in `hardware/kicad/footprint-check/notes.md`
+
+If layout doesn't fit:
+- Reduce ESC connector type (JST-SH solder pads instead of JST-GH) OR
+- Reduce peripheral set (drop microSD, route mag to GPS header only) OR
+- Escalate to supermaster: form factor revisit (DECISIONS.md §2 may need v1 revision)
+
+Acceptance: a placement plot showing all components fit, OR a documented constraint that forces a Phase 2.5 escalation.
+
 ## Phase 3 — Schematic in KiCad (NOT STARTED)
 
 - `hardware/kicad/novapcb.kicad_pro` initialized.
@@ -58,6 +83,22 @@ flash delta tracked in BUILD_BASELINE.md.
 - Net names mirror Phase 2's hwdef.dat pin assignments — the hwdef is
   the contract; the schematic just lays it out.
 - Acceptance: ERC clean; schematic netlist consistent with hwdef.dat.
+
+## Phase 3.5 — Reference design audit (NEW, before Phase 4)
+
+Before laying out copper, lift verbatim what's been proven. For each subsystem in CONFIDENCE_MAP.md, compare our schematic against ≥3 open-schematic FCs:
+
+| Rule | Action |
+|---|---|
+| ≥3 references agree on a value/topology | Our design **must** match. No "improvement" without an explicit risk note. |
+| References diverge | Pick one, document why. Diff becomes part of CONFIDENCE_MAP row evidence. |
+| No reference exists | Subsystem is novel. Confidence drops to LOW automatically. |
+
+Reference designs to compare against: MatekH743 (primary, since DECISIONS.md §2 v1 forks from it), Pixhawk6X (for parts where 6X happens to use similar single-PCB topology), Pixhawk6C, Mateksys H743-Slim.
+
+Output: `docs/REFERENCE_AUDIT.md` with one section per subsystem. Becomes input to Phase 4 layout.
+
+This single phase is probably worth more than half of the simulation regime — most novapcb subsystems are already solved problems and we shouldn't redesign them.
 
 ## Phase 4 — PCB layout (NOT STARTED)
 
@@ -79,17 +120,37 @@ flash delta tracked in BUILD_BASELINE.md.
 - Acceptance: every footprint in the schematic has a BOM row; total
   cost documented.
 
-## Phase 6 — Manufacturability review (NOT STARTED — GO/NO-GO GATE)
+## Phase 6 — Simulation regime (NOT STARTED — GO/NO-GO GATE)
 
-- DRC + ERC clean and re-run.
-- BOM ↔ footprint cross-check (no orphan components).
-- Fab DFM check against the chosen fab's capability sheet
-  (default: JLCPCB 4-layer).
-- Power-rail review (decoupling, thermals, current capacity).
-- Stack-up + impedance for any controlled-impedance nets (USB
-  differential pair; SDMMC if applicable).
-- Acceptance: **explicit checklist signed off by the user.** This is
-  the real-money gate (Rule 7). No fab order without it.
+See `docs/SIMULATION_PLAN.md` for the per-subsystem detail. Phase 6 loops back to Phase 4 on any sim failure — that re-loop is expected, not a project failure (see ENGINEERING_RIGOR.md commitment #5).
+
+Sub-phases (each its own PR, each writes to `sims/<subsystem>/`):
+
+| Sub | Subsystem | Primary tool |
+|---|---|---|
+| 6a | Power tree | ngspice + PySpice |
+| 6b | USB-CDC diff pair | KiCad impedance + OpenEMS |
+| 6c | IMU SPI bus | ngspice + IBIS |
+| 6d | I²C buses (baro / mag) | ngspice |
+| 6e | UARTs (GPS, CRSF) | ngspice |
+| 6f | SDMMC (SDR25) | ngspice + IBIS |
+| 6g | ESC DShot outputs | ngspice + IBIS |
+| 6h | VBAT divider + current sense | ngspice + noise analysis |
+| 6i | Reverse polarity + ESD protection | ngspice transient |
+| 6j | Thermal steady-state | Elmer FEM |
+| 6k | EMC / clock-harmonic estimate | analytical Python + OpenEMS spot |
+| 6l | ArduPilot SITL — functional regression | SITL |
+| 6m | Manufacturability — DRC/ERC/DFM/BOM cross-check | KiCad + interactiveHtmlBom |
+
+Every sub runs at three corners: nominal, hot (40 °C / max load), cold (0 °C / min VBAT). Monte Carlo (±10 %) on critical analog paths.
+
+Acceptance: every sub-phase PR merged into main; CONFIDENCE_MAP.md updated cumulatively with evidence per row.
+
+## Phase 6.5 — Forum review (NEW, mandatory for LOW-confidence rows)
+
+Post schematic + sim results to ArduPilot Hardware forum and RC Groups Custom FC thread. **Mandatory** for every LOW-confidence subsystem in `CONFIDENCE_MAP.md`; optional for HIGH-confidence rows. Findings tracked per-subsystem; address before Phase 7.
+
+Adds ~1 week. Costs zero dollars. Strong signal multiplier on LOW-confidence subsystems (currently: reverse-polarity protection, EMC, plus whatever else moves to LOW between now and Phase 6 close).
 
 ## Phase 7 — Fab order (NOT STARTED)
 
