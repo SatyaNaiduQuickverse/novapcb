@@ -42,7 +42,7 @@ from sheets import imu_3c    # noqa: F401  (3c — ICM-42688-P on SPI1)
 from sheets import baro_3d   # noqa: F401  (3d — DPS310 on I²C2 at 0x76)
 from sheets import gps_mag_3e  # noqa: F401  (3e — GPS+mag JST-GH 10P + I²C1 pull-ups)
 from sheets import esc_3f    # noqa: F401  (3f — 8 DShot motor outputs to solder pads)
-# from sheets import crsf_usb_3g  # 3g — CRSF UART + USB-C
+from sheets import crsf_usb_3g  # noqa: F401  (3g — CRSF JST-GH 4P + USB-C w/ ESD)
 # from sheets import power_mon_sd_swd_3h  # 3h — Mauch ADC + microSD + SWD + mounting
 
 # ---- pipeline (netlist-only; see module docstring + OPEN_QUESTIONS phase3-render-1) ----
