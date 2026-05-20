@@ -1,0 +1,102 @@
+id: phase-pivot-step4
+phase: pivot
+subphase: "step-4"
+title: "Step 4 — sim-validate the placement (Elmer thermal FEA + EMC re-check)"
+status: in_progress
+depends_on:
+  - phase-pivot-step3-p1   # placement execution (merged PR #58)
+  - phase-pivot-step3-p0   # strategy + thermal budget (merged PR #57)
+
+inputs:
+  files:
+    - hardware/kicad/novapcb-layout-v2/novapcb-layout-v2.kicad_pcb  # the placement to validate
+    - hardware/kicad/novapcb-layout-v2/PLACEMENT_REPORT.md          # zoning + component coords
+    - docs/THERMAL_BUDGET.md                                          # per-component dissipation + BCs + LDO prediction
+    - docs/PLACEMENT_STRATEGY.md                                      # §3.4 predicts LDO Tj=79.8°C
+    - sims/PHASE6_P0_RESULTS.md                                       # Phase 6k EMC baseline
+    - sims/em-fem-builds/                                             # Elmer + OpenEMS toolchain (PR #56)
+
+  refs:
+    - "Master 2026-05-21 directive (post-PR-#58): Step 4 sim-validates the placement against the physics, iterates where sims surface problems. Primary: Elmer thermal FEA of the actual 62×42 6-layer placement at worst-case BCs (still air, 50-60°C ambient). Get junction temps — especially AP2112K LDO + STM32H743 MCU. Validate vs falsifiable strategy prediction. Iterate if a junction exceeds target. Secondary: re-run 6k EMC analytical on new placement to confirm zone-separation adequacy."
+    - "PLACEMENT_STRATEGY §3.4 prediction: LDO Tj at 50°C ambient with 100 mm² L4 +5V pour drops from 98°C (4-layer) to ≤80°C (6-layer with θ_JA ~50°C/W). Master accepted this prediction explicitly + locked 6-layer in PR #57."
+    - "THERMAL_BUDGET §2.5.6 re-evaluation trigger: 'AP2112K Tj > 85°C in Elmer-FEM with realized placement → Means the thermal budget assumption was wrong. Architecture re-evaluation required.'"
+
+# Falsifiable pre-prediction
+prediction:
+  worker_pre_run_prediction: |
+    Sim setup:
+      - Elmer 3D heat-conduction solve (HeatSolver)
+      - Domain: 62 × 42 × 1.6 mm box (board), uniform isotropic effective k
+        from copper-stack weighting
+      - Heat sources at component locations per THERMAL_BUDGET §1 (LDO,
+        MCU, eFuse, P-FET; sensors < 1% folded into board avg)
+      - BCs: h_conv = 5 W/m²·K each surface (still-air worst case),
+        T_amb = 50°C, adiabatic edges
+      - Steady-state solve
+
+    PRED-1 (LDO Tj at 50°C ambient): predict ≤ 80°C per
+      PLACEMENT_STRATEGY §3.4 (the 6-layer thermal-pour solution).
+      Falsifiable: if Elmer-FEM shows Tj > 80°C, PLACEMENT_STRATEGY's
+      thermal claim was over-optimistic and architecture re-evaluation
+      kicks in per THERMAL_BUDGET §2.5.6.
+
+    PRED-2 (MCU Tj at 50°C ambient): predict ≤ 75°C per
+      THERMAL_BUDGET §5 (0.7 W × θ_JA 35°C/W = 24.5°C rise above
+      board T; board T ≈ 50°C → Tj ≈ 74.5°C). Falsifiable similarly.
+
+    PRED-3 (board avg T): predict ~75-80°C at 50°C ambient (the
+      whole-board convection-limited steady state for 1.33 W total
+      dissipation).
+
+    PRED-4 (sensitivity to h_conv): include h ∈ {5, 8, 10, 15, 25}
+      W/m²·K sensitivity sweep so the design's robustness to
+      airflow-assumption is documented for Phase 6.5 forum + Sai
+      adjudication.
+
+    PRED-5 (EMC re-check): the 6k Fourier harmonic-band intersections
+      are determined by clock frequencies (SDMMC 12.5 MHz, USB FS 12
+      MHz, DShot600 600 kHz) NOT by placement; the 4 critical
+      harmonics intersecting USB FS band remain Phase 9.5 chamber-test
+      items. Placement-level EMC check confirms physical separation:
+      Zone 1 (power switching) — Zone 3 (IMU/ADC analog) end-to-end
+      separation ≈ 45-50 mm; SDMMC ↔ USB-pair distance within Zone 2
+      ≈ 10-20 mm; ESC row ↔ MCU/sensors ≥ 8 mm.
+
+    Predicted PR outcome: Step 4 report documents (a) thermal FEA
+      result with PASS/FAIL vs PRED-1/2/3, (b) sensitivity sweep,
+      (c) EMC zone-separation confirmation, and EITHER:
+      (i) all PASS → Step 4 closes, Step 5 (routing) dispatches; OR
+      (ii) thermal FAIL → architecture-trigger per THERMAL_BUDGET
+        §2.5.6 → escalate to master + Sai for either (a) architecture
+        change (buck-switcher hybrid for 3V3), (b) BC update (assume
+        forced/propwash convection h>10), or (c) larger board /
+        external heatsink. NOT a placement iteration since
+        convection-limited regime can't be fixed by repositioning.
+
+acceptance:
+  - "Elmer FEA runs end-to-end on the 62×42 6-layer placement geometry; produces junction temps at LDO + MCU."
+  - "Result compared explicitly to PLACEMENT_STRATEGY §3.4 prediction (the falsifiable claim) — PASS or FAIL stated, with delta in °C."
+  - "Sensitivity sweep over h_conv documented so the design's robustness boundary is explicit."
+  - "EMC zone-separation re-confirmed against Phase 6k findings (placement preserves the 4-zone strategy)."
+  - "Step 4 PR contains a clear PASS/FAIL/ITERATE/ESCALATE outcome and the chosen next-action path."
+
+deliverables:
+  - tasks/phase-pivot-step4.yaml            # this contract
+  - sims/thermal-step4/                     # Elmer model + run script + results
+  - sims/thermal-step4/STEP4_REPORT.md      # validation report
+  - sims/emc-6k-rev/                        # EMC re-check on new placement (analytical)
+
+gates:
+  master_review:
+    description: |
+      Master reviews thermal FEA result + delta vs prediction +
+      sensitivity sweep + EMC zone-separation check. If all PASS, Step
+      4 closes and Step 5 (routing) dispatches. If thermal FAILS at
+      master's stated BCs (h=5, T_amb=50°C), THERMAL_BUDGET §2.5.6
+      trigger fires — master + Sai decide architecture (buck-switcher
+      hybrid? BC update? heatsink?). The decision rule is
+      pre-documented; this PR honestly surfaces whichever outcome the
+      FEA gives.
+
+retrospective:
+  hourly_cadence: "Every hour while running; capture any deviations or surprising results."

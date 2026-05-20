@@ -1,0 +1,12 @@
+{
+  "n_nodes": 3520,
+  "T_board_avg_C": 89.93470589267542,
+  "T_board_max_C": 95.16559032867168,
+  "T_board_min_C": 86.7593931999228,
+  "Tj_U2_LDO_C": 92.05885711961628,
+  "Tj_U1_MCU_C": 93.98339813098104,
+  "Tj_U6_eFuse_C": 90.88528583428815,
+  "Tj_Q2_PFET_C": null,
+  "validation_ldo": "FAIL",
+  "validation_mcu": "FAIL"
+}
