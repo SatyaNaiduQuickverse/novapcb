@@ -1,0 +1,111 @@
+id: phase-pivot-step2-inrush-mitigation
+phase: pivot
+subphase: "step-2"
+title: "Inrush mitigation — schematic add of MOSFET soft-start on +5V BEC input"
+status: in_progress
+depends_on:
+  - phase-pivot-step1-emi-thermal-tooling   # Phase 0.6 (not blocking the schematic change itself)
+
+inputs:
+  files:
+    - sims/power-6a/results.md            # the 3.39A inrush finding
+    - hardware/kicad/novapcb/sheets/power_3b.py
+    - docs/DECISIONS.md                   # §10 reliability mandate + §11 inrush stub
+  refs:
+    - "Phase 6a finding: inrush 3.39A peak at power-on (BEC 0→5V ramp through 5.7µF input bulk + LDO startup transient). Exceeds the <2A SIMULATION_PLAN §6a criterion AND likely exceeds a ≥3A BEC's transient tolerance."
+    - "Sai directive 2026-05-21: reliability is THE priority; 'strong resilient stuff that won't fail'. Fix the failure mode in the design, don't justify why it 'probably won't trigger'."
+    - "Master steer 2026-05-21: favor MOSFET soft-start over NTC thermistor. NTC has real reliability caveats (steady-state voltage drop wasted as heat; fails to reset on a fast warm power-cycle); a deterministic active soft-start is more resilient."
+    - "DECISIONS.md §10 reliability mandate; §11 inrush stub"
+
+# Falsifiable pre-prediction
+prediction:
+  worker_pre_run_prediction: |
+    Design: P-MOSFET active soft-start on the +5V BEC input rail.
+    Topology:
+      - P-MOSFET in the high-side path: Source=BEC_in, Drain=BEC_filtered (to LDO)
+      - R_gs from gate to source (R6=100kΩ): pulls gate toward source over time
+      - C_gd from gate to GND (C5=1µF): holds gate low at power-on, charges through R_gs
+      - Optional zener (D1, 5.1V) from gate to source: clamps Vgs to safe range
+    Time constant τ = R_gs × C_gd = 100kΩ × 1µF = 100ms
+      → output voltage rises monotonically from 0 to 5V over ~100ms
+      → input current capped: I_max ≈ C_total × dV/dt ≈ 16.3µF × 5V/100ms = 0.8A
+      → well below 2A target AND well within any 3A BEC transient envelope
+
+    Part selection:
+      - Q1: AO3401A (Alpha & Omega Semi) P-channel MOSFET, SOT-23
+            Vds=-30V (handles 5-6S BEC + transients), Id=-4A (handles 360mA worst-case
+            load × 10× margin), Rds(on)=50mΩ @ Vgs=-4.5V (drop at 360mA = 18mV,
+            negligible), Vgs_max=±12V (5V Vgs safe).
+            LCSC C15127, JLCPCB BASIC part.
+      - R6: 100kΩ 0402 1% — existing BOM has 47k and others; can use existing 47k
+            (τ=47ms still OK) or add 100k as a new row.
+      - C5: 1µF X7R 0402 (same as C20/C22/C31/C33 in BOM — reuse the 1uF
+            X7R 0402 row, refdes C5 added)
+      - D1: optional 5.1V zener (SOT-23, e.g. MMSZ5231B / BZX84C5V1). LCSC C8556.
+            For 5V BEC + small Vgs swings, may not be strictly needed (Vgs stays
+            ≤5V). Skip in v1; add only if Phase 6.5 review flags it.
+
+    Predicted PR outcome:
+      - power_3b.py: add Q1 (AO3401A) + R6 (100k) + C5 (1uF) in inrush-limit
+        topology between BEC_in and LDO Vin. Net naming: +5V_BEC (raw) →
+        Q1 → +5V (filtered, what feeds the LDO).
+      - Regenerate netlist (novapcb.net via SKiDL).
+      - BOM: add 3 new rows (Q1, R6, C5 — though R6 can reuse 47k row + C5 reuses 1uF row).
+      - DECISIONS.md §11 resolution (MOSFET soft-start chosen + rationale recorded).
+      - falsifiable pre-prediction matched if all 3 components add without
+        ERC errors + netlist regenerates clean.
+
+    Phase 6a re-sim post-merge: should show I_peak ≤ 1A (well under 2A target).
+    Doesn't block this PR (it's a Phase 6 re-run, not Step 2 acceptance).
+
+decision_forks_watched:
+  inrush-topology:
+    fork: "Inrush mitigation topology — MOSFET soft-start vs NTC vs LDO EN soft-start vs accept-criterion-review"
+    expected_classes: [mosfet-soft-start, ntc-thermistor, ldo-en-rc, criterion-review-only, hybrid]
+    pre_recommendation: "MOSFET soft-start (P-channel high-side with RC gate slow-on). Deterministic, clean-reset on any power-cycle, no steady-state voltage drop. Per master + Sai §10 reliability mandate. NTC's reliability caveats (steady drop + warm-cycle reset failure) disqualify it under the §10 priority."
+    actual_resolution: ""
+    resolved_via: "this PR"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-pivot-step2-inrush-mitigation.yaml
+  files_modified:
+    - hardware/kicad/novapcb/sheets/power_3b.py   # add Q1 + R6 + C5 soft-start
+    - hardware/kicad/novapcb/novapcb.net          # regenerated netlist (auto from SKiDL)
+    - bom/novapcb-bom.csv                          # add 3 new BOM rows (or extend existing)
+    - bom/SOURCING_NOTES.md                        # note Q1 P-MOSFET addition
+    - docs/DECISIONS.md                            # §11 resolution
+    - docs/OPEN_QUESTIONS.md                       # close any related items
+  pr:
+    title: "Pivot Step 2: inrush mitigation — MOSFET soft-start on +5V BEC input"
+    branch: hw/step2-inrush-mitigation-2026-05-21
+
+pass_criteria:
+  - "S2.1: power_3b.py modified — Q1 AO3401A + R_gs 100kΩ + C_gd 1µF inserted between +5V_BEC (raw, from connector) and +5V (filtered, feeding LDO + LDO input caps). KiCad symbol library has AO3401A or generic P-MOSFET footprint matched to SOT-23."
+  - "S2.2: SKiDL netlist regenerates clean (python3 generate_netlist.py exits 0; novapcb.net updated)."
+  - "S2.3: KiCad ERC clean on the regenerated schematic — no new ERC errors introduced by the additions (Q1 has body diode, R + C standard parts)."
+  - "S2.4: BOM updated — 1 new row (Q1 MOSFET) and 2 refdes-list additions (R6 to a new or existing 100k row; C5 to existing 1uF row). Q1 sourced with real LCSC# + JLCPCB type."
+  - "S2.5: DECISIONS.md §11 resolved — chosen topology, time constant calc, the rejected alternatives + why."
+  - "S2.6: SOURCING_NOTES.md updated with the AO3401A entry and note that Step 2 added 3 components for inrush limiting per §10 reliability mandate."
+  - "S2.7: SOTA self-audit. Falsifiable prediction vs actual outcome reported."
+  - "S2.8: Phase 6a re-sim is a SEPARATE follow-up; not a S2 gate — but a brief paper-check that the predicted I_peak ≤ 1A holds with the new topology is folded into the PR description."
+
+estimated_context_kb: 45
+estimated_wallclock: "2-4 hours"
+
+notes: |
+  Step 2 is the first concrete design change driven by Sai's reliability
+  mandate (DECISIONS §10). The mitigation must be a FIX in the schematic,
+  not a criterion re-review.
+
+  This PR makes the schematic change; Phase 6a re-sim (verifying the
+  topology actually delivers ≤1A inrush) is a subsequent run, not a S2
+  gate. The schematic change is reviewable against the topology + part
+  selection on its own merits.
+
+  Phase 0.6 PR (Elmer + OpenEMS validations + Palace deferred + pivot doc
+  updates) is in WIP on infra/sim-tooling-pivot-2026-05-20 — Step 2 PR
+  stacks on that branch (carries the Sai-directive doc updates +
+  DECISIONS §11 stub).

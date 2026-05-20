@@ -1,0 +1,10 @@
+{
+  "i_peak_A": 2.849888200000006,
+  "i_peak_time_ms": 0.0109353457,
+  "ldo_out_ramp_10_90_ms": 0.005400000000000001,
+  "i_pre_Step2_A": 3.39,
+  "i_reduction_factor": 1.1895203467981632,
+  "target_max_A": 2,
+  "pass": false,
+  "note": "Behavioral SPICE model \u2014 VT=-2.5V switch with smooth transition. Real AO3401A Vth \u2248 -0.9V, but the switch's effective transition modeled with VT=-2.5 + VH=0.5 gives a similar soft-start envelope. Phase 9 bench measurement is the definitive verification."
+}
