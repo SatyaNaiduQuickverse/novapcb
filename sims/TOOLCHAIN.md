@@ -1,8 +1,8 @@
-# Simulation toolchain — Phase 0.5 install + smoke-test
+# Simulation toolchain — Phase 0.5 install + smoke-test + Phase 0.6 EMI/thermal pivot
 
-> **Status**: Phase 0.5 done 2026-05-20. 8 tools installed userspace; 3 NEEDS-SUDO-HANDOFF; 1 deferred-with-fallback; 1 skipped (LTspice/Wine, master directive).
+> **Status (post-Phase-0.6 pivot, 2026-05-20)**: 8 base tools installed userspace from Phase 0.5; EMI/thermal trio (Elmer FEM, OpenEMS, Palace) added via Phase 0.6 pivot — sudo-granted apt build prereqs + source-build the three. See §10 below for the Phase 0.6 entries.
 >
-> **Phase 6 reachability**: ~85% — 10 of 13 sub-phases fully unblocked, 2 with analytical fallback, 1 Sai-handoff-pending.
+> **Phase 6 reachability**: pre-pivot ~85%; **post-pivot 100%** once Phase 0.6 validation gate passes (Elmer unblocks 6j deep thermal; OpenEMS+Palace unblock 6b/6k OpenEMS-dependent deeper validation that was previously DEFERRED-WITH-FALLBACK).
 
 ---
 
