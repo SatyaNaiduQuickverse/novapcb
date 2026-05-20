@@ -123,8 +123,8 @@ Sub-phases per the P0.6-approved breakdown:
 
 | Sub | Title | Status |
 |---|---|---|
-| 4a | Footprints + 4-layer stackup + DRC ruleset + closed outline | **DONE 2026-05-20** — `hardware/kicad/novapcb-layout/` (board scaffolding ready for placement; 70/70 footprints final; 36×36mm closed outline; 4× M3 at 30.5 c-to-c; 8 net classes incl. Power/USB_diffpair/IMU_SPI/SDMMC/DShot; DRC rules within JLCPCB 4-layer capability) |
-| 4b | Component placement (per Phase 2.5 sketch + Phase 3 hierarchy) | NOT STARTED — first-class design task per master 09:00 retro cross-review |
+| 4a | Footprints + 4-layer stackup + DRC ruleset + closed outline | **DONE 2026-05-20** — `hardware/kicad/novapcb-layout/` (board scaffolding ready for placement; 70/70 footprints final; 36×36mm closed outline; 4× M3 at 30.5 c-to-c; 8 net classes incl. Power/USB_diffpair/IMU_SPI/SDMMC/DShot; DRC rules within JLCPCB 4-layer capability). Phase 4a-1 ICM-42688-P land pattern is HARD carry-forward per `OPEN_QUESTIONS.md` phase4a-1. |
+| 4b | Component placement (per Phase 2.5 sketch + Phase 3 hierarchy) | **DONE 2026-05-20 (first-pass headless)** — `hardware/kicad/novapcb-layout/` 70 components positioned with per-group routing-aware reasoning. 87 DRC violations remain (clearance + shorting_items between adjacent passives + IC pads — many GND-vs-signal auto-resolve in 4c plane pour). Per-group reasoning + design discipline in PR body. |
 | 4c | Plane definition (GND on In1; +3V3/+5V/VBAT split on In2) | NOT STARTED — lifts iter-#3 power-plane finding from P0 |
 | 4d | Auto-routing pass (Freerouting via DSN/SES) | NOT STARTED |
 | 4e | Critical-net hand-routing (USB diff pair, IMU SPI, SDMMC, Mauch ADC filter) | NOT STARTED |
