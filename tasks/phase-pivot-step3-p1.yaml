@@ -1,0 +1,96 @@
+id: phase-pivot-step3-p1
+phase: pivot
+subphase: "step-3-p1"
+title: "Step 3 P1 — placement execution (6-layer rectangular, 4-zone strategy)"
+status: in_progress
+depends_on:
+  - phase-pivot-step3-p0   # planning + layer-count adjudication (merged PR #57)
+  - phase-pivot-step2-inrush-mitigation   # Step 2 schematic (merged PR #55)
+
+inputs:
+  files:
+    - docs/PLACEMENT_STRATEGY.md          # zoning + sizing + mounting + methodology
+    - docs/THERMAL_BUDGET.md              # per-component dissipation + architecture decision
+    - docs/DECISIONS.md                   # §8 (6-layer locked via PR #57)
+    - hardware/kicad/novapcb/novapcb.net  # netlist (83 components, schematic locked)
+    - hardware/kicad/novapcb-layout/generate_board.py   # script template (old 36×36)
+
+  refs:
+    - "Master 2026-05-21 directive (post-PR-#57): execute placement per the approved strategy. New 6-layer board, rectangular outline 50-55×35-40 mm target, 4-zone layout, generous spacing. Components on correct layers, M3 corner mounting. Pass criteria: placement-level DRC clean (courtyards don't overlap), every netlist component placed, 4-zone separation visibly realized, placement report + render."
+    - "Sai's reliability mandate + dimension freedom: size is OUTPUT of placement, not pre-decided input. Generous spacing > density."
+    - "Master: this is the FIRST strategy-driven placement — Step 4 (sim-validate) then iterates it via the place→sim→adjust loop. So: a solid strategy-faithful first pass, not necessarily the final geometry."
+
+# Falsifiable pre-prediction
+prediction:
+  worker_pre_run_prediction: |
+    Output artifacts:
+      - hardware/kicad/novapcb-layout-v2/generate_board.py  — authoritative
+        placement script (re-runnable, bit-identical modulo KiCad UUIDs).
+      - hardware/kicad/novapcb-layout-v2/novapcb-layout-v2.kicad_pcb
+      - hardware/kicad/novapcb-layout-v2/novapcb-layout-v2.kicad_pro
+      - hardware/kicad/novapcb-layout-v2/PLACEMENT_REPORT.md
+      - hardware/kicad/novapcb-layout-v2/renders/ (top + bottom 2D SVG + 3D PNG)
+      - hardware/kicad/novapcb-layout-v2/lib/ (custom CRSF + ESC solder pads,
+        copied from old layout's in-repo lib)
+      - hardware/kicad/novapcb-layout-v2/fp-lib-table (footprint-lib reference)
+      - tasks/phase-pivot-step3-p1.yaml (this contract)
+
+    Headline predictions:
+
+    PRED-1 (board envelope): rectangle 50-55 × 35-40 mm chosen within the
+      strategy's range. Aspect ratio 1.3-1.6. Mounting holes at ≥3 mm
+      inset.
+
+    PRED-2 (component count): all 83 netlist components placed exactly
+      once (no missing, no duplicates).
+
+    PRED-3 (6-layer stackup): copper layer count = 6, per DECISIONS §8.
+
+    PRED-4 (4-zone separation visibly realized):
+      Zone 1 POWER at one short edge (Mauch J4 + Q2 + D1 + U6 eFuse +
+        config network + U2 LDO + bulks).
+      Zone 2 MCU + USB + SDMMC in centre (U1 LQFP-100 + halo + USB-C +
+        USBLC6 + microSD on B.Cu + SWD on B.Cu).
+      Zone 3 SENSORS / ANALOG at opposite short edge (U3 IMU on TOP, U4
+        baro on BOTTOM, ADC LPFs).
+      Zone 4 CONNECTORS on long edges (JST-GH N edge, ESC pads S edge).
+
+    PRED-5 (placement-level DRC clean): courtyards don't overlap; pads
+      don't short different nets; mounting-hole keepouts respected. The
+      sub-condition "every netclass clearance met" is harder — pre-existing
+      footprint internals (ICM-42688-P LGA-14 pad-to-pad at 0.15 mm) will
+      register as residual clearance violations that are footprint-internal
+      not placement-caused. Documented in PLACEMENT_REPORT as residual.
+
+    PRED-6 (placement-tension residuals): zone-boundary tensions at:
+      - Zone 1 ↔ Zone 2 boundary (eFuse config cluster ↔ MCU W-side caps)
+      - N-edge connector cluster (J3 + J5 + J1 + H4 mounting hole — 49 mm
+        usable edge for ~35 mm of connector body + clearances → tight)
+      Expected ≤ 20 zone-boundary residuals; > 30 means the strategy is
+      under-spaced and needs Step 4 iteration to relieve.
+
+acceptance:
+  - "All 83 netlist components placed (parity: netlist count == placed count)."
+  - "6 copper layers."
+  - "Mounting holes: 4 × M3 corners, ≥ 3 mm edge inset."
+  - "B.Cu components correctly flipped to bottom layer (DPS310 U4, microSD J2, SWD J9, SDMMC pullups R51-R55, CRSF pads J10)."
+  - "PLACEMENT_REPORT.md documents the 4-zone realization with per-zone component lists + DRC residual breakdown + how-to-reproduce."
+  - "Render (3D PNG top + bottom) committed to renders/."
+  - "Placement-level DRC residuals enumerated; categorized as (a) footprint-internal (not fixable by placement), (b) zone-boundary tension (Step 4 iterate target), or (c) actual placement error."
+  - "Acceptance does NOT require fully DRC-clean state — master allowed 'solid strategy-faithful first pass, not necessarily the final geometry'. Residuals quantified + categorized in the report."
+
+deliverables:
+  - hardware/kicad/novapcb-layout-v2/                  # the new board project
+  - tasks/phase-pivot-step3-p1.yaml                    # this contract
+
+gates:
+  master_review:
+    description: |
+      Master reviews placement render + report. Adjudicates whether the
+      strategy realization is solid enough to dispatch Step 4 (sim-validate
+      + iterate). Residuals identified as zone-boundary tensions are
+      expected; if they're severe, master may direct another P1 pass
+      before Step 4. Otherwise PR closes + Step 4 dispatches.
+
+retrospective:
+  hourly_cadence: "Every hour while drafting; capture deviations from this contract."
