@@ -1,0 +1,77 @@
+id: phase-3i-telem
+phase: "3"
+subphase: "3i"
+title: "Telemetry UART connector sheet — USART1 on JST-GH 6P (Phase 3-exit A2 hwdef-completeness fix)"
+status: done
+depends_on:
+  - phase-3h-power-sd-swd
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - hardware/kicad/novapcb/sheets/mcu_3a.py
+    - hardware/kicad/novapcb/sheets/crsf_usb_3g.py
+    - hardware/kicad/novapcb/sheets/common.py
+    - docs/CONFIDENCE_MAP.md
+    - docs/OPEN_QUESTIONS.md
+  refs:
+    - "hwdef.dat:113-114 — USART1 TX/RX (PA9/PA10). AUTHORITATIVE per hwdef-cited discipline."
+    - "Pixhawk Connector Standard DS-009 (pixhawk/Pixhawk-Standards GitHub) — TELEM JST-GH 6-pin pinout: 1=VCC5V, 2=TX, 3=RX, 4=CTS, 5=RTS, 6=GND. Web-cross-confirmed 2026-05-20."
+    - "DECISIONS §7 — JST-GH connector standard"
+    - "crsf_usb_3g.py — closest pattern (UART on a JST-GH connector); follow structure"
+    - "Phase 3-exit A2 hwdef-completeness check 2026-05-20 — caught USART1 unconnected; master adjudication NEEDS-FIX → this sub-phase"
+
+decision_forks_watched:
+  telem-connector:
+    fork: "TELEM JST-GH pin count — full 6-pin (with CTS/RTS) vs 4-pin reduced"
+    expected_classes: [jst-gh-6p-full, jst-gh-4p-reduced]
+    pre_recommendation: "6-pin Pixhawk-standard footprint per DS-009 for mechanical compatibility with standard telem cables; CTS/RTS NC since hwdef doesn't assign USART1 hardware flow control"
+    actual_resolution: "6-pin JST-GH SM06B-GHS-TB horizontal. Pin map per DS-009 standard. hwdef.dat grep'd for USART1_CTS / USART1_RTS — neither defined. Pins 4 + 5 captured as NC; mechanical compatibility with standard Pixhawk telem cables preserved (peripheral side may connect CTS/RTS via cable cross-over but FC side ignores). Software flow control sufficient for telem-radio + GCS use cases."
+    resolved_via: "inline (hwdef grep + DS-009 cite + master pre_rec)"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-3i-telem.yaml
+    - hardware/kicad/novapcb/sheets/telem_3i.py
+  files_modified:
+    - hardware/kicad/novapcb/generate.py
+    - hardware/kicad/novapcb/novapcb.net
+    - hardware/kicad/novapcb/generate.erc
+    - docs/CONFIDENCE_MAP.md            # row 6 now covers mag+GPS+telem
+    - docs/DESIGN_PHASES.md             # Phase 3: 3a-3i done
+    - docs/OPEN_QUESTIONS.md            # CLOSED phase3exit-can entry (deliberate omission record)
+  pr:
+    title: "Phase 3i: telem JST-GH 6P (USART1) + CAN-omit decision"
+    branch: hw/phase-3i-telem-2026-05-20
+
+pass_criteria:
+  - "3i.1: hwdef.dat:113-114 USART1 TX/RX (PA9/PA10) grep'd + cited. USART1_CTS / USART1_RTS NOT defined → pins 4+5 NC. Wiring matches hwdef exactly — verified by guard PASS."
+  - "3i.2: telem_3i.py built — JST-GH 6P SM06B-GHS-TB horizontal per DS-009 (1=VCC5V/2=TX/3=RX/4=CTS-NC/5=RTS-NC/6=GND). USART1_TX → MCU PA9; USART1_RX → MCU PA10 via n() shared nets."
+  - "3i.3: CAN-omit closed-decision added to docs/OPEN_QUESTIONS.md per master 2026-05-20 wording — closed entry, not open question; documents deliberate v1 feature-scope decision."
+  - "3i.4: Pipeline — SKiDL ERC 0 errors / 67 warnings (UNCHANGED from 3h: 2 MCU pins newly connected balanced by 2 CTS/RTS NC pins on connector). 0 netlist errors. Rail-uniqueness guard PASSED. USART1_TX + USART1_RX unique cross-sheet nets."
+  - "3i.5: CONFIDENCE_MAP row 6 title broadened (mag + GPS + telem); 3i evidence note appended. ⚠️ SUPERMASTER REVIEW flag in PR body for the CAN-omit v1 feature-scope autonomous decision."
+
+estimated_context_kb: 35
+estimated_wallclock: "45-60 min — small connector sheet, A2 follow-up"
+
+notes: |
+  3i closes the Phase 3-exit A2 hwdef-completeness gap on USART1. The
+  schematic now has 9 sheets (3a-3i); every hwdef-defined port is either
+  (a) on a connector, or (b) a Phase-2-exit-Part-B classified harmless
+  cruft pin with no novapcb v1 hardware (MAX7456 deferred, SPI3 unused,
+  spare UARTs, GPS2, LEDs, RSSI, PINIO, etc.), or (c) the deliberate
+  v1-omit CAN bus (decision recorded in OPEN_QUESTIONS).
+
+  After 3i merges, Phase 3-exit resumes from the A2 re-run. Expectation:
+  the 2 telem pins now connected; remaining unconnected hwdef-assigned
+  pins reduce to the documented Cat-A intentional set; A2 passes clean.
+
+  CAN-omit decision recorded as CLOSED entry (not open question) — it's
+  a deliberate v1 scope call, not awaiting action. Includes the v1.x/v2
+  re-evaluation pointer for future Claude.
+
+  Master's "audit deep" emphasis from 07:00 retro paid off here: A2's
+  rigorous-application caught a real omission. Same rigor for Phase 3i's
+  re-run of A2 after this PR merges.

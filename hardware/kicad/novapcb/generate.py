@@ -44,6 +44,7 @@ from sheets import gps_mag_3e  # noqa: F401  (3e — GPS+mag JST-GH 10P + I²C1 
 from sheets import esc_3f    # noqa: F401  (3f — 8 DShot motor outputs to solder pads)
 from sheets import crsf_usb_3g  # noqa: F401  (3g — CRSF JST-GH 4P + USB-C w/ ESD)
 from sheets import power_sd_swd_3h  # noqa: F401  (3h — Mauch ADC + microSD + SWD + mounting)
+from sheets import telem_3i         # noqa: F401  (3i — Telem USART1 JST-GH 6P, breakdown-omission fix)
 
 # ---- pipeline (netlist-only; see module docstring + OPEN_QUESTIONS phase3-render-1) ----
 import skidl
