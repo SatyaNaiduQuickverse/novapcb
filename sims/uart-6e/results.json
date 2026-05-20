@@ -1,0 +1,66 @@
+{
+  "tool": "analytical + ngspice for SI (scaffold)",
+  "tier": "1 (analytical) / 2 (cable SI)",
+  "checks": [
+    {
+      "check": "6e.GPS USART2 default",
+      "status": "PASS",
+      "result": {
+        "baud": 38400,
+        "t_bit_us": 26.042,
+        "edge_ns": 10,
+        "ratio": 2604.0,
+        "interpretation": "ratio > 10 = edges are tiny fraction of bit; eye stays wide open",
+        "pass": true
+      },
+      "notes": "STM32H743 GPIO medium-speed default ~10 ns edge"
+    },
+    {
+      "check": "6e.Telem USART1 default",
+      "status": "PASS",
+      "result": {
+        "baud": 115200,
+        "t_bit_us": 8.681,
+        "edge_ns": 10,
+        "ratio": 868.0,
+        "interpretation": "ratio > 10 = edges are tiny fraction of bit; eye stays wide open",
+        "pass": true
+      },
+      "notes": "STM32H743 GPIO medium-speed default ~10 ns edge"
+    },
+    {
+      "check": "6e.CRSF USART6 (DECISIONS \u00a74)",
+      "status": "PASS",
+      "result": {
+        "baud": 420000,
+        "t_bit_us": 2.381,
+        "edge_ns": 10,
+        "ratio": 238.0,
+        "interpretation": "ratio > 10 = edges are tiny fraction of bit; eye stays wide open",
+        "pass": true
+      },
+      "notes": "STM32H743 GPIO medium-speed default ~10 ns edge"
+    },
+    {
+      "check": "6e.GPS USART2 high-speed",
+      "status": "PASS",
+      "result": {
+        "baud": 921600,
+        "t_bit_us": 1.085,
+        "edge_ns": 10,
+        "ratio": 109.0,
+        "interpretation": "ratio > 10 = edges are tiny fraction of bit; eye stays wide open",
+        "pass": true
+      },
+      "notes": "STM32H743 GPIO medium-speed default ~10 ns edge"
+    }
+  ],
+  "layout_dependent_TODOs": [
+    "Post-4F: simulate USART2 with 1m cable model (R + L + C distributed). Test eye opening at 921 kbaud (worst case).",
+    "Post-4F: confirm CRSF J10 solder-pad to MCU PC6/PC7 route is short (<50mm) and away from DShot."
+  ],
+  "summary": {
+    "total": 4,
+    "pass": 4
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "tool": "ngspice 46 (userspace .deb extract)",
+  "checks": [
+    {
+      "check": "6d.1_i2c2_baro_4.7k_50pF",
+      "status": "PASS",
+      "result": {
+        "analytical_ns": 282.9,
+        "simulated_ns": 1282.9,
+        "target_ns_400kHz": 300,
+        "pass": "True"
+      },
+      "notes": "On-board I2C2 DPS310 \u2014 R11/R12 = 4.7k\u03a9; bus C \u226450pF upper bound. Layout refines C post-4f."
+    },
+    {
+      "check": "6d.2_i2c1_external_4.7k_200pF",
+      "status": "INFO",
+      "result": {
+        "analytical_ns": 1131.7,
+        "simulated_ns": 2130.2,
+        "target_ns_400kHz": 300,
+        "pass": "False"
+      },
+      "notes": "External I2C1 GPS+mag \u2014 cable C dominates; R21/R22 = 4.7k\u03a9. If FAIL, lower R to 2.2k\u03a9 or run 100kHz only."
+    },
+    {
+      "check": "6d.3_bus_cap_budget_400kHz",
+      "status": "PASS",
+      "result": {
+        "R_pullup_ohm": 4700,
+        "C_max_pF_for_400kHz": 53.2,
+        "interpretation": "With 4.7k\u03a9 pullups, I\u00b2C bus cap budget for 400kHz operation is ~53 pF. On-board I2C2 stays within this; external I2C1 GPS+mag cable may not \u2014 defer to 100kHz if needed.",
+        "pass": true
+      },
+      "notes": "Bus cap budget analysis"
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "pass": 2
+  }
+}

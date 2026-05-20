@@ -1,0 +1,55 @@
+{
+  "tool": "analytical Fourier (numpy/matplotlib) \u2014 OpenEMS deferred per TOOLCHAIN.md \u00a74",
+  "checks": [
+    {
+      "check": "6k.1_harmonic_band_intersections",
+      "status": "INFO",
+      "result": {
+        "n_intersections_found": 37,
+        "worst_case": {
+          "source": "SDMMC1 clock 12.5MHz",
+          "harm_n": 1,
+          "f_harm_MHz": 12.5,
+          "band": "USB FS self",
+          "amplitude_dB_rel_fundamental": -3.9
+        },
+        "critical_count": 4,
+        "critical_findings": [
+          {
+            "source": "SDMMC1 clock 12.5MHz",
+            "harm_n": 1,
+            "f_harm_MHz": 12.5,
+            "band": "USB FS self",
+            "amplitude_dB_rel_fundamental": -3.9
+          },
+          {
+            "source": "USB FS 12MHz NRZI",
+            "harm_n": 1,
+            "f_harm_MHz": 12.0,
+            "band": "USB FS self",
+            "amplitude_dB_rel_fundamental": -3.9
+          },
+          {
+            "source": "DShot600 600kHz",
+            "harm_n": 19,
+            "f_harm_MHz": 11.4,
+            "band": "USB FS self",
+            "amplitude_dB_rel_fundamental": -34.6
+          },
+          {
+            "source": "DShot600 600kHz",
+            "harm_n": 21,
+            "f_harm_MHz": 12.6,
+            "band": "USB FS self",
+            "amplitude_dB_rel_fundamental": -36.3
+          }
+        ]
+      },
+      "notes": "Analytical Fourier \u2014 harmonics > -40 dB in sensitive bands are chamber-test targets. Pre-fab analysis only; real EMC compliance via Phase 9.5 chamber."
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "info": 1
+  }
+}

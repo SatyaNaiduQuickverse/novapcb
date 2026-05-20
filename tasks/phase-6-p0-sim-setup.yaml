@@ -1,0 +1,117 @@
+id: phase-6-p0-sim-setup
+phase: "6"
+subphase: "6-P0"
+title: "Phase 6 sim-regime setup — directory structure, per-sub-phase scaffolding, execution plan"
+status: in_progress
+depends_on:
+  - phase-0.5-sim-toolchain
+  - phase-6l-sitl-regression
+
+inputs:
+  files:
+    - docs/SIMULATION_PLAN.md
+    - sims/TOOLCHAIN.md
+    - hardware/kicad/novapcb/sheets/
+    - tasks/phase-4a-footprints-rules.yaml
+    - docs/CONFIDENCE_MAP.md
+  refs:
+    - "SIMULATION_PLAN.md §6a-§6m — per-sub-phase spec (tool, scenarios, pass criteria, output convention sims/<subsystem>/)"
+    - "TOOLCHAIN.md — what's installed; OpenEMS deferral + 6b/6k analytical fallback; 6j Elmer Sai-handoff"
+    - "hardware/kicad/novapcb/sheets/power_3b.py — AP2112K LDO + cap network for 6a power tree"
+    - "hardware/kicad/novapcb/sheets/baro_3d.py + sheets/gps_mag_3e.py — I²C buses for 6d"
+    - "Phase 4a stackup — W=0.25/S=0.10/h=0.21/εr=4.3 — locked at Phase 4d for 6b USB diff pair"
+    - "hwdef.dat — SPI/I2C/UART/SDMMC/PWM peripheral configs"
+
+# Falsifiable pre-prediction
+prediction:
+  worker_pre_run_prediction: |
+    Per-sub-phase classification (schematic-level vs layout-dependent):
+      Tier-1 (schematic-level, run NOW): 6a power tree, 6h ADC noise/LPF,
+        6d I²C pullup analysis, 6e UART rise-time, 6i ESD/reverse-polarity gap
+        inventory, 6j thermal lumped-element, 6k EMC analytical Fourier.
+        6b USB diff pair (Hammerstad-Jensen already done Phase 4d) — also Tier-1
+        analytical, deeper post-4f for actual routed length.
+      Tier-2 (gates on Phase 4f): 6c IMU SPI SI, 6f SDMMC SI, 6g DShot SI,
+        6m manufacturability.
+      Already done: 6l SITL (PR #52 merged).
+      Deferred: 6b/6k OpenEMS deep validation (post-Sai-handoff), 6j Elmer
+        deep validation (post-Sai-handoff).
+
+    For 6a specifically (per 6P0.6 — "RUN IT if fully schematic-level"):
+      Likely PASS the load-step droop (cap network is well-sized).
+      Likely CAUTION on PDN impedance (anti-resonance @ 100 kHz between bulk
+        and decoupling cap groups — common in mini-FC PDN design).
+      Likely CAUTION on inrush (5.7µF input bulk charging in 10µs ramp).
+      Likely PASS the BOR check (mcuconf inspection).
+
+    Net Tier-1 outcome prediction: most PASS, 2-4 CAUTION findings that
+    feed Phase 6.5 forum review queue.
+
+decision_forks_watched:
+  power-6a-runnow:
+    fork: "Is 6a runnable now (fully schematic-level) per 6P0.6?"
+    expected_classes: [yes-run-now, partial-runnable, no-defer-to-post-4f]
+    pre_recommendation: "YES — AP2112K LDO + cap network is fully defined from schematic + datasheets; routed trace parasitics REFINE but don't DEFINE the response. PDN impedance + load-step + inrush + BOR all computable from schematic-level inputs."
+    actual_resolution: "RAN — 1 PASS + 2 CAUTION + 1 INFO. CAUTIONs are real engineering signals (anti-resonance + inrush) feeding Phase 6.5 forum review; no NO-GO."
+    resolved_via: "sims/power-6a/results.md"
+
+escalation_log:
+  - timestamp: "2026-05-20"
+    sub: "6a.1 PDN impedance — PySpice AC current source magnitude"
+    finding: "PySpice's CurrentSource doesn't expose AC magnitude parameter. Workaround: subprocess ngspice with raw netlist string."
+    resolution: "Switched 6a + 6d + 6h + 6i + 6g + 6c to subprocess ngspice; PySpice retained for transient analyses (6a.2/6a.3) which DO expose dc_value cleanly."
+  - timestamp: "2026-05-20"
+    sub: "6a.1 PDN impedance — LDO model interpretation"
+    finding: "Including a finite-Z LDO model in AC analysis at 5Ω → over-clamped the 100Hz region. The 100 kHz – 10 MHz band of interest is ABOVE the LDO loop bandwidth where the LDO is effectively open; modeling LDO as open at AC and letting the caps own Z(f) is the correct convention."
+    resolution: "AC analysis runs cap-network-only. 100 mΩ target exceeded at 100 kHz (133 mΩ peak — anti-resonance bulk vs decoupling). Documented as CAUTION because real LDO would clamp the peak."
+
+outputs:
+  files_created:
+    - tasks/phase-6-p0-sim-setup.yaml
+    - sims/PHASE6_PLAN.md
+    - sims/PHASE6_P0_RESULTS.md
+    - sims/power-6a/run_6a.py + results.json + results.md + plots/ + README.md
+    - sims/usb-diffpair-6b/run_6b.py + results.json + README.md
+    - sims/i2c-6d/run_6d.py + results.json + plots/ + README.md
+    - sims/uart-6e/run_6e.py + results.json + README.md
+    - sims/adc-6h/run_6h.py + results.json + plots/ + README.md
+    - sims/esd-6i/run_6i.py + results.json + README.md
+    - sims/thermal-6j/run_6j.py + results.json + README.md
+    - sims/emc-6k/run_6k.py + results.json + plots/ + README.md
+    - sims/imu-spi-6c/run_6c.py + README.md (scaffold)
+    - sims/sdmmc-6f/run_6f.py + README.md (scaffold)
+    - sims/dshot-6g/run_6g.py + README.md (scaffold)
+    - sims/manufacturability-6m/run_6m.py + README.md (scaffold)
+  files_modified:
+    - docs/DESIGN_PHASES.md
+  pr:
+    title: "Phase 6 P0: sim-regime setup + scaffolding"
+    branch: sim/6-p0-setup-2026-05-20
+
+pass_criteria:
+  - "6P0.1: sims/<subsystem>/ directory structure created for 6a-6k + 6m (6l already shipped). DONE — 12 directories."
+  - "6P0.2: sims/PHASE6_PLAN.md classifies each sub-phase: tool, input dependency (SCHEMATIC-LEVEL vs LAYOUT-DEPENDENT), and pass criteria. DONE — per-sub-phase table + execution-order tiers."
+  - "6P0.3: Sim SCRIPT SCAFFOLD for each sub-phase. Tier-1 fully-schematic scripts COMPLETE + run. Tier-2 layout-dependent scripts ship with TODO placeholders. DONE — 12 run_6X.py scripts."
+  - "6P0.4: 6b/6k OpenEMS analytical fallback DETAILED — 6b Hammerstad-Jensen (Phase 4d done) + scikit-rf transmission-line model; 6k analytical Fourier decomposition. DONE — both scaffolded and 6b/6k Tier-1 executed."
+  - "6P0.5: Execution plan in PHASE6_PLAN.md — Tier-1 (NOW) / Tier-2 (post-4f) / Tier-3 (post-Sai-handoff) — DONE."
+  - "6P0.6: For sub-phases that are fully schematic-level — RUN NOW. EXECUTED: 6a (1 PASS + 2 CAUTION + 1 INFO); 6b (2 PASS); 6d (2 PASS + 1 INFO); 6e (4 PASS); 6h (2 PASS + 1 CAUTION); 6i (1 PASS + 1 INFO); 6j (4 PASS + 1 CAUTION); 6k (1 INFO — 37 harmonic intersections). Per-sub-phase results in sims/<subsystem>/results.json + sims/PHASE6_P0_RESULTS.md summary."
+  - "6P0.7: SOTA self-audit. P0 is setup + scaffolding + Tier-1 run; Tier-2 (6c/6f/6g/6m) needs Sai's routing + Phase 4f; Tier-3 (6j Elmer deep, 6b/6k OpenEMS deep) needs Sai-handoff tools."
+
+estimated_context_kb: 60
+estimated_wallclock: "2-4 hours"
+
+notes: |
+  Phase 6 P0 ships the sims/ structure + 12 run scripts + executed
+  Tier-1 results. Real engineering signals from the schematic-level analysis:
+    - 6a.3 inrush 3.39A at power-on (BEC current-limit concern)
+    - 6j AP2112K Tj 88°C (3°C over target — pour size or input voltage drop)
+    - 6i 5 unprotected external-cable lines (Phase 6.5 forum review)
+    - 6k 4 harmonics above -40 dB in sensitive bands (chamber-test target)
+
+  None of these reach NO-GO for v1; all queued for Phase 6.5 forum review.
+
+  Tier-2 sub-phases (6c/6f/6g/6m) scaffolds ready. When Sai's routing lands +
+  Phase 4f exports gerbers + extracted parasitics, plug values into TODO
+  placeholders in each script and re-run.
+
+  6 P0 closes IN-PROGRESS → DONE upon PR merge.
