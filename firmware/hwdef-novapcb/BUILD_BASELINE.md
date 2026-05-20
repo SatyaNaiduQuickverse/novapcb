@@ -9,12 +9,15 @@ Recorded ArduCopter build results per sub-phase. Each section is self-contained:
 | Phase 2b (baro → DPS310 only) | 1,534,572 | 169,356 | `12a4d50d…d7444aa8` |
 | Phase 2c (mag → IST8310+RM3100, drop broad-probe) | 1,519,948 | 183,980 | `86fec69e…f788ac70` |
 | Phase 2d (GPS port verify, zero hwdef change) | 1,519,948 | 183,980 | `86fec69e…f788ac70` (bit-identical) |
+| Phase 2e (8 ESC channels with **4 BIDIR**, MatekH743-bdshot inherit) | 1,521,688 | 182,244 | `8c3adbfa…2df234d93f` |
 
 Phase 2a delta from Phase 1: text −11,228 B, BSS −1,860 B → total flash used **−11,224 B**, free flash **+11,224 B**. Drop comes from un-linking the three legacy IMU drivers (`mpu6000`, `icm20602`, `icm42605`) we removed.
 
 Phase 2b delta from Phase 2a: text **−72 B**, BSS 0 → total flash used **−72 B**, free flash **+72 B**. Tiny because MS5611 + BMP280 baro drivers share probe-loop infrastructure with the DPS310 driver we kept.
 
-Phase 2c delta from Phase 2b: text **−14,624 B**, BSS 0 → total flash used **−14,624 B**, free flash **+14,624 B**. Big drop from removing `AP_COMPASS_PROBING_ENABLED` — unlinks all the compass drivers we no longer probe (BMM150, BMM350, LIS2MDL, IIS2MDC, AK8963, AK09916, QMC5883L/P, MMC3416, MMC5xx3, HMC5843, plus probe infrastructure). Only IST8310 + RM3100 driver code remains linked. Free-flash headroom now ~10.8% of image_maxsize.
+Phase 2c delta from Phase 2b: text **−14,624 B**, BSS 0 → total flash used **−14,624 B**, free flash **+14,624 B**. Big drop from removing `AP_COMPASS_PROBING_ENABLED` — unlinks all the compass drivers we no longer probe (BMM150, BMM350, LIS2MDL, IIS2MDC, AK8963, AK09916, QMC5883L/P, MMC3416, MMC5xx3, HMC5843, plus probe infrastructure). Only IST8310 + RM3100 driver code remains linked.
+
+Phase 2e delta from Phase 2d (amended for bdshot): text **+1,820 B**, data −80 B, BSS **+1,212 B** → total flash used **+1,740 B**, free flash **−1,736 B**. Net positive because bdshot's BIDIR machinery (TIM3/TIM2 DMA receive path for ESC telemetry) adds ~2.4 KB on top of the ~672 B saved from dropping PWM 9-13. Trade-off: 4 BIDIR-DShot channels (motor RPM telemetry on PB0/PA0/PA2/PD12) cost ~2.4 KB vs the base-MatekH743 inheritance alternative. Free-flash headroom still ~10.7% of image_maxsize.
 
 ---
 
@@ -389,3 +392,107 @@ sha256  86fec69e894e08fe4555477c2752b566bc2f0dde00c83de39f5f77fff788ac70  arduco
 - `SERIAL3_PROTOCOL` / `SERIAL4_PROTOCOL` runtime defaults assumed to be ArduPilot's defaults (`5` = GPS for SERIAL3, `5` for SERIAL4 = GPS2). Not verified against an `apj_tool.py --show-params` dump.
 - u-blox baud + protocol negotiation works at runtime via ArduPilot driver; not a hwdef concern.
 - I²C pull-up sizing not yet analyzed (Phase 6d).
+
+---
+
+## Phase 2e — ESC outputs lock to 8 channels with 4-BIDIR (MatekH743-bdshot inheritance) (amended 2026-05-20)
+
+Phase 2e initially landed (2026-05-20 in this same dev session) inheriting **base MatekH743**'s PWM block — 8 motor channels on TIM8/TIM5/TIM4, zero BIDIR. Worker flagged in the initial PR that MatekH743-**bdshot** variant provides 4 BIDIR-DShot channels via different timer reassignments (TIM3/TIM2 in place of TIM8/TIM5 on the same PB0/PB1/PA0/PA1 pins), with bdshot's two trade-offs (RC-via-UART required, GPIO-buzzer only) being FREE for novapcb v1 (CRSF on UART per `DECISIONS §4` + no buzzer requirement). Master accepted the recommendation and amended the PR before merge per the "push limits when the proven path is free" calibration.
+
+This section reflects the AMENDED state: byte-identical inheritance of MatekH743-bdshot's PWM block lines 23-30, plus the conflict-resolution edits the bdshot variant makes to base MatekH743 (resolve TIM3 conflict on PC7 RC input; resolve TIM2 conflict on PA15 buzzer; add NODMA to UART4/UART8 to free DMA streams for motor timers; extend DMA_NOSHARE with motor timers).
+
+### Locked pin / timer / channel / BIDIR table
+
+| PWM # | Pin | Timer | Channel | GPIO# | DShot300/600 | BIDIR |
+|---:|---|---|---|---:|:---:|:---:|
+| 1 | PB0  | TIM3 | CH3  | 50 | ✓ | ✓ |
+| 2 | PB1  | TIM3 | CH4  | 51 | ✓ | — |
+| 3 | PA0  | TIM2 | CH1  | 52 | ✓ | ✓ |
+| 4 | PA1  | TIM2 | CH2  | 53 | ✓ | — |
+| 5 | PA2  | TIM5 | CH3  | 54 | ✓ | ✓ |
+| 6 | PA3  | TIM5 | CH4  | 55 | ✓ | — |
+| 7 | PD12 | TIM4 | CH1  | 56 | ✓ | ✓ |
+| 8 | PD13 | TIM4 | CH2  | 57 | ✓ | — |
+
+All 8 lines byte-identical to MatekH743-bdshot hwdef.dat:23-30. **4/8 BIDIR** — one per timer per the H743 "one BIDIR per timer" hardware constraint.
+
+### Conflict resolution (bdshot-style, applied beyond the 6 PWM lines)
+
+The bdshot timer reassignments collide with two base-MatekH743 pin definitions; bdshot resolves these via `undef` + re-add. We applied the same resolutions (since we have a full inline copy of MatekH743 rather than an `include` + `undef`):
+
+| Conflict | Base MatekH743 | Resolution (bdshot pattern) |
+|---|---|---|
+| TIM3 used by PC7 RCININT (RC input via timer) | `PC7 TIM3_CH2 TIM3 RCININT PULLDOWN LOW` + `PC7 USART6_RX USART6 NODMA ALT(1)` | Drop both; `PC7 USART6_RX USART6` (primary, not ALT). cite bdshot hwdef.dat:19-20 |
+| TIM2 used by PA15 ALARM (buzzer PWM) | `PA15 TIM2_CH1 TIM2 GPIO(32) ALARM` | `PA15 BUZZER OUTPUT GPIO(32) LOW` + `define HAL_BUZZER_PIN 32` (GPIO single-tone). cite bdshot hwdef.dat:39-40 |
+| DMA streams contended by motor timers | `DMA_NOSHARE SPI1*` | `DMA_NOSHARE SPI1* TIM3* TIM2* TIM5* TIM4*` (motor timers get dedicated streams). cite bdshot hwdef.dat:45 |
+| UART4/UART8 DMA candidates conflict with motor DMA | `PB9 UART4_TX UART4` (no NODMA) etc. | `PB9 UART4_TX UART4 NODMA`, `PB8 UART4_RX UART4 NODMA`, `PE0 UART8_RX UART8 NODMA`, `PE1 UART8_TX UART8 NODMA`. cite bdshot hwdef.dat:11-17 |
+
+For novapcb v1 the bdshot trade-offs are free:
+- USART6 was unused for RC anyway (we use CRSF on a separate UART per `DECISIONS §4`; Phase 2f locks the specific UART)
+- novapcb v1 has no documented buzzer requirement — PA15 GPIO buzzer is a future option, not used
+- UART4/UART8 NODMA loss is acceptable; both are auxiliary UARTs not used at high baud
+
+### Dropped channels (unchanged from initial 2e)
+
+| PWM # | Pin | Timer/Ch | Reason |
+|---:|---|---|---|
+| 9 | PD14 | TIM4_CH3 | DECISIONS §3 8-channel cap |
+| 10 | PD15 | TIM4_CH4 | DECISIONS §3 |
+| 11 | PE5 | TIM15_CH1 | DECISIONS §3 |
+| 12 | PE6 | TIM15_CH2 | DECISIONS §3 |
+| 13 | PA8 | TIM1_CH1 | WS2812 LED — no v1 requirement |
+
+### Build identity (unchanged)
+
+| Field | Value |
+|---|---|
+| `APJ_BOARD_ID` | `5350` |
+| `USB_STRING_MANUFACTURER` | `"ArduPilot"` |
+| `USB_STRING_PRODUCT` | `"novapcb-v1"` |
+
+### Build wall-clock
+
+| Step | Time |
+|---|---|
+| `./waf configure --board novapcb-v1` | 2.170 s |
+| `./waf copter` | **10 min 20.7 s** (large hwdef.h regen — PWM timer reassignment + USART6 reassignment + buzzer reassignment + DMA_NOSHARE change all invalidated significant ccache) |
+| Real / user / sys | 10m21.598s / 23m02.472s / 2m5.400s |
+| Compiler warnings | **0** (Werror build) |
+
+### Flash budget (`bin/arducopter`)
+
+| Section | Bytes | Δ vs Phase 2d |
+|---|---:|---:|
+| Text | 1,517,160 | +1,820 |
+| Data | 4,528 | −80 |
+| BSS | 136,668 | +1,212 |
+| **Total flash used** | **1,521,688** | **+1,740** |
+| **Free flash** | **182,244** | **−1,736** |
+| External flash used | Not Applicable | — |
+
+The +1,740 B net cost over Phase 2d comes from: (a) bdshot BIDIR machinery for the 4 BIDIR channels (~+2,400 B vs base inheritance), partially offset by (b) the −672 B saved from dropping 5 PWM channels relative to MatekH743's 13-channel block. Headroom remains comfortable at ~10.7% of `image_maxsize`.
+
+### Checksums
+
+```
+sha256  8c3adbfa5ab30e36e341b61405b5024e4ef6947ef2d73d640a19db2df234d93f  arducopter.bin
+```
+
+### Verification
+
+- `board_id` in `arducopter.apj` = `5350` ✓.
+- `image_size: 1521692`, `image_maxsize: 1703936` ✓.
+- Grep-confirmed: PWM 1-8 lines + DMA_NOSHARE all match bdshot variant byte-identically.
+- PC7 TIM3_CH2 RCININT line removed (was the timer-conflict source); PC7 is now USART6_RX.
+- PA15 TIM2_CH1 ALARM line removed; PA15 is now GPIO BUZZER with `define HAL_BUZZER_PIN 32`.
+- UART4 (PB9/PB8) and UART8 (PE0/PE1) all have NODMA flag added.
+- DMA_NOSHARE expanded to include TIM3* TIM2* TIM5* TIM4*.
+
+### What this Phase 2e build is NOT
+
+- Not flight-validated. Pin/timer assignments are correct + production-validated against MatekH743-bdshot; no physical board to test ESC drive yet.
+- Real-silicon DShot600 + BIDIR timing margin not measured; deferred to Phase 6g sim (IBIS analysis).
+- DMA stream allocation table not explicitly tabulated against H743 RM DMA request mux — implicit via ArduPilot DMAMUX allocator + the bdshot-pattern DMA_NOSHARE rule. Build passes = no allocation conflict reported by waf.
+- USART6 (PC7/PC6) defined as a UART but novapcb v1 doesn't currently use it. Phase 2f locks the CRSF UART (different UART); USART6 pins stay defined to match bdshot pattern but become "spare UART" for novapcb.
+- PA15 BUZZER pin defined but no buzzer hardware required for v1. Pin can be repurposed in Phase 2-exit if not used.
+- `HAL_BUZZER_PIN 32` is defined; no buzzer driver code change beyond ArduPilot's default GPIO-toggle pattern.

@@ -1,0 +1,72 @@
+id: phase-2e-esc
+phase: 2
+subphase: 2e
+title: "Lock 8 ESC outputs with DShot300/600 + DMA per H743 alt-func table"
+status: in_progress
+depends_on:
+  - phase-2d-gps-port
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md
+    - docs/CONFIDENCE_MAP.md
+    - docs/INTERFACE_CONTRACT.md
+    - docs/DECISIONS.md
+  refs:
+    - "STM32H743V datasheet — Table 12 'Alternate function mapping' (verify by datasheet page reference, NOT memory)"
+    - "STM32H743 Reference Manual RM0433 — TIM1/TIM2/TIM3/TIM4/TIM5/TIM8/TIM12/TIM13/TIM14/TIM15/TIM16/TIM17 channel availability + DMA request mux"
+    - "MatekH743 hwdef.dat PWM block — grep for `^PWM` or `^PB.*TIM` or `^PA.*TIM` etc. Report ALL PWM-output lines with their (pin, timer, channel, DMA) tuple"
+    - "MatekH743 hwdef.dat `define HAL_WITH_DSHOT` and any DShot-specific config"
+    - "Pixhawk6X hwdef.dat PWM block (cross-reference for SOTA pattern — 6X also has 8-channel DShot)"
+    - "DECISIONS.md §3 — 8 channels (DShot300/600 preferred, PWM fallback)"
+    - "CONFIDENCE_MAP.md row 8 (currently MEDIUM ~75% pending per-pin DShot/BIDIR cap check)"
+    - "CarbonixF405 hwdef.dat PWM block (cross-reference, smaller MCU though)"
+    - "DShot protocol spec — 300 kbit/s and 600 kbit/s bit rates, 16-bit frames; bidirectional variant adds telemetry"
+
+outputs:
+  files_created:
+    - tasks/phase-2e-esc.yaml  # this file
+  files_modified:
+    - firmware/hwdef-novapcb/hwdef.dat        # PWM channel definitions if expansion needed
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md  # append Phase 2e section with per-channel (pin, timer, DMA) table
+    - docs/CONFIDENCE_MAP.md                  # row 8 evidence note — bump per evidence, not speculation
+    - docs/INTERFACE_CONTRACT.md              # ESC section update if needed
+  pr:
+    title: "Phase 2e: lock 8 ESC outputs with DShot300/600 + DMA"
+    branch: fw/hwdef-phase2e-esc-2026-05-20
+
+pass_criteria:
+  - "Grep MatekH743 hwdef.dat for ALL PWM-output lines. Report each as (pin, timer, channel, DMA stream) with hwdef.dat line citation. If MatekH743 has exactly 8 channels: inheritance applies, lock as-is."
+  - "If MatekH743 has <8: identify the additional pin(s) needed, verify timer + DMA availability from STM32H743 RM0433 / datasheet alt-func table (cite by page number), confirm no conflict with SPI/I²C/UART/SDMMC already allocated. Rule 13 stop if any allocation is ambiguous."
+  - "If MatekH743 has >8: lock first 8 in MatekH743's order; document the channels intentionally not exposed in INTERFACE_CONTRACT.md."
+  - "Verify per-pin DShot capability: each of the 8 chosen channels must be on a timer channel that supports the high bit-rate of DShot600 (most TIM1/TIM2/TIM3/TIM4 channels do; TIM12/13/14/15/16/17 may have constraints — cite RM). DShot300 is the conservative fallback."
+  - "BIDIR matrix: 4/8 channels enabled per MatekH743-bdshot inheritance — BIDIR keyword on PB0 (TIM3_CH3, bdshot hwdef.dat:23), PA0 (TIM2_CH1, :25), PA2 (TIM5_CH3, :27), PD12 (TIM4_CH1, :29). 4/8 NOT-BIDIR — PB1, PA1, PA3, PD13 (bdshot lines 24, 26, 28, 30) per the H743 'one BIDIR per timer' constraint. DShot300/600 standard direction works on all 8. Per-channel matrix in BUILD_BASELINE.md. Master's amendment instruction had the BIDIR channel list swapped; corrected per the actual bdshot file content."
+  - "./waf copter exits 0, zero warnings. board_id 5350 preserved."
+  - "BUILD_BASELINE.md appended with Phase 2e section: 8-channel (pin, timer, ch, DMA stream, DShot300 ✓, DShot600 ?, BIDIR ?) table + sha256 + flash delta vs 2d (1,519,948 used / 183,980 free)."
+  - "CONFIDENCE_MAP row 8: bump per evidence. If all 8 channels prove DShot600 + BIDIR capable per RM citations, → HIGH. If some BIDIR-incapable, → MEDIUM-HIGH with the BIDIR caveat documented. Don't jump confidence without explicit citation evidence."
+  - "Surely-working > SOTA: prefer inheriting MatekH743 family PWM block over speculative re-pin. Amendment 2026-05-20: master accepted option-B switch to MatekH743-bdshot variant inheritance (PWM 1-8 from bdshot lines 23-30, DMA_NOSHARE extended with TIM3* TIM2* TIM5* TIM4*) — calibration: 'push limits when the proven path is free' since bdshot's two trade-offs (RC-via-UART, GPIO-buzzer) are FREE for novapcb v1 given DECISIONS §4 + no buzzer req. Default-to-inheritance preserved (still inheriting from MatekH743 family, just the bdshot variant)."
+
+estimated_context_kb: 50
+estimated_wallclock: "60-120 minutes (PWM allocation has more verification depth than baro/mag)"
+
+notes: |
+  H743 timer + DMA constraints summary (verify each by RM citation,
+  NOT from memory):
+
+  - TIM1, TIM8 are advanced timers — best for DShot due to dedicated
+    update events. Each has 4 channels.
+  - TIM2-5 are 32-bit general-purpose timers — also DShot-capable.
+  - TIM12-17 are smaller — channel count + DMA support varies. CHECK
+    THE RM before assigning DShot to these.
+  - DMA1/DMA2 each have 8 streams. Each stream serves one peripheral
+    request at a time via DMAMUX. Conflicts between PWM-DMA and
+    SPI/I²C/UART/SDMMC-DMA are common allocation traps.
+
+  If MatekH743's PWM block uses TIM1/TIM8 + safe DMA streams, that's
+  the inherit path. If anything looks marginal, Rule 13 stop and
+  escalate — H743 DMA allocation bugs are post-fab nightmares.
+
+  BIDIR-DShot is nice-to-have for motor RPM telemetry. Not required
+  for v1 to fly. If 1-2 channels don't support BIDIR, that's OK —
+  document and move on.
