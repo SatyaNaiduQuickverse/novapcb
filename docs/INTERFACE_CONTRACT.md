@@ -101,10 +101,28 @@ These pins are *available on the H743* if a future v1.x respin needs more channe
 
 | Rail | Spec |
 |---|---|
-| VBAT input | 4S–6S LiPo monitoring (16 V – 26 V) |
+| VBAT input | 4S–6S LiPo monitoring (16 V – 26 V) — **via external Mauch HS-200-LV power module** per `DECISIONS.md §5` (Mauch 200A pinned) + CLAUDE.md §3.6 (4-6S → LV variant, max 28V). Module provides voltage-divided VBAT line (9:1 1% resistor divider) + offset-shifted Hall-effect current sensor output (ACS-250U, 0V=0A → 3.3V=200A); novapcb has NO onboard power circuit. |
 | 5 V in | from external BEC, ≥3 A |
 | 3.3 V | on-board LDO for sensors / MCU |
 | USB 5 V | for bench bring-up only; do not power motors from USB |
+
+**novapcb v1 FC-side power-monitor allocation** (Phase 2g, 2026-05-20):
+
+| Property | Value |
+|---|---|
+| BATT (primary) voltage ADC pin | PC0 — `ADC1`, channel index `HAL_BATT_VOLT_PIN 10`. Inherited from MatekH743. |
+| BATT (primary) current ADC pin | PC1 — `ADC1`, channel index `HAL_BATT_CURR_PIN 11`. Inherited from MatekH743. |
+| BATT2 (secondary) voltage ADC pin | PA4 — `ADC1`, channel index `HAL_BATT2_VOLT_PIN 18`. Inherited from MatekH743 as harmless scaffolding; `BATT_MONITOR2 = 0` default → unused at runtime. Removal queued for Phase 2-exit. |
+| BATT2 (secondary) current ADC pin | PA7 — `ADC1`, channel index `HAL_BATT2_CURR_PIN 7`. Same status as BATT2 voltage. |
+| `BATT_MONITOR` default | `4` (Analog Voltage + Current) via `HAL_BATT_MONITOR_DEFAULT 4` — correct for Mauch analog VBAT + Hall current. |
+| `BATT_VOLT_MULT` default | **`9.0`** via `HAL_BATT_VOLT_SCALE 9.0` — researched Mauch HS-200-LV 9:1 divider typical. Replaces inherited Matek-onboard `11.0` (which described Matek's onboard divider — wrong hardware for novapcb). Per-unit precision: user enters the value from the Mauch sensor's final-test calibration card (typical ±1-3% deviation). |
+| `BATT_AMP_PERVLT` default | **`60.6`** via `HAL_BATT_CURR_SCALE 60.6` — researched Mauch HS-200 typical (200A unidirectional over 0-3.3V analog full-scale, ACS-250U hall sensor with offset shifting). Replaces inherited Matek-onboard `40.0` (Matek's onboard current sensor — wrong hardware for novapcb). Per-unit precision: user enters the value from the Mauch sensor's final-test calibration card. |
+| `BATT2_VOLT_MULT` default | `11.0` (inherited Matek) — `BATT2` is `#ifdef`-guarded and `BATT_MONITOR2` defaults to `0` (never read). Harmless cruft; removal queued for Phase 2-exit. |
+| Pre-calibration UX | Failsafes (`BATT_LOW_VOLT`, `BATT_CRT_VOLT`) function approximately on first power-up with the typical Mauch HS-200-LV defaults, and become precise after the user enters their unit's per-unit calibration card values. No "ship broken to force calibration" sentinel mode (that would leave uncalibrated users with no failsafe protection, strictly more dangerous than 0-3% calibration error). |
+| HV variant note | If a future Nova frame switches to HS-200-HV (>6S, up to 14S), update `HAL_BATT_VOLT_SCALE 9.0 → 18.0` (HV uses 18:1 divider). Current calibration (`60.6`) is unchanged — HV and LV share the same ACS-250U hall sensor. |
+| ADC peripheral | ADC1 (all 4 BATT pins). MatekH743 + Pixhawk6X both use ADC1 for primary battery monitoring; H743V (LQFP-100) exposes all 4 channels. |
+| DMA | ADC DMA uses DMA2 streams, no conflict with Phase 2e's `DMA_NOSHARE SPI1* TIM3* TIM2* TIM5* TIM4*` (those are on DMA1 or other DMA2 streams). |
+| Sources | Mauch HS-200-HV product page (`mauch-electronic.com/products/076-hs-200-hv` — ACS-250U sensor + "0.0V (0A) until 3.3V" full-range claim); Craft & Theory listing for Mauch 075 HS-200-LV (`craftandtheoryllc.com/store/mauch-075-hs-200-lv/` — "up to 6S max 28V for LV version"); ArduPilot wiki Mauch page (`ardupilot.org/copter/docs/common-mauch-power-modules.html` — divider 9:1 (LV) and 18:1 (HV), per-unit calibration card workflow). |
 
 ## Ports the Pi expects to reach (none directly on the FC)
 

@@ -1,0 +1,86 @@
+id: phase-2g-power
+phase: 2
+subphase: 2g
+title: "Lock VBAT + CURRENT ADC pins for external Mauch (drop Matek-onboard scale defines)"
+status: in_progress
+depends_on:
+  - phase-2f-crsf
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - firmware/hwdef-novapcb/defaults.parm
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md
+    - docs/CONFIDENCE_MAP.md
+    - docs/INTERFACE_CONTRACT.md
+    - docs/DECISIONS.md
+    - CLAUDE.md
+  refs:
+    - "MatekH743-bdshot hwdef.dat — grep for BATT_VOLT_PIN, BATT_CURR_PIN, BATT_MONITOR, and any pin lines that look like ADC channels for VBAT/CURRENT. Report each with the (pin, ADC peripheral, channel) tuple and hwdef.dat line numbers."
+    - "MatekH743-bdshot defaults.parm — grep for BATT_*. Report what's set and what isn't."
+    - "Base MatekH743 hwdef.dat — same grep, cross-reference (sibling-dir discipline)"
+    - "Pixhawk6X hwdef.dat — battery monitor section (cross-reference; may use different ADC channels but the pattern should match)"
+    - "STM32H743V datasheet — ADC channel-to-pin mapping. Confirm the ADC channels MatekH743-bdshot uses are actually available on the H743V package. Cite by datasheet page."
+    - "Mauch power module specs — Mauch 050/100/200/250 family output: voltage divided VBAT line + hall-effect current sensor output. We don't ship Mauch-specific calibration multipliers in defaults.parm (user configures per their specific Mauch unit). We DO ship the ADC pin assignments."
+    - "DECISIONS.md §5 — external Mauch via FC ADC input"
+    - "CONFIDENCE_MAP.md row 10 (currently MEDIUM ~80%)"
+    - "CLAUDE.md §3.6 power table: VBAT 4S-6S monitoring (16-26 V nominal); 5V from external BEC ≥3A; 3.3V on-board LDO"
+
+outputs:
+  files_created:
+    - tasks/phase-2g-power.yaml  # this file
+  files_modified:
+    - firmware/hwdef-novapcb/hwdef.dat        # only if MatekH743-bdshot inheritance has misalignment for novapcb
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md  # append Phase 2g section
+    - docs/CONFIDENCE_MAP.md                  # row 10 evidence note — bump per evidence
+    - docs/INTERFACE_CONTRACT.md              # power monitoring section update
+    - firmware/hwdef-novapcb/defaults.parm    # ONLY if we want to set BATT_MONITOR default; otherwise leave for user
+  pr:
+    title: "Phase 2g: lock VBAT + CURRENT ADC pins for external Mauch"
+    branch: fw/hwdef-phase2g-power-2026-05-20
+
+pass_criteria:
+  - "Grep MatekH743-bdshot for BATT_VOLT_PIN + BATT_CURR_PIN + BATT_MONITOR + any pin lines that define ADC channels for battery monitoring. Report each finding with the (pin, ADC channel, hwdef.dat line) tuple."
+  - "Grep base MatekH743 for same — confirm the bdshot variant inherits or diverges. Document divergence with reasoning."
+  - "Verify the ADC channels MatekH743-bdshot uses are actually present on H743V (LQFP-100) package per STM32H743V datasheet. Cite by datasheet page. If a channel is only on the LQFP-176/208 packages and NOT on -V, that's a Rule 13 stop — escalate."
+  - "Verify no DMA conflict between ADC and the DMA streams we already allocated (SPI*, TIM2/3/4/5*) in the Phase 2e DMA_NOSHARE line. ADC1/ADC3 typically use DMA2 streams 0-4; check no overlap with our protected streams."
+  - "Restore HAL_BATT_VOLT_SCALE + HAL_BATT_CURR_SCALE (compile requires them — ArduPilot #error-enforces SCALE-with-PIN at AP_BattMonitor_Analog.cpp:17-18 + 32-33). Values are researched Mauch HS-200-LV typical figures (HAL_BATT_VOLT_SCALE 9.0 from 9:1 LV divider; HAL_BATT_CURR_SCALE 60.6 from 200A/3.3V analog full-scale, ACS-250U), NOT inherited Matek values (which were for Matek's onboard hardware novapcb does not have). LV variant selected per CLAUDE.md §3.6 (4-6S LiPo, ≤28V → LV per Mauch product spec). Cite Mauch product page (mauch-electronic.com 076 + craftandtheoryllc.com 075) + ArduPilot wiki Mauch page. HAL_BATT2_VOLT_SCALE stays inherited (Matek 11.0, #ifdef-guarded, BATT2_MONITOR defaults to 0, harmless; full BATT2 removal → Phase 2-exit candidate list). Per-unit final-test calibration card from Mauch refines both values for precision (typical ±1-3% deviation); failsafes function approximately pre-calibration. Phase 2g master adjudication chain: option A (Matek inheritance) → option B (drop SCALEs, BUILD FAILS) → option C5 (researched Mauch HS-200-LV typicals, this option). Picked 2026-05-20 after worker Rule-13 stop on B's compile failure."
+  - "DEFAULTS DECISION: do we set BATT_MONITOR in novapcb-v1/defaults.parm? Options: (a) NO defaults — user configures BATT_MONITOR after first boot per their Mauch model (matches base MatekH743 behavior); (b) BATT_MONITOR 4 — 'Analog voltage and current' default (works for Mauch + most analog power modules but locks user to that monitoring mode). RECOMMEND (a) per DECISIONS §5 (Mauch is locked but the user-configurable scalars vary per Mauch model — keeping monitor mode user-set avoids forcing a partial pre-config that user has to override anyway). Flag if you disagree."
+  - "BATT_VOLT_MULT + BATT_CURR_AMP_PER_VOLT (the Mauch-model-specific calibration scalars): DO NOT add to defaults.parm. Different Mauch models (050/100/200/250) have different multipliers; user configures per their specific module."
+  - "BATT2 dual-battery scaffolding (PA4/PA7 pins + BATT2 defines) stays in Phase 2g as harmless inherited scaffolding (BATT_MONITOR2=0 default, zero runtime cost). Removal deferred to Phase 2-exit candidate list (joins HAL_BUZZER_PIN cruft from Phase 2e + PC7 RCININT cruft already noted)."
+  - "./waf copter exits 0, zero warnings. board_id 5350 preserved."
+  - "BUILD_BASELINE.md appended with Phase 2g section: ADC channel assignments, sha256, flash delta vs 2f (1,523,100 used / 180,828 free)."
+  - "CONFIDENCE_MAP row 10: bump per evidence (cited ADC channels + datasheet verification + DMA non-conflict)."
+  - "Surely-working > SOTA: inherit MatekH743-bdshot ADC pin assignments. Only deviate if you find a specific H743V package incompatibility. AMENDED (2026-05-20 master option-C5): 'decision-aligned surely-working' beats 'surely-working strict inheritance' for the Matek-onboard scale defines. Researched-Mauch-200A typicals (BATT_VOLT_SCALE 9.0 / BATT_CURR_SCALE 60.6 for HS-200-LV) replace inherited Matek values (11.0 / 40.0 / 11.0). Option-B sentinel-zero / scream-loud alternatives were rejected because uncalibrated user would lose failsafe protection entirely (strictly more dangerous than a 0-8% calibration error). Researched typicals give working failsafes pre-calibration + precision post-calibration via Mauch per-unit card."
+
+estimated_context_kb: 35
+estimated_wallclock: "30-90 minutes"
+
+notes: |
+  ADC channel ↔ pin mapping is a hardware constraint, not a software
+  choice. The H743V (LQFP-100) package exposes a subset of ADC
+  channels — typically ADC1/ADC2 channels 0-15 on PA0-PA7, PB0-PB1,
+  PC0-PC5, and ADC3 channels on different pins. If MatekH743-bdshot
+  uses an ADC channel that's NOT pinned out on LQFP-100, we have a
+  problem. Cite datasheet to confirm.
+
+  Mauch's analog output is voltage-divided VBAT + Hall-effect
+  current. The FC needs (a) a high-impedance ADC input for VBAT
+  (post-divider), (b) another ADC input for the current sensor's
+  voltage output. Both need a small filter cap (Phase 4 layout
+  decision, not Phase 2).
+
+  Master amendment 2026-05-20 (option B): the 3 Matek-onboard calibration
+  defines (HAL_BATT_VOLT_SCALE 11.0, HAL_BATT_CURR_SCALE 40.0,
+  HAL_BATT2_VOLT_SCALE 11.0) describe Matek's onboard divider + current
+  sensor hardware, which novapcb does NOT have (DECISIONS §5 locks
+  external Mauch). Shipping those values = wrong VBAT calibration at
+  first boot = mis-timed BATT_LOW_VOLT/BATT_CRT_VOLT failsafes (safety-
+  relevant). Drop them; user configures per their specific Mauch model.
+  Same spirit as criterion #7's defaults.parm exclusion, extended to
+  hwdef-define scalars (which translate to the same BATT_VOLT_MULT
+  parameter at first boot).
+
+  Sibling-dir discipline reminder: grep ~/ardupilot/libraries/AP_HAL_ChibiOS/hwdef/MatekH743*
+  before assuming bdshot inheritance — there may be other variants
+  (MatekH743-mini, MatekH743-Slim, etc.) with different ADC choices.

@@ -11,6 +11,7 @@ Recorded ArduCopter build results per sub-phase. Each section is self-contained:
 | Phase 2d (GPS port verify, zero hwdef change) | 1,519,948 | 183,980 | `86fec69e…f788ac70` (bit-identical) |
 | Phase 2e (8 ESC channels with **4 BIDIR**, MatekH743-bdshot inherit) | 1,521,688 | 182,244 | `8c3adbfa…2df234d93f` |
 | Phase 2f (CRSF UART lock + defaults.parm at 420 kbaud) | 1,523,100 | 180,828 | `0ec597c1…d9a58b3c` |
+| Phase 2g (VBAT+CURRENT ADC lock; Mauch HS-200-LV researched SCALEs) | 1,523,104 | 180,828 | `9ddb37d4…c06b1db7` |
 
 Phase 2a delta from Phase 1: text −11,228 B, BSS −1,860 B → total flash used **−11,224 B**, free flash **+11,224 B**. Drop comes from un-linking the three legacy IMU drivers (`mpu6000`, `icm20602`, `icm42605`) we removed.
 
@@ -19,6 +20,8 @@ Phase 2b delta from Phase 2a: text **−72 B**, BSS 0 → total flash used **−
 Phase 2c delta from Phase 2b: text **−14,624 B**, BSS 0 → total flash used **−14,624 B**, free flash **+14,624 B**. Big drop from removing `AP_COMPASS_PROBING_ENABLED` — unlinks all the compass drivers we no longer probe (BMM150, BMM350, LIS2MDL, IIS2MDC, AK8963, AK09916, QMC5883L/P, MMC3416, MMC5xx3, HMC5843, plus probe infrastructure). Only IST8310 + RM3100 driver code remains linked.
 
 Phase 2e delta from Phase 2d (amended for bdshot): text **+1,820 B**, data −80 B, BSS **+1,212 B** → total flash used **+1,740 B**, free flash **−1,736 B**. Net positive because bdshot's BIDIR machinery (TIM3/TIM2 DMA receive path for ESC telemetry) adds ~2.4 KB on top of the ~672 B saved from dropping PWM 9-13. Trade-off: 4 BIDIR-DShot channels (motor RPM telemetry on PB0/PA0/PA2/PD12) cost ~2.4 KB vs the base-MatekH743 inheritance alternative. Free-flash headroom still ~10.7% of image_maxsize.
+
+Phase 2g delta from Phase 2f: text **+4 B**, data 0, BSS **−4 B** → total flash used **+4 B**, free flash effectively unchanged at 180,828. Tiny because the only edits are two compile-time SCALE-default constants (`HAL_BATT_VOLT_SCALE 11.0 → 9.0`, `HAL_BATT_CURR_SCALE 40.0 → 60.6`) which feed `AP_BATT_VOLTDIVIDER_DEFAULT` / `AP_BATT_CURR_AMP_PERVOLT_DEFAULT` — the +4 B is one extra constant-pool entry because 60.6 (vs Matek's 40.0) needs different float representation. No new code paths or symbols added.
 
 ---
 
@@ -576,3 +579,96 @@ sha256  0ec597c10f89965a9a2dd8145010dd1536b53f1ff1d534b9a41f3818d9a58b3c  arduco
 - ArduPilot defaults.parm honoring behavior: assumed-working based on bdshot's defaults.parm being shipped + working in production. Not bench-verified against a built binary's actual first-boot parameter store.
 - CRSF protocol-level handshake (open-drain UART, polarity autodetection) is ArduPilot driver responsibility at protocol layer. Phase 6e sim can verify edge-rate / eye opening.
 - DECISIONS §4 also references "external RX module + on-board CRSF UART" — the "on-board" part means a JST connector for the ELRS RX module's CRSF lines. Specific connector pinout (which of PC7/PC6 + which power rails + which ground) is a Phase 4 layout decision.
+
+---
+
+## Phase 2g — VBAT + CURRENT ADC lock for external Mauch HS-200-LV (2026-05-20)
+
+Phase 2g locks the FC-side ADC pin assignments for novapcb's external Mauch power module per `DECISIONS.md §5` (Mauch 200A pinned) + CLAUDE.md §3.6 (4-6S LiPo → LV variant, max 28V). The ADC pin lines + `HAL_BATT_*_PIN` defines inherit cleanly from MatekH743 (production-validated). The `HAL_BATT_VOLT_SCALE` / `HAL_BATT_CURR_SCALE` defines DIVERGE from Matek-inherited values: replaced with researched Mauch HS-200-LV typicals.
+
+### Locked ADC pin allocation (inherited from MatekH743 hwdef.dat:68-77)
+
+| Property | Pin | ADC | Channel | Define |
+|---|---|---|---:|---|
+| BATT1 voltage sense | PC0 | ADC1 | 10 | `HAL_BATT_VOLT_PIN 10` |
+| BATT1 current sense | PC1 | ADC1 | 11 | `HAL_BATT_CURR_PIN 11` |
+| BATT2 voltage sense (scaffolding) | PA4 | ADC1 | 18 | `HAL_BATT2_VOLT_PIN 18` |
+| BATT2 current sense (scaffolding) | PA7 | ADC1 | 7 | `HAL_BATT2_CURR_PIN 7` |
+
+All four ADC inputs declared with `SCALE(1)` (1× attenuation; the per-channel ArduPilot ADC scaler). ADC1 DMA uses DMA2 streams, no conflict with Phase 2e's `DMA_NOSHARE SPI1* TIM3* TIM2* TIM5* TIM4*` (DMA1 or other DMA2 streams).
+
+### BATT_MONITOR + SCALE defaults
+
+| Define | Value | Source |
+|---|---|---|
+| `HAL_BATT_MONITOR_DEFAULT` | `4` (Analog Voltage + Current) | inherited Matek — correct for Mauch analog VBAT + Hall current |
+| `HAL_BATT_VOLT_SCALE` | **`9.0`** (DIVERGED from Matek `11.0`) | researched Mauch HS-200-LV 9:1 1% resistor divider; sets `BATT_VOLT_MULT` default |
+| `HAL_BATT_CURR_SCALE` | **`60.6`** (DIVERGED from Matek `40.0`) | researched Mauch HS-200 typical (200A unidirectional over 0-3.3V analog full-scale, ACS-250U hall sensor with offset shifting → 200/3.3 ≈ 60.6 A/V); sets `BATT_AMP_PERVLT` default |
+| `HAL_BATT2_VOLT_SCALE` | `11.0` | inherited Matek; `#ifdef`-guarded, `BATT_MONITOR2` defaults to `0` (never read), harmless. Full BATT2 removal queued for Phase 2-exit. |
+
+### Master adjudication chain (Phase 2g 2026-05-20)
+
+| Option | Picked? | Reason |
+|---|:---:|---|
+| (A) Strict Matek inheritance — SCALE 11.0 / 40.0 / 11.0 | — | Wrong-hardware calibration. The 40.0 current scale is Matek's ONBOARD hall sensor; Mauch HS-200's ACS-250U is a completely different sensor (~50% scale error, not 8%). Ships definitely-wrong calibration for known target hardware. |
+| (B) Drop the 3 SCALE defines | — | **Build FAILS.** ArduPilot `#error`-enforces SCALE-with-PIN at `AP_BattMonitor_Analog.cpp:17-18 + 32-33`: `#if defined(HAL_BATT_CURR_PIN) #ifndef HAL_BATT_CURR_SCALE #error …` Same for VOLT. BATT2 SCALEs use `#ifdef` (optional), but BATT1 enforces both. |
+| (C3) Sentinel 0 / scream-loud broken values | — | Failsafes IMPOSSIBLE to trigger correctly with `BATT_CURR_SCALE 0` (current always reads 0 → consumed-mAh failsafe never fires). User who forgets to calibrate flies with ZERO low-battery protection. Strictly more dangerous than 0-3% calibration error. |
+| (C4) Override at defaults.parm with `BATT_AMP_PER_VOLT 0` | — | Same fatal flaw as C3 (defaults.parm wins over hwdef at first boot → same uncalibrated-flight-no-failsafe risk). |
+| **(C5) Researched Mauch HS-200-LV typicals** | **✓** | Compiles + correct-to-ballpark for the actual target hardware. Failsafes work approximately even if user never calibrates; precise after standard per-unit calibration card entry. Implements DECISIONS §5 + CLAUDE.md §3.6 surely-working calibration. |
+
+### Mauch HS-200-LV research sources (cited per Rule 3 grep-then-state)
+
+| Source | Value extracted |
+|---|---|
+| `mauch-electronic.com/products/076-hs-200-hv` (HV variant product page) | "200A — Current measurement sensor board, based on Allegro Hall Sensor ACS-250U"; "voltage reading of the LiPo is optimized for up to 14S LiPo packs" (HV); "the offset shifting allows the current measurement to use the full analog input range of the flight controller from 0.0V (0A) until 3.3V" (HV+LV share sensor) |
+| `craftandtheoryllc.com/store/mauch-075-hs-200-lv/` (LV variant listing) | "up to 6S (max 28V) for LV version" — confirms LV is the right variant for Nova's 4-6S spec |
+| `ardupilot.org/copter/docs/common-mauch-power-modules.html` | "1% resistor divider in factor 9:1 (LV) and 18:1 (HV)" → BATT_VOLT_MULT = 9.0 nominal for LV; "Each sensor board comes with a final test result, which indicates the calibration values for voltage and current measurement" → per-unit precision via Mauch's calibration card |
+
+Per-unit precision: Mauch ships a final-test calibration card with each sensor (typical ±1-3% deviation from nominal). User enters their unit's card values for precision; failsafes work approximately with the shipped typicals pre-calibration.
+
+### HV variant note
+
+If a future Nova frame switches to HS-200-HV (>6S, up to 14S), update `HAL_BATT_VOLT_SCALE 9.0 → 18.0` (HV uses 18:1 divider). Current calibration (`60.6`) is unchanged — HV and LV share the same ACS-250U hall sensor.
+
+### Build wall-clock
+
+| Step | Time |
+|---|---|
+| `./waf configure --board=novapcb-v1` | 1.780 s |
+| `./waf copter` | **3 min 27.152 s** (clean rebuild after Phase 2g hwdef edit invalidated ROMFS + AP_BattMonitor compilation chain) |
+| Compiler warnings | **0** (Werror build) |
+
+### Flash budget (`bin/arducopter`)
+
+| Section | Bytes | Δ vs Phase 2f |
+|---|---:|---:|
+| Text | 1,518,576 | +4 |
+| Data | 4,528 | 0 |
+| BSS | 136,676 | −4 |
+| **Total flash used** | **1,523,104** | **+4** |
+| **Free flash** | **180,828** | unchanged (4 B variance absorbed) |
+| External flash used | Not Applicable | — |
+
+The +4 B comes from the float constant change `40.0 → 60.6` requiring an extra constant-pool entry (the BSS −4 B is allocator-level rearrangement, not a removal). No new code paths, symbols, or libraries linked. Free flash now ~10.6% of `image_maxsize` (`1,703,936`) — still comfortable for Phase 2h additions.
+
+### Checksums
+
+```
+sha256  9ddb37d420c166ab7b425cf6aa0fd7cdaf234dc250ecd31adf2a9419c06b1db7  arducopter.bin
+```
+
+### Verification (post-build)
+
+- `board_id` in `arducopter.apj` = `5350` ✓ (preserved).
+- `image_size: 1523108`, `image_maxsize: 1703936` ✓.
+- Exit code from `./waf copter` = `0`, `Enabling -Werror : yes` confirmed.
+- hwdef.dat BATT block: ADC pin lines + `HAL_BATT_*_PIN` defines + `HAL_BATT_MONITOR_DEFAULT 4` inherited from MatekH743; `HAL_BATT_VOLT_SCALE` + `HAL_BATT_CURR_SCALE` diverged to Mauch HS-200-LV typicals + multi-line lock comment explaining the option-C5 chain.
+- defaults.parm unchanged — Phase 2g intentionally does not preset `BATT_VOLT_MULT` / `BATT_AMP_PER_VOLT` at parameter layer; the hwdef SCALE defines suffice (and the per-unit calibration card workflow expects the user to set these via GCS after physical install, not via defaults.parm).
+
+### What this Phase 2g build is NOT
+
+- Not flight-validated. The Mauch HS-200-LV typical values are correct-to-ballpark from datasheet research; precision comes from the per-unit calibration card. No physical Mauch + arming sequence to verify on this Pi.
+- Not pinout-locked at the connector level — which JST pin carries the Mauch VBAT analog vs Mauch CURR analog vs sensor GND vs sensor 5 V is a Phase 4 layout decision. The hwdef just says "VBAT analog feeds PC0, CURR analog feeds PC1."
+- BATT2 scaffolding (PA4/PA7 + BATT2 defines) retained as harmless inherited cruft (BATT_MONITOR2 = 0 default → never read; `#ifdef`-guarded SCALE = zero runtime cost). Removal queued for Phase 2-exit candidate list (joins HAL_BUZZER_PIN from Phase 2e + PC7 RCININT historical-comment cruft).
+- HV variant tracking — if airframe upgrades to >6S, hwdef needs the `9.0 → 18.0` flip noted above. Not future-proofed via a multi-config define; Phase 1 commitment to a single canonical hwdef per variant family.
+- ADC settling time + filter cap design — Phase 4 layout / Phase 6h sim concerns; hwdef only declares which channel is which.
