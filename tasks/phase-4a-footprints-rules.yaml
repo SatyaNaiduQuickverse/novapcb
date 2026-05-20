@@ -1,0 +1,93 @@
+id: phase-4a-footprints-rules
+phase: "4"
+subphase: "4a"
+title: "Footprint finalization + 4-layer stackup + DRC ruleset + closed board outline"
+status: in_progress
+depends_on:
+  - phase-4-p0-layout-approach
+
+inputs:
+  files:
+    - hardware/kicad/novapcb/novapcb.net
+    - hardware/kicad/PHASE4_P0_REPORT.md
+    - docs/PHASE3_AUDIT.md
+    - docs/REFERENCE_AUDIT.md
+    - docs/DECISIONS.md
+    - hardware/kicad/footprint-check/notes.md
+  refs:
+    - "PHASE3_AUDIT.md §B — the 7 carry-forward footprint items (proper TDK/Infineon/ST land patterns replacing the Phase 2.5 generic/geom-match placeholders)"
+    - "Component datasheets — TDK ICM-42688-P (LGA-14 recommended land pattern), Infineon DPS310 (LGA-8), and any other component whose Phase 2.5/Phase 3 footprint was a placeholder/generic — the datasheet's recommended-land-pattern section is authoritative"
+    - "DECISIONS §8 — 4-layer stackup; §2 — 36x36mm board / 30.5 M3 holes"
+    - "PHASE4_P0_REPORT.md §P0.4 — the proposed stackup + track-width/clearance + impedance-net + DRC ruleset (this contract finalizes them)"
+    - "PHASE4_P0_REPORT.md §P0.5 — 5 Phase 4d pre-conditions, lifted into 4a notes as forward references for 4c/4d"
+    - "JLCPCB (or the intended fab) 4-layer capability — min trace/space, min drill, annular ring — the DRC rules must be within fab capability"
+
+decision_forks_watched:
+  fab-capability:
+    fork: "Which fab's design rules the DRC ruleset targets"
+    expected_classes: [jlcpcb-4layer, generic-conservative]
+    pre_recommendation: "JLCPCB 4-layer is the most likely fab (cost, the code-driven-PCB workflow context); target its standard 4-layer capability (min trace/space ~3.5 mil ~0.09mm; we'll use 0.13mm baseline for ample headroom). Fab choice itself is a Phase 5/7 decision — 4a just needs a defensible ruleset."
+    resolved_via: ""
+  icm42688p-footprint:
+    fork: "ICM-42688-P custom land pattern — datasheet-exact vs KiCad-generic LGA-14"
+    expected_classes: [datasheet-exact-custom, kicad-generic-acceptable, rule13-defer]
+    pre_recommendation: "If TDK datasheet ds-000347 §10 land-pattern is web-accessible (figure dims usable), build a custom .kicad_mod in `hardware/kicad/novapcb/lib/novapcb.pretty/`. If not, the KiCad-generic LGA-14_3x2.5mm_P0.5mm_LayoutBorder3x4y has matching body+pitch+pad-arrangement (Phase 2.5 P0.4 confirmed); use it WITH documented Phase 4 carry-forward to confirm pad dimensions at Phase 6.5 forum review."
+    resolved_via: ""
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-4a-footprints-rules.yaml
+    - hardware/kicad/novapcb-layout/   # board file + generate_board.py
+    - hardware/kicad/novapcb-layout/generate_board.py
+    - hardware/kicad/novapcb-layout/novapcb-layout.kicad_pcb
+    - hardware/kicad/novapcb/lib/    # in-repo footprint library if custom footprints landed
+  files_modified:
+    - hardware/kicad/KICAD9_NOTES.md   # cross-link to PHASE4_P0_REPORT.md install paths (master P0 #2)
+    - docs/CONFIDENCE_MAP.md
+    - docs/DESIGN_PHASES.md
+
+  pr:
+    title: "Phase 4a: footprints + 4-layer stackup + DRC rules"
+    branch: hw/phase-4a-footprints-rules-2026-05-20
+
+pass_criteria:
+  - "4a.1: Resolve the 7 PHASE3_AUDIT §B carry-forward footprints — for each, the datasheet-exact recommended land pattern (NOT the Phase 2.5 generic/geom-match placeholder). The ICM-42688-P TDK land pattern + DPS310 Infineon land pattern especially. Where KiCad's standard library has an exact match, cite it; where it doesn't, build the footprint from the datasheet land-pattern drawing + cite the datasheet figure."
+  - "4a.2: Confirm all 70 netlist footprints resolve to a final (non-placeholder) footprint. Any still-placeholder footprint is a Rule 13 stop — list it."
+  - "4a.3: Define the 4-layer stackup per DECISIONS §8 + PHASE4_P0_REPORT §P0.4 — layer assignment (signal/GND-plane/power-plane/signal), copper weights, dielectric. Document it."
+  - "4a.4: Finalize the DRC ruleset — track widths (signal / power / the controlled-impedance nets), clearances, via sizes, annular ring — within the target fab's capability per the fab-capability fork. Net classes defined: a power_plane class, a diff_pair class for USB D+/D-, default signal. This is the ruleset Phase 4d Freerouting + 4f DRC use."
+  - "4a.5: Fix the board outline — PHASE4_P0_REPORT noted the current build produces 4 disjoint outline segments; produce a single closed 36x36mm outline with the 4 M3 mounting holes at the 30.5mm pattern (Phase 2.5 P1.1 geometry)."
+  - "4a.6: Produce the board scaffolding — the netlist imported (kinet2pcb) to a .kicad_pcb with all footprints assigned, the stackup set, the outline closed, the DRC rules loaded. NO placement yet (that's 4b), NO routing. The deliverable is a clean board-ready-for-placement."
+  - "4a.7: SOTA self-audit + verified/not-verified in PR body. hwdef + datasheets authoritative for footprints; DECISIONS §8 + fab capability for rules."
+  - "4a.8: KICAD9_NOTES.md cross-link to PHASE4_P0_REPORT.md install paths (master P0 adjudication item #2 follow-up)."
+
+estimated_context_kb: 70
+estimated_wallclock: "2-4 hours — the 7 datasheet-exact footprints are the bulk"
+
+notes: |
+  4a is the foundation for the layout — footprints, stackup, rules,
+  outline. 4b placement and 4d routing both depend on 4a being right.
+
+  The footprint work is the bulk: a datasheet-exact land pattern is
+  load-bearing — a wrong pad pitch or pad size means parts don't
+  solder. Ground every footprint in the datasheet's recommended
+  land-pattern drawing, cited by figure. The Phase 2.5 generics were
+  fine for a fit-check; they are NOT fine for fab.
+
+  The DRC ruleset must be within the actual fab's capability — a
+  rule tighter than the fab can make is a fab reject. JLCPCB 4-layer
+  standard is the conservative baseline.
+
+  4a produces a board READY for placement — not placed, not routed.
+  Scope discipline: don't drift into 4b.
+
+  Forward references to Phase 4c/4d (from PHASE4_P0_REPORT §P0.5
+  5-pre-conditions, lifted here so 4c/4d task contracts don't lose
+  the iter-#3 power-plane finding):
+    - 4c MUST add copper planes on In1.Cu (GND) and In2.Cu (split
+      +3V3/+5V/VBAT) before any DSN export
+    - 4d MUST declare power_plane + diff_pair net classes in DSN
+    - 4d MUST run on Phase 4b real placement, NOT kinet2pcb/scatter
+    - 4d -mp 30 -mt 4 budget; 30-60 min wall-clock expected
+    - Outline must be closed (4a deliverable; 4d input requirement)

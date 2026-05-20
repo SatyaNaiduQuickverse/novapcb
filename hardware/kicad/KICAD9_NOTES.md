@@ -15,6 +15,9 @@ Created 2026-05-20 (03:00 retro action item; landed in Phase 3a PR per master di
 | `kicad-cli` | 9.0.2 | bundled w/ KiCad apt package, at `/usr/bin/kicad-cli` | ✓ Phase 2.5 (`pcb drc`) + Phase 3 P0 (`sch erc`, `sch export pdf`) |
 | SKiDL | 2.2.3 | `pip install --user skidl` | ✓ Phase 3 P0 smoke (small circuit) / Phase 3a (netlist) |
 | kicad-skip | 0.2.5 | `pip install --user kicad-skip` | candidate for `phase3-render-1`; not yet exercised |
+| kinet2pcb | 1.1.4 | `pip install --user kinet2pcb` (SKiDL ecosystem, xesscorp) | ✓ Phase 4 P0 (netlist → .kicad_pcb headless) / Phase 4a (board scaffolding) |
+| OpenJDK 25 JRE (aarch64) | 25.0.3+9 (LTS) | user-space tarball at `~/local/jre/jdk-25.0.3+9-jre/` — see `PHASE4_P0_REPORT.md §P0.1` install table | ✓ Phase 4 P0 (Freerouting runtime) |
+| Freerouting | v2.2.4 | user-space JAR at `~/local/freerouting/freerouting.jar` — see `PHASE4_P0_REPORT.md §P0.1` install table | ✓ Phase 4 P0 (DSN parse + auto-route ingest) |
 
 KiCad 9 vs 8: novapcb is KiCad 9 — per `CLAUDE.md §6.1`, confirmed by master 2026-05-20 (escalation #1 in `tasks/phase-2.5-footprint-check.yaml`). Anyone cloning the project should use KiCad 9.x; KiCad 8 cannot read KiCad 9 `.kicad_sch` files reliably.
 
