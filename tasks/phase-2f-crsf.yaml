@@ -1,0 +1,85 @@
+id: phase-2f-crsf
+phase: 2
+subphase: 2f
+title: "Lock CRSF UART for external ELRS RX (USART6 = SERIAL7, 420 kbaud, novapcb defaults.parm)"
+status: in_progress
+depends_on:
+  - phase-2e-esc
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md
+    - docs/CONFIDENCE_MAP.md
+    - docs/INTERFACE_CONTRACT.md
+    - docs/DECISIONS.md
+    - CLAUDE.md
+  refs:
+    - "MatekH743-bdshot defaults.parm — SERIAL7_PROTOCOL 23 + SERIAL7_BAUD 115 (2 lines, our inheritance source for the file structure + the PROTOCOL value)"
+    - "MatekH743-bdshot hwdef.dat:19-20 — USART6 RX/TX on PC7/PC6 (already inherited into novapcb-v1 via Phase 2e amendment)"
+    - "DECISIONS.md §4 — external RX module + on-board CRSF UART (no integrated RF). Locks novapcb v1 to CRSF specifically."
+    - "ExpressLRS RP4TD doc — CRSF over UART at 420000 baud, 8N1 (per project context CLAUDE.md §3.2)"
+    - "ArduPilot SERIALn_PROTOCOL table — 23 = RCIN (autodetects SBUS/CRSF/DSM/etc. at the protocol layer based on byte stream)"
+    - "ArduPilot SERIALn_BAUD encoding — value × 1000 = baud (115 = 115200; 420 = 420000)"
+    - "CONFIDENCE_MAP.md row 9 — CRSF UART for ELRS, currently MEDIUM ~75%, needs FT-pin verification + 420 kbaud + inversion"
+    - "CLAUDE.md §3.2 — CRSF channel map (frozen; do NOT change in this sub-phase)"
+
+outputs:
+  files_created:
+    - tasks/phase-2f-crsf.yaml  # this file
+    - firmware/hwdef-novapcb/defaults.parm  # SCOPE EXPANSION authorized by master 2026-05-20 — novapcb-CRSF-specific defaults
+  files_modified:
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md  # append Phase 2f section
+    - docs/CONFIDENCE_MAP.md                    # row 9 evidence note
+    - docs/INTERFACE_CONTRACT.md                # CRSF section update with the locked SERIAL + pin + baud
+    # hwdef.dat: NO EDIT — USART6 pins on PC7/PC6 already inherited via Phase 2e amendment
+
+  pr:
+    title: "Phase 2f: lock CRSF UART for external ELRS RX (SERIAL7 / USART6 / 420 kbaud)"
+    branch: fw/hwdef-phase2f-crsf-2026-05-20
+
+pass_criteria:
+  - "novapcb-v1/defaults.parm created with: SERIAL7_PROTOCOL 23 (inherited from bdshot) + SERIAL7_BAUD 420 (novapcb-specific per DECISIONS §4 CRSF lock). Cite bdshot/defaults.parm line numbers + DECISIONS §4 + RP4TD 420 kbaud spec."
+  - "Grep MatekH743-bdshot for RCIN/CRSF config. Confirm SERIAL7_PROTOCOL 23 in defaults.parm; USART6 RX/TX on PC7/PC6 in hwdef.dat:19-20. Cite line numbers."
+  - "USART6 = SERIAL7 verified via SERIAL_ORDER index lookup (cite novapcb-v1 hwdef.dat SERIAL_ORDER line)."
+  - "Inversion / half-duplex not required in hwdef — ArduPilot CRSF driver handles polarity at protocol layer (CRSF is non-inverted at TTL). No RXINV/TXINV/HALF_DUPLEX in either MatekH743 variant (grep-confirmed)."
+  - "FT-rated pin verification: PC7 is the inherited choice from bdshot (production-validated on shipping MatekH743-bdshot firmware); STM32H743V datasheet Table 9 NOT directly cited (PDF not on this Pi). Trust path is 'ArduPilot upstream maintainers validated this on real MatekH743-bdshot hardware' — same as Phase 2e BIDIR claims."
+  - "If MatekH743-bdshot defaults.parm SERIAL7_BAUD value is correct as-is (115) for novapcb's CRSF use case: pure inheritance. If not: 1-number deviation with cited reason (DECISIONS §4)."
+  - "./waf copter exits 0, zero warnings. board_id 5350 preserved."
+  - "BUILD_BASELINE.md appended with Phase 2f section: SERIAL allocation + UART + pin + baud + FT trust path + inversion handling notes, sha256, flash delta vs Phase 2e."
+  - "CONFIDENCE_MAP row 9: bump per evidence. If pin inherited from bdshot + 420 kbaud locked in defaults.parm + ArduPilot driver mature → MEDIUM-HIGH or HIGH. If FT-rated verification deferred to bring-up → keep MEDIUM-HIGH with caveat."
+  - "Surely-working AND decision-aligned: bdshot's defaults.parm structure + USART6 pin assignment ARE surely-working; DECISIONS §4 explicit CRSF target REQUIRES BAUD=420 not BAUD=115. Option B picked over A per master adjudication 2026-05-20."
+
+estimated_context_kb: 35
+estimated_wallclock: "30-60 minutes (small file additions + verification + build; no hwdef.dat edit since USART6 pins already inherited from Phase 2e)"
+
+notes: |
+  Master+worker iteration 2026-05-20 settled on option B: novapcb-specific
+  defaults.parm with SERIAL7_PROTOCOL 23 + SERIAL7_BAUD 420. Option A
+  (strict bdshot inheritance with BAUD 115) was rejected because BAUD 115
+  doesn't deliver CRSF — DECISIONS §4 locks novapcb v1 to CRSF, not generic
+  RCIN. Option C (no defaults.parm) was rejected because it costs out-of-box
+  capability.
+
+  Calibration: "surely-working AND decision-aligned" beats "surely-working
+  strict inheritance" — same pattern as Phase 2c (explicit IST8310 + RM3100
+  COMPASS lines over MatekH743's broad probe, because §3.5 had committed to
+  those specific chips).
+
+  The defaults.parm scope expansion was authorized by master 2026-05-20
+  after worker's Rule-13 stop + escalation flagged that the original
+  contract didn't mention defaults.parm. Updated contract reflects the
+  expansion.
+
+  No hwdef.dat edit needed: USART6 RX/TX on PC7/PC6 already in the hwdef
+  via Phase 2e bdshot amendment.
+
+  CRSF inversion + half-duplex: not needed in hwdef. CRSF is non-inverted
+  at TTL; ArduPilot driver autodetects polarity at protocol layer. Grep of
+  both MatekH743 and MatekH743-bdshot variants confirms no RXINV/TXINV/
+  HALF_DUPLEX flags in their hwdefs either.
+
+  FT-rated pin verification: deferred. PC7 is inherited from bdshot which
+  ships in production on MatekH743-bdshot hardware; the trust path is the
+  same as the rest of bdshot inheritance. Phase 6e sim could measure
+  actual edge-rate / 5V-tolerance behavior on real silicon.

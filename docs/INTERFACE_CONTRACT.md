@@ -25,7 +25,9 @@ udev only requires the **strings** prefix to match — VID/PID are not part of t
 
 ## RC input — CRSF over UART
 
-The RC link arrives via an ELRS RP4TD receiver. Today this is bridged through an ESP32-C6 on USB; if the FC has a spare 5V-tolerant UART we may move CRSF directly onto the FC instead.
+The RC link arrives via an ELRS RP4TD receiver. The receiver's CRSF UART is wired directly into novapcb v1 (no ESP32-C6 bridge for v1; DECISIONS §4 locked the on-board-CRSF-UART path).
+
+**Protocol-level properties:**
 
 | Property | Value |
 |---|---|
@@ -34,6 +36,19 @@ The RC link arrives via an ELRS RP4TD receiver. Today this is bridged through an
 | Telemetry ratio | 1:2 (downlink:uplink — one telemetry slot per two RC frames) |
 | Channel range | u11, 172=−1, 992=centre, 1811=+1 |
 | Safety channels | CH5 arm, CH6 force-disarm, CH7 mode (6-pos today, 12-pos planned) |
+
+**novapcb v1 FC-side CRSF allocation** (Phase 2f, 2026-05-20):
+
+| Property | Value |
+|---|---|
+| ArduPilot SERIAL slot | `SERIAL7` (= USART6 per `SERIAL_ORDER` index 7 in `hwdef.dat`) |
+| USART pin (RX) | PC7 — inherited from MatekH743-bdshot hwdef.dat:19 via Phase 2e amendment |
+| USART pin (TX) | PC6 — inherited from MatekH743-bdshot hwdef.dat:20 |
+| `SERIAL7_PROTOCOL` default | `23` (RCIN) — set in `firmware/hwdef-novapcb/defaults.parm`; inherited from `MatekH743-bdshot/defaults.parm` |
+| `SERIAL7_BAUD` default | `420` (= 420 000 baud) — novapcb-specific 1-number deviation from bdshot's `115` per DECISIONS §4 CRSF lock |
+| Inversion / half-duplex | None at hwdef level. ArduPilot CRSF driver handles polarity at protocol layer (CRSF is non-inverted at TTL). Grep across both MatekH743 + MatekH743-bdshot confirms zero `RXINV`/`TXINV`/`HALF_DUPLEX` flags. |
+| FT-pin verification | Deferred. PC7 is bdshot-inherited (production-validated on MatekH743-bdshot shipping hardware). Phase 6e sim can measure edge-rate / 5 V-tolerance on real silicon when available. |
+| Out-of-box behavior | User flashes novapcb-v1 firmware, plugs ELRS RX into the CRSF UART connector → CRSF works at 420 kbaud without further GCS configuration. |
 
 **Sign convention** (do not "fix" in firmware): phone-side has already negated pitch before transmitting. FC sees drone-convention values directly. Re-negating crashes the drone — this bug was caught in v0 review.
 

@@ -1,0 +1,12 @@
+# novapcb-v1 parameter defaults — applied on first boot before user params.
+# Structure inherited from MatekH743-bdshot/defaults.parm.
+
+# SERIAL7 (= USART6 per SERIAL_ORDER index 7) is RCIN by default.
+# Inherited from MatekH743-bdshot/defaults.parm (PROTOCOL line + structure).
+SERIAL7_PROTOCOL 23
+
+# CRSF requires 420000 baud. novapcb-specific 1-number deviation from bdshot's
+# default of 115 (= 115200 for SBUS/DSM/PPM). Reason: DECISIONS.md §4 locks
+# novapcb v1 to ExpressLRS RX over CRSF UART; 420 kbaud is the CRSF/ELRS spec.
+# RP4TD ships at 420k.
+SERIAL7_BAUD 420
