@@ -1,0 +1,104 @@
+id: phase-3h-power-sd-swd
+phase: "3"
+subphase: "3h"
+title: "Power-monitor + microSD + SWD + mounting-holes sheet — LAST Phase 3 schematic sheet"
+status: done
+depends_on:
+  - phase-3a-mcu
+  - phase-3b-power
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - hardware/kicad/novapcb/sheets/mcu_3a.py
+    - hardware/kicad/novapcb/sheets/power_3b.py
+    - hardware/kicad/novapcb/sheets/common.py
+    - hardware/kicad/footprint-check/notes.md
+    - docs/CONFIDENCE_MAP.md
+    - docs/DECISIONS.md
+  refs:
+    - "hwdef.dat:32-33 — SWD pins (PA13 JTMS-SWDIO, PA14 JTCK-SWCLK)"
+    - "hwdef.dat:68-69 — ADC pins (PC0 BATT_VOLTAGE_SENS, PC1 BATT_CURRENT_SENS)"
+    - "hwdef.dat:74-76 — HAL_BATT_MONITOR_DEFAULT 4 + VOLT_PIN 10 + CURR_PIN 11"
+    - "hwdef.dat:91-92 — HAL_BATT_VOLT_SCALE 9.0 + HAL_BATT_CURR_SCALE 60.6 (Phase 2g Mauch HS-200-LV)"
+    - "hwdef.dat:183-188 — SDMMC1 pins (PC8-12 + PD2)"
+    - "Pixhawk DS-009 Connector Standard — JST-GH 6-pin power-module pinout"
+    - "Mauch product 075 (HS-200-LV) — ships DF-13 6P factory cable; Mauch product 065 (Power-Cube output cable JST-GH/6p) is the JST-GH adapter"
+    - "ARM Cortex Debug standard — 10-pin 1.27mm SWD header pinout (verified via KiCad Conn_ARM_JTAG_SWD_10 symbol pin map)"
+    - "SD Association SDMMC 4-bit spec — pull-up convention on CMD + D0-D3"
+    - "Phase 2.5 P1.1 spec — board 36×36 mm, M3 mounting holes at 30.5×30.5 c-to-c"
+    - "CONFIDENCE_MAP rows 7 (microSD), 10 (VBAT/current ADC), 13 (thermal — not material to 3h, noted)"
+
+decision_forks_watched:
+  mauch-connector:
+    fork: "Mauch HS-200-LV power-module connector type + pinout"
+    expected_classes: [jst-gh-6p, per-mauch-spec]
+    pre_recommendation: "JST-GH 6P per DECISIONS §7"
+    actual_resolution: "JST-GH 6-pin (SM06B-GHS-TB horizontal). Pin map per Pixhawk DS-009 6-pin power-module standard: 1=VCC(+5V Mauch BEC), 2=VCC paralleled, 3=VBAT_analog (post 9:1 LV divider), 4=CURRENT_analog (Hall offset-shifted), 5=GND, 6=GND paralleled. **User-side caveat documented in sheet docstring**: Mauch HS-200-LV factory ships DF-13 6P; novapcb v1 user uses Mauch 065 'Power-Cube output cable JST-GH/6p' adapter OR fabricates DF-13→JST-GH pigtail. Standard Pixhawk-vs-Matek interface choice. Flagged for Phase 9 bring-up user docs."
+    resolved_via: "inline (DECISIONS §7 + Pixhawk DS-009 + Mauch product 075/065 research)"
+  adc-filter:
+    fork: "RC filter on the VBAT + CURRENT ADC inputs"
+    expected_classes: [series-r-plus-cap, cap-only, inherit-matek]
+    pre_recommendation: "series R + cap LPF; MatekH743 values if sourceable, else datasheet-grounded"
+    actual_resolution: "Series 1 kΩ + 100 nF X7R to GND on each ADC input (VBAT + CURRENT). LPF cutoff ~1.6 kHz — rejects DShot600 (600 kHz) + ESC PWM (25-50 kHz) noise; comfortably passes battery dynamics (sub-Hz). 1 kΩ source impedance OK for STM32H743 ADC (100 MΩ input). MatekH743 exact values not sourceable locally; this is datasheet-grounded standard practice. Phase 6h sim validates settling/accuracy; Phase 3.5 cross-checks vs MatekH743 if sourceable."
+    resolved_via: "inline (datasheet-grounded standard LPF + Phase 6h sim flagged)"
+  sdmmc-pullups:
+    fork: "SDMMC CMD + D0-D3 pull-up handling"
+    expected_classes: [external-resistors, card-internal, inherit-matek]
+    pre_recommendation: "external resistors per SD spec + Phase 2h INTERFACE_CONTRACT 'external pull-ups Phase 4 layout concern'"
+    actual_resolution: "External 47 kΩ pull-ups on CMD + D0-D3 (5 resistors). Per SD Association 4-bit spec (range 10-100 kΩ; 47 kΩ is the middle/standard). Phase 2h INTERFACE_CONTRACT noted 'no PULL directive in novapcb or MatekH743; external pull-ups belong on the board' — schematic 3h is where they're captured. CLK NOT pulled (MCU drives idle). MatekH743 exact value not sourceable locally."
+    resolved_via: "inline (SD spec + Phase 2h Phase-4-deferral resolution)"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-3h-power-sd-swd.yaml
+    - hardware/kicad/novapcb/sheets/power_sd_swd_3h.py
+  files_modified:
+    - hardware/kicad/novapcb/generate.py
+    - hardware/kicad/novapcb/sym-lib-table   # +Mechanical lib (for MountingHole_Pad symbol)
+    - hardware/kicad/novapcb/novapcb.net
+    - hardware/kicad/novapcb/generate.erc
+    - docs/CONFIDENCE_MAP.md
+    - docs/DESIGN_PHASES.md
+  pr:
+    title: "Phase 3h: power-monitor + microSD + SWD + mounting (LAST schematic sheet)"
+    branch: hw/phase-3h-power-sd-swd-2026-05-20
+
+pass_criteria:
+  - "3h.1: hwdef.dat:32-33 (SWD), 68-69 (ADC), 74-76 + 91-92 (BATT defines + Phase 2g Mauch scales), 183-188 (SDMMC) grep'd + cited. Wiring matches hwdef.dat exactly — verified by guard PASS."
+  - "3h.2: Power-monitor block — JST-GH 6P Mauch connector + RC filters (1k + 100nF on each ADC input). Pin map per Pixhawk DS-009. User-side DF-13→JST-GH adapter note flagged in docstring."
+  - "3h.3: microSD block — Hirose DM3AT-SF-PEJM5 socket via SD_Card_Device symbol. SDMMC1 4-bit wiring per hwdef.dat:183-188. 5× 47 kΩ pull-ups on CMD + D0-D3. 100 nF VDD decoupling. Card-detect mechanical switch pin Phase 4-deferred."
+  - "3h.4: SWD block — ARM Cortex Debug 10-pin 1.27mm header (Conn_ARM_JTAG_SWD_10). VTref=+3V3, SWDIO=PA13, SWCLK=PA14, ~RESET=NRST (shared via n() from mcu_3a). Pins 6/7/8 NC (SWO + KEY + TDI). +Mechanical sym-lib-table entry for MountingHole_Pad."
+  - "3h.5: 4× M3 MountingHole_Pad GND-tied for EMC drain. Phase 2.5 P1.1 36×36 mm board / 30.5×30.5 mm c-to-c geometry."
+  - "3h.6: Pipeline result — SKiDL ERC 0 errors / 67 warnings (DOWN 6 from 3g's 73 — 10 MCU pins newly connected (PC0/PC1/PC8/PC9/PC10/PC11/PC12/PD2/PA13/PA14) minus 3 SWD-header NC pins + minor delta from new components). generate_netlist 0 errors / 148 warnings (harmless random-tag warnings, more parts). Rail-uniqueness guard PASSED. SDMMC1 + SWD + BATT nets all unique."
+  - "3h.7: CONFIDENCE_MAP rows 7 (~87 → 88%) + 10 (~89 → 89% + 3h evidence row appended) updated. Row 13 (thermal) not material to 3h — no update."
+  - "3h.8: SOTA self-audit in PR body. Authoritative: hwdef.dat (all 3 pin maps) + Pixhawk DS-009 (Mauch connector) + ARM standard (SWD) + SD spec (pull-ups). PHASE 3 SCHEMATIC CAPTURE COMPLETE — every hwdef peripheral has a sheet."
+
+estimated_context_kb: 55
+estimated_wallclock: "2 hours (four small blocks + Mauch connector research + ARM SWD standard + SDMMC pull-up convention)"
+
+notes: |
+  3h is the LAST Phase 3 schematic sheet. After this PR merges:
+
+  ✓ All hwdef.dat peripherals now have a schematic sheet (3a MCU,
+    3b power, 3c IMU, 3d baro, 3e GPS+mag, 3f ESC, 3g CRSF+USB-C,
+    3h Mauch+SD+SWD+mounting).
+
+  ✓ Cross-sheet shared nets discipline: 31 unique cross-sheet nets
+    (from 23 at 3g, +SDMMC1 + SWD + Mauch analog nets); guard PASS;
+    no _N duplicates.
+
+  Next: Phase 3.5 (reference design audit — cross-check the whole
+  schematic against MatekH743 + Pixhawk references) and Phase 3-exit
+  (re-audit + assembled-netlist check, per Phase 2-exit pattern).
+
+  Three external connectors covered now:
+    - USB-C: USBLC6-2P6 ESD ✓ (3g)
+    - GPS+mag: ESD deferred (3e — Phase 3.5/6.5/6k)
+    - Mauch: ESD deferred (3h — Phase 3.5/6.5/6k)
+    - CRSF: ESD deferred (3g — Phase 3.5/6.5/6k)
+  Three deferred external connectors are explicit ENGINEERING items
+  for Phase 3.5 (reference audit) + Phase 6.5 (forum review) +
+  Phase 6k (EMC sim). CONFIDENCE_MAP rows 11+12 track them.

@@ -1,10 +1,12 @@
-ERC WARNING: Only one pin (PASSIVE pin 7/Pin_7 of Conn_01x10/J5) attached to net SAFETY_LED_TP.
-ERC WARNING: Only one pin (PASSIVE pin 6/Pin_6 of Conn_01x10/J5) attached to net SAFETY_SW_TP.
+ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 3/GND of Conn_ARM_JTAG_SWD_10/J9.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 19/VSSA of STM32H743VITx/U1.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 1/GND of BMP280/U4.
+ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 3/VSS of SD_Card_Device/J2.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 7/GND of BMP280/U4.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 10/VSS of STM32H743VITx/U1.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 2/GND of AP2112K-3.3/U2.
+ERC WARNING: Only one pin (PASSIVE pin 7/Pin_7 of Conn_01x10/J5) attached to net SAFETY_LED_TP.
+ERC WARNING: Only one pin (PASSIVE pin 6/Pin_6 of Conn_01x10/J5) attached to net SAFETY_SW_TP.
 ERC WARNING: Only one pin (PASSIVE pin 1/INT1 of Conn_01x14/U3) attached to net IMU_INT1_TP.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 97/PE0 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 98/PE1 of STM32H743VITx/U1.
@@ -24,7 +26,6 @@ ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 44/PE14 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 45/PE15 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 81/PD0 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 82/PD1 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 83/PD2 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 84/PD3 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 85/PD4 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 55/PD8 of STM32H743VITx/U1.
@@ -38,8 +39,6 @@ ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 31/PA7 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 67/PA8 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 68/PA9 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 69/PA10 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 72/PA13 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 76/PA14 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 36/PB2 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 89/PB3 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 90/PB4 of STM32H743VITx/U1.
@@ -50,17 +49,10 @@ ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 51/PB12 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 52/PB13 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 53/PB14 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 54/PB15 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 15/PC0 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 16/PC1 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 17/PC2_C of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 18/PC3_C of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 32/PC4 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 33/PC5 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 65/PC8 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 66/PC9 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 78/PC10 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 79/PC11 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 80/PC12 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 7/PC13 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 8/PC14 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: PASSIVE pin 2/RESV2 of Conn_01x14/U3.
@@ -71,6 +63,8 @@ ERC WARNING: Unconnected pin: PASSIVE pin 7/AUX_DA of Conn_01x14/U3.
 ERC WARNING: Unconnected pin: PASSIVE pin 13/RESV13 of Conn_01x14/U3.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin A8/SBU1 of USB_C_Receptacle_USB2.0_16P/J1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin B8/SBU2 of USB_C_Receptacle_USB2.0_16P/J1.
-ERC INFO: 73 warnings found while running ERC.
+ERC WARNING: Unconnected pin: INPUT pin 6/SWO/TDO of Conn_ARM_JTAG_SWD_10/J9.
+ERC WARNING: Unconnected pin: OUTPUT pin 8/NC/TDI of Conn_ARM_JTAG_SWD_10/J9.
+ERC INFO: 67 warnings found while running ERC.
 ERC INFO: 0 errors found while running ERC.
 
