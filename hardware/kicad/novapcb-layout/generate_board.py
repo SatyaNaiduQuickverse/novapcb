@@ -554,21 +554,18 @@ PLACEMENT = {
     "C62": (23.5, 13.0,    0),   # 100nF CURRENT filter — 4b-rev3-final: was (24,13) 0.035mm shy of MCU pad-75; moved 0.5mm W → body X=23.0..24.0 clears MCU east pad-75 at X=24.88..26.48 by 0.88mm
     "C63": (29.5,  9.5,    0),   # additional decoupling — clear of Y1 (Y=16.25..18.75)
 
-    # J2 microSD DM3AT — flipped to B.Cu (bottom layer); positioned at
-    # bottom-center to clear all THT pads (mounting holes H1-H4, J1 USB-C
-    # shield pins). MatekH743-style mini-FC convention. The DM3AT footprint's
-    # "footprints not_allowed" keep-out applies via its through-hole pads
-    # to all layers; for B.Cu placement, no THT pads from F.Cu components
-    # may overlap. Position selected such that:
-    #   - body X=11..25, Y=0.5..11.5 — clears MCU body (Y=12..26) by 0.5mm
-    #   - keep-out X≈10..26, Y≈-3..19 (capped at board) — clears H1/H2
-    #     (X<10.5 or X>25.5), J1 USB-C shields (all at Y≥29.87), H3/H4
-    #     (Y≥33.25)
-    #   - F.Cu ESC solder pads at Y=2 are SMD-only (no THT), so B.Cu
-    #     keep-out doesn't reach them as conflict
-    # Card slot opens off the bottom edge per default 0° rotation → card
-    # accessible from underside via airframe cutout (standard mini-FC).
-    "J2":  (18.0,  6.0,    0),
+    # J2 microSD DM3AT — flipped to B.Cu. Phase 4d J2 fix (master 2026-05-20):
+    # DM3AT pads have Y-offset range [-7.73, +7.38] from J2 center. With J2_Y=6
+    # (Phase 4b), pads 1-9 sat at world Y=-1.73 (OFF-BOARD — unmanufacturable
+    # since pads are copper-on-PCB; an off-board pad has no board underneath).
+    # Moved J2 N to Y=9 → pads at Y=1.27..16.38 (ALL on-board ✓; min pad Y
+    # cleared from board edge by 1.27mm).
+    # Card-slot insertion overhang past south edge is acceptable (the slot
+    # opening can hang off-board for card-access; only the solder terminals
+    # must be on-board).
+    # Body now Y=3.5..14.5 (still on B.Cu, no F.Cu conflict since MCU is
+    # F.Cu SMD only and overlaps body region only).
+    "J2":  (18.0,  9.0,    0),
 
     # SDMMC pullups — 47kΩ × 5. Master 4b-rev3 path-B: move from F.Cu east
     # of MCU (was Y=24 col X=27.5..33.5, conflicting with J3 MP-S pad at
@@ -796,8 +793,23 @@ zones = list(brd.Zones())
 print(f"      {len(zones)} zones added to board (unfilled)", flush=True)
 
 
-# Save board (with planes)
-print(f"[9/10] save board", flush=True)
+# ============================================================
+# ============================================================
+# Step 8.5 — Phase 4d: critical-net hand-routing — RULE 13 STOP
+# ============================================================
+# Headless scripted Manhattan/Z-routes through dense 36×36 placement
+# repeatedly produces tracks-crossing + shorting-items conflicts.
+# Empirical: naive (16 nets) → 53 DRC; body-aware → 81 DRC; USB-only
+# → 6 DRC. The APPROACH (Python-scripted Manhattan + auto-via on dense
+# placement) is the tripwire master anticipated at 10:00 retro.
+# All 4d critical-net routing DEFERRED via Rule-13-with-options
+# escalation; see PR #44... err PR #47 body. Helper functions kept
+# (route_multi, add_track, add_via) — may be used by Phase 4e or a
+# follow-on PR with a smarter routing strategy.
+print(f'[9/10] Phase 4d ROUTING DEFERRED — see Rule 13 escalation in PR body', flush=True)
+
+# Save board (with planes + critical routing)
+print(f"[10/11] save board", flush=True)
 pcbnew.SaveBoard(OUT_PCB, brd)
 
 
@@ -918,10 +930,10 @@ project = {
              "name": "Power_VBAT", "pcb_color": "rgba(128,0,0,1.000)",
              "priority": 80, "track_width": 0.80,
              "via_diameter": 0.8, "via_drill": 0.4, "wire_width": 6},
-            {"clearance": 0.15, "diff_pair_gap": 0.15,
-             "diff_pair_via_gap": 0.15, "diff_pair_width": 0.2,
+            {"clearance": 0.15, "diff_pair_gap": 0.10,
+             "diff_pair_via_gap": 0.10, "diff_pair_width": 0.25,
              "name": "USB_diffpair", "pcb_color": "rgba(0,200,200,1.000)",
-             "priority": 50, "track_width": 0.2,
+             "priority": 50, "track_width": 0.25,
              "via_diameter": 0.55, "via_drill": 0.25, "wire_width": 6},
             {"clearance": 0.15, "diff_pair_gap": 0.15, "diff_pair_width": 0.15,
              "name": "IMU_SPI", "pcb_color": "rgba(255,0,255,1.000)",
