@@ -1,0 +1,873 @@
+(export 
+  (version "D")
+  (design
+    (source "generate.py")
+    (date "05/20/2026 09:05 AM")
+    (tool "SKiDL (2.2.3)")
+    (sheet
+      (number 1)
+      (name "/")
+      (tstamps "/")
+      (title_block
+        (title)
+        (company)
+        (rev)
+        (date)
+        (source "generate.py")
+        (comment
+          (number "1")
+          (value ""))
+        (comment
+          (number "2")
+          (value ""))
+        (comment
+          (number "3")
+          (value ""))
+        (comment
+          (number "4")
+          (value ""))
+        (comment
+          (number "5")
+          (value ""))
+        (comment
+          (number "6")
+          (value ""))
+        (comment
+          (number "7")
+          (value ""))
+        (comment
+          (number "8")
+          (value ""))
+        (comment
+          (number "9")
+          (value "")))))
+  (components
+    (comp
+      (ref "C11")
+      (value "100nF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "ocHGKLTBNB")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:91"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "ac2c61de-7389-54d7-88f9-cdbccf2905f9"))
+    (comp
+      (ref "C12")
+      (value "100nF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "IYyReO8TxU")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:91"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "194971e9-d500-5ade-accf-94afe6675398"))
+    (comp
+      (ref "C13")
+      (value "100nF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "dxPcKDmuT7")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:91"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "2f575897-c761-5fea-9f30-1185fe2df7e8"))
+    (comp
+      (ref "C14")
+      (value "100nF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "68pSRO9o3W")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:91"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "37523228-dfab-5745-aec4-93009ef50eb8"))
+    (comp
+      (ref "C15")
+      (value "100nF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "QLU5xw5vYu")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:91"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "e7471b03-ccf5-529a-a035-ac601bcc5f5a"))
+    (comp
+      (ref "C16")
+      (value "4.7uF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0805_2012Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0805_2012Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "fAT4Zd6ugt")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:98"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "94958ffd-eac1-5acf-97c3-be60d2898e43"))
+    (comp
+      (ref "C17")
+      (value "2.2uF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "iS3AxUQwf1")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:108"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "cf598dc5-a920-5f9a-b4b0-870e49c8bc20"))
+    (comp
+      (ref "C18")
+      (value "2.2uF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "7den504_ZV")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:108"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "876461b8-942b-54c3-bed2-d61c8313eca2"))
+    (comp
+      (ref "C19")
+      (value "100nF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "Zww9zaSXR4")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:124"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "f2bf0768-3449-55a2-a9d0-7856a638193f"))
+    (comp
+      (ref "C20")
+      (value "1uF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "85ji3tttgX")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:130"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "8284713d-bf1f-51f0-bf11-530c22244391"))
+    (comp
+      (ref "C21")
+      (value "100nF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "YzBOpTF2fW")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:137"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "10cac83a-bc58-59b2-9ca8-04537db2f99b"))
+    (comp
+      (ref "C22")
+      (value "1uF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "Tj38Y8GD0i")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:143"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "fbabe1f9-91ce-5e66-87a2-7b372acc9b6b"))
+    (comp
+      (ref "C23")
+      (value "100nF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "K5a5V6000D")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:168"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "ffe3741e-d779-510f-b686-ef7e4080c1cd"))
+    (comp
+      (ref "C24")
+      (value "18pF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "ob8NjCRl5j")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:190"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "29169e48-fa6e-59a7-af2a-bdd4404fc31d"))
+    (comp
+      (ref "C25")
+      (value "18pF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "pS3xNdSImG")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:196"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "c5f6b596-08a7-54b6-abf1-c0f765520188"))
+    (comp
+      (ref "C26")
+      (value "100nF")
+      (description "Unpolarized capacitor")
+      (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Unpolarized capacitor")
+        (field
+          (name "Footprint") "Capacitor_SMD:C_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "7PMnB9tMU4")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:207"))
+      (libsource
+        (lib "Device")
+        (part "C"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "d90b60d7-436e-5df9-8521-d3103971710b"))
+    (comp
+      (ref "FB1")
+      (value "600R@100MHz")
+      (description "Ferrite bead")
+      (footprint "Inductor_SMD:L_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Ferrite bead")
+        (field
+          (name "Footprint") "Inductor_SMD:L_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "1KQZK0xqz3")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:117"))
+      (libsource
+        (lib "Device")
+        (part "FerriteBead"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "4a05a798-368e-5ed5-a6b3-4e85f715511d"))
+    (comp
+      (ref "R1")
+      (value "0R")
+      (description "Resistor")
+      (footprint "Resistor_SMD:R_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Resistor")
+        (field
+          (name "Footprint") "Resistor_SMD:R_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "WIoiYWYMvU")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:152"))
+      (libsource
+        (lib "Device")
+        (part "R"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "760793b3-18de-5ff0-a504-182a0e7bb8b5"))
+    (comp
+      (ref "R2")
+      (value "0R")
+      (description "Resistor")
+      (footprint "Resistor_SMD:R_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Resistor")
+        (field
+          (name "Footprint") "Resistor_SMD:R_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "axS4JKLTPv")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:162"))
+      (libsource
+        (lib "Device")
+        (part "R"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "8876573d-7b05-5ca0-abd9-8c500dc266c7"))
+    (comp
+      (ref "R3")
+      (value "10k")
+      (description "Resistor")
+      (footprint "Resistor_SMD:R_0402_1005Metric")
+      (fields
+        (field
+          (name "Description") "Resistor")
+        (field
+          (name "Footprint") "Resistor_SMD:R_0402_1005Metric")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "Nm7tGgg5Hh")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:218"))
+      (libsource
+        (lib "Device")
+        (part "R"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "7554b76e-d1b7-5e72-bada-8fe7b1324511"))
+    (comp
+      (ref "U1")
+      (value "STM32H743VITx")
+      (description "STMicroelectronics Arm Cortex-M7 MCU, 2048KB flash, 1024KB RAM, 480 MHz, 1.71-3.6V, 82 GPIO, LQFP100")
+      (footprint "Package_QFP:LQFP-100_14x14mm_P0.5mm")
+      (fields
+        (field
+          (name "Description") "STMicroelectronics Arm Cortex-M7 MCU, 2048KB flash, 1024KB RAM, 480 MHz, 1.71-3.6V, 82 GPIO, LQFP100")
+        (field
+          (name "Footprint") "Package_QFP:LQFP-100_14x14mm_P0.5mm")
+        (field
+          (name "Datasheet") "https://www.st.com/resource/en/datasheet/stm32h743vi.pdf")
+        (field
+          (name "SKiDL Tag") "Lu1OOYVBeM")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:52"))
+      (libsource
+        (lib "MCU_ST_STM32H7")
+        (part "STM32H743VITx"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "4210d0c1-3d2b-59ec-b023-1a8202a0fd1a"))
+    (comp
+      (ref "Y1")
+      (value "8MHz")
+      (description "Four pin crystal, GND on pins 2 and 4")
+      (footprint "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm")
+      (fields
+        (field
+          (name "Description") "Four pin crystal, GND on pins 2 and 4")
+        (field
+          (name "Footprint") "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "gXi4mtuIAV")
+        (field
+          (name "SKiDL Line") "sheets/mcu_3a.py:179"))
+      (libsource
+        (lib "Device")
+        (part "Crystal_GND24"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "caeaf88a-a0fc-5542-b8b7-99cd98d07a7f")))
+  (nets
+    (net
+      (code 1)
+      (name "+3V3")
+      (class "Default")
+      (node
+        (ref "C11")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C12")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C13")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C14")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C15")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C16")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "FB1")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "R2")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "100")
+        (pintype "POWER-IN"))
+      (node
+        (ref "U1")
+        (pin "11")
+        (pintype "POWER-IN"))
+      (node
+        (ref "U1")
+        (pin "27")
+        (pintype "POWER-IN"))
+      (node
+        (ref "U1")
+        (pin "50")
+        (pintype "POWER-IN"))
+      (node
+        (ref "U1")
+        (pin "75")
+        (pintype "POWER-IN")))
+    (net
+      (code 2)
+      (name "+3V3A")
+      (class "Default")
+      (node
+        (ref "C19")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C20")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "FB1")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "R1")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "21")
+        (pintype "POWER-IN")))
+    (net
+      (code 3)
+      (name "BOOT0")
+      (class "Default")
+      (node
+        (ref "R3")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "94")
+        (pintype "INPUT")))
+    (net
+      (code 4)
+      (name "GND")
+      (class "Default")
+      (node
+        (ref "C11")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C12")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C13")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C14")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C15")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C16")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C17")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C18")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C19")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C20")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C21")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C22")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C23")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C24")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C25")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C26")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "R3")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "10")
+        (pintype "POWER-IN"))
+      (node
+        (ref "U1")
+        (pin "19")
+        (pintype "POWER-IN"))
+      (node
+        (ref "U1")
+        (pin "26")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "49")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "74")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "99")
+        (pintype "PASSIVE"))
+      (node
+        (ref "Y1")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "Y1")
+        (pin "4")
+        (pintype "PASSIVE")))
+    (net
+      (code 5)
+      (name "HSE_IN")
+      (class "Default")
+      (node
+        (ref "C24")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "12")
+        (pintype "BIDIRECTIONAL"))
+      (node
+        (ref "Y1")
+        (pin "1")
+        (pintype "PASSIVE")))
+    (net
+      (code 6)
+      (name "HSE_OUT")
+      (class "Default")
+      (node
+        (ref "C25")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "13")
+        (pintype "BIDIRECTIONAL"))
+      (node
+        (ref "Y1")
+        (pin "3")
+        (pintype "PASSIVE")))
+    (net
+      (code 7)
+      (name "NRST")
+      (class "Default")
+      (node
+        (ref "C26")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "14")
+        (pintype "INPUT")))
+    (net
+      (code 8)
+      (name "VBAT")
+      (class "Default")
+      (node
+        (ref "C23")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "R2")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "6")
+        (pintype "POWER-IN")))
+    (net
+      (code 9)
+      (name "VCAP1")
+      (class "Default")
+      (node
+        (ref "C17")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "48")
+        (pintype "POWER-OUT")))
+    (net
+      (code 10)
+      (name "VCAP2")
+      (class "Default")
+      (node
+        (ref "C18")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "73")
+        (pintype "POWER-OUT")))
+    (net
+      (code 11)
+      (name "VREF_P")
+      (class "Default")
+      (node
+        (ref "C21")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "C22")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "R1")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "U1")
+        (pin "20")
+        (pintype "INPUT")))))

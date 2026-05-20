@@ -1,0 +1,116 @@
+id: phase-3a-mcu
+phase: "3"
+subphase: "3a"
+title: "MCU sheet — STM32H743VITx + clock + reset + decoupling + novapcb project scaffold (netlist-only mode)"
+status: in_progress
+depends_on:
+  - phase-3-p0-schematic-approach
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - hardware/kicad/PHASE3_P0_REPORT.md
+    - CLAUDE.md
+    - docs/DECISIONS.md
+  refs:
+    - "STM32H743VI datasheet (ST DS12110) — power pins (VDD/VSS/VDDA/VREF+/VBAT/VCAP), decoupling guidance"
+    - "ST AN5354 (or current equiv) — STM32H7 hardware development: power scheme, decoupling, crystal, reset, boot"
+    - "hwdef.dat — grep OSCILLATOR_HZ (HSE crystal freq), MCU_CLOCKRATE, BOOT/reset config, APJ_BOARD_ID"
+    - "MatekH743 hwdef.dat — for the H743 core power scheme (LDO vs SMPS) decision: confirmed LDO via grep (no SMPS_PWR/SMPS_EXT define → falls through to PWR_CR3_LDOEN in hwdef/common/stm32h7_mcuconf.h:93)"
+    - "SKiDL 2.2.3 docs — multi-module pattern, generate_netlist + generate_schematic (see escalation_log #1 for generate_schematic scaling result)"
+    - "KiCad 9 symbol libs — MCU_ST_STM32H7:STM32H743VITx (exact match confirmed), Device (R/C/Crystal_GND24/FerriteBead), power symbols"
+
+decision_forks_watched:
+  h743-power-scheme:
+    fork: "STM32H743 core power supply config — LDO / direct-SMPS / SMPS+LDO-bypass"
+    expected_classes: [ldo, smps, smps-ldo-bypass]
+    pre_recommendation: "inherit MatekH743's choice (surely-working)"
+    actual_resolution: "LDO. grep'd MatekH743 hwdef.dat + MatekH743-bdshot hwdef.dat for SMPS_PWR / SMPS_EXT — neither defined. Per hwdef/common/stm32h7_mcuconf.h:93, fall-through default is PWR_CR3_LDOEN. novapcb inherits LDO mode → VCAP1/VCAP2 need 2.2µF X7R caps to GND."
+    resolved_via: "inline (grep)"
+  stm32-symbol:
+    fork: "KiCad symbol for STM32H743VIT6 — exact match vs generic"
+    expected_classes: [exact, generic-needs-check]
+    pre_recommendation: "MCU_ST_STM32H7 lib should have STM32H743VITx"
+    actual_resolution: "EXACT MATCH. grep'd /usr/share/kicad/symbols/MCU_ST_STM32H7.kicad_sym → 'STM32H743VITx' symbol present. SKiDL Part('MCU_ST_STM32H7', 'STM32H743VITx') loads cleanly; 100-pin map verified against datasheet via per-pin query."
+    resolved_via: "inline (grep + SKiDL pin query)"
+  drawn-schematic-render:
+    fork: "Generate .kicad_sch + PDF per sub-phase via SKiDL generate_schematic()"
+    expected_classes: [per-sub-phase, deferred-to-phase-3-exit, deferred-to-phase-6.5]
+    pre_recommendation: "per sub-phase per P0 plan"
+    actual_resolution: "DEFERRED to dedicated investigation before Phase 6.5 per escalation_log #1 (master adjudication: 'A reframed'). SKiDL generate_schematic() doesn't scale to MCU sheet (hung 11+ min, no output). Phase 3 is netlist-only mode. Drawn-schematic tracked as docs/OPEN_QUESTIONS.md phase3-render-1."
+    resolved_via: "escalation_log entry 1 (sk-generate-schematic-scaling)"
+
+escalation_log:
+  - timestamp: 2026-05-20T08:55:00Z
+    subphase: "3a"
+    trigger: "SKiDL generate_schematic() hung 11+ minutes on the MCU sheet (27 components, 100-pin MCU with 95 unconnected peripheral pins). Auto-router stuck in retry loop ('Routing failed on attempt 1/2, expanding area by 1.5x'). Killed both Python processes; no .kicad_sch produced. SKiDL generate_netlist() ran instantly + cleanly (22 KB netlist, 0 errors)."
+    options_presented:
+      - "(A) Drop generate_schematic() per-sub-phase; ship netlist-only 3a-3h; generate full schematic at 3-exit (hope it routes)."
+      - "(B) Investigate SKiDL router flags / timeouts / hierarchical-subcircuit modes before continuing 3a."
+      - "(C) Switch to hybrid: SKiDL netlist + kicad-skip programmatic .kicad_sch construction."
+      - "(D) Accept netlist-only Phase 3; defer drawn-schematic artifact to a Phase 6.5-prep manual KiCad-GUI cleanup pass."
+    pre_recommendation: "A for 3a-3h with C as fallback at 3-exit. Netlist is load-bearing (Phase 4 consumes); schematic-render risk concentrated in one place."
+    master_decision: "A REFRAMED. Drop generate_schematic() per-sub-phase entirely. Drawn schematic is a TRACKED OPEN PROBLEM (OPEN_QUESTIONS phase3-render-1), not deferred-hope. Investigation evaluates (a) SKiDL router flags / (b) kicad-skip programmatic / (c) one-time manual KiCad-GUI / (d) per-small-sheet generation. Do NOT do C now (kicad-skip is itself an auto-place/route problem — same hard thing generate_schematic fails at). Do NOT time-box B into 3a. Both fold into phase3-render-1. SUPERMASTER-VISIBILITY FLAG for the 3a PR body — P0 'SKiDL resolves the tension' conclusion was over-optimistic; this is a notable course correction."
+    reasoning: "Phase 3 deliverable is the NETLIST (load-bearing for Phase 4 + 3.5 + 5 + 6 consume the netlist not the schematic). Per-PR review = SKiDL Python source (240 lines, datasheet-cited, hwdef-grounded) — arguably more reviewable than an auto-ugly schematic. Drawn schematic is needed ONLY for Phase 6.5 forum review; bounded. Shared P0 miss noted for next retro: 'investigation-phase smoke tests must be realistically scaled — toy 2-component test proves API EXISTS, not that it SCALES.'"
+
+outputs:
+  files_created:
+    - tasks/phase-3a-mcu.yaml
+    - hardware/kicad/novapcb/sym-lib-table
+    - hardware/kicad/novapcb/fp-lib-table
+    - hardware/kicad/novapcb/generate.py            # netlist-only mode
+    - hardware/kicad/novapcb/sheets/__init__.py
+    - hardware/kicad/novapcb/sheets/common.py
+    - hardware/kicad/novapcb/sheets/mcu_3a.py
+    - hardware/kicad/novapcb/novapcb.net            # SKiDL-generated netlist (22 KB)
+    - hardware/kicad/novapcb/generate.log           # SKiDL build log
+    - hardware/kicad/novapcb/generate.erc           # SKiDL ERC report
+    - hardware/kicad/novapcb/README.md
+    - hardware/kicad/KICAD9_NOTES.md                # 03:00 retro action item, master-directed location
+  files_modified:
+    - docs/DESIGN_PHASES.md         # Phase 3a status
+    - docs/OPEN_QUESTIONS.md        # phase3-render-1 (escalation #1 resolution)
+    - .gitignore                    # SKiDL/KiCad scratch artefacts (generate_sklib.py if applicable)
+  pr:
+    title: "Phase 3a: MCU sheet + project scaffold (netlist-only mode per phase3-render-1)"
+    branch: hw/phase-3a-mcu-2026-05-20
+
+pass_criteria:
+  - "3a.1: Create hardware/kicad/novapcb/ scaffold: novapcb.kicad_pro held until Phase 4 / drawn-schematic landing (note in PR per master 'your call'); sym-lib-table + fp-lib-table committed referencing /usr/share/kicad/symbols/ + footprints/; SKiDL modular source (sheets/common.py + sheets/mcu_3a.py + sheets/__init__.py); generate.py top-level assembler; README.md regenerate workflow."
+  - "3a.2: Sym-lib-table references KiCad 9 standard libs at /usr/share/kicad/symbols/. fp-lib-table references /usr/share/kicad/footprints/."
+  - "3a.3: MCU sheet — STM32H743VITx (LQFP-100) with full decoupling per datasheet + AN5354: 5×100nF VDD + 4.7µF bulk + 2×2.2µF VCAP + 100nF+1µF VDDA + 100nF+1µF VREF + 100nF VBAT + 8 MHz HSE crystal + 2×18pF load caps + NRST 100nF + BOOT0 10k pull-down + ferrite bead VDD→VDDA + 2×0R tie (VREF→VDDA, VBAT→VDD). Every value cited inline with datasheet/AN section."
+  - "3a.4: H743 core power scheme: LDO (decision_forks_watched.h743-power-scheme resolved). VCAP1/VCAP2 wired with 2.2µF X7R each."
+  - "3a.5: hwdef.dat authoritative for pin/board facts. Grep'd lines cited in mcu_3a.py docstring: MCU type (line 5), board ID (line 8), OSCILLATOR_HZ 8000000 (line 16), FLASH_SIZE_KB 2048 (line 18)."
+  - "3a.6 REVISED PER ESCALATION #1: Pipeline runs SKiDL ERC + generate_netlist() only. generate_schematic() INTENTIONALLY DROPPED per master adjudication (Rule-13 escalation #1, OPEN_QUESTIONS phase3-render-1). Per-sub-phase output: Python source + netlist + SKiDL ERC. Drawn-schematic + PDF deferred."
+  - "3a.7: hardware/kicad/KICAD9_NOTES.md created — committed cross-machine source of truth. Includes Phase 2.5 pcbnew gotchas (FLIP_DIRECTION enum, add-before-flip ordering, .kicad_prl gitignore, MountingHole copper-pad keep-out, headless mode) + Phase 3 SKiDL gotchas (generate_schematic scaling limit, PWR_FLAG footprint error, pip --user, symbol-dir env vars, skidl_REPL.* gitignore) + kicad-cli capability matrix. Replaces per-machine local memory per CLAUDE.md §9."
+  - "3a.8: SOTA self-audit in PR body — 3 questions. Full reference cross-check is Phase 3.5; 3a needs to be datasheet-correct + not contradict known reference practice."
+  - "3a.9: PR body enumerates verified (ERC 0 errors, netlist 22 KB, pipeline runs, hwdef grep'd, LDO confirmed, exact STM32 symbol confirmed) vs NOT verified (no SPICE, no silicon — decoupling adequacy is Phase 6a, crystal oscillation is Phase 9; full reference cross-check is Phase 3.5; drawn schematic is phase3-render-1)."
+  - "3a.10: PR body headlines the ⚠️ SUPERMASTER REVIEW flag — Phase 3 schematic approach adjusted (netlist-only delivery; drawn schematic deferred to phase3-render-1 with full reasoning) per master directive."
+
+estimated_context_kb: 70
+estimated_wallclock: "2-4 hours — first SKiDL sheet + project scaffold + datasheet grounding + Rule-13 stop + reframe"
+
+notes: |
+  3a is the heaviest schematic sub-phase — MCU + project scaffold +
+  KICAD9_NOTES.md + a Rule-13 reframe of the entire Phase 3 schematic-
+  rendering strategy.
+
+  Per master adjudication 2026-05-20: Phase 3 mode is NETLIST-ONLY.
+  generate_schematic() per sub-phase is dropped. Drawn schematic
+  tracked as OPEN_QUESTIONS phase3-render-1 with bounded investigation
+  before Phase 6.5 (not blocking Phase 3.5/4/5/6).
+
+  The decoupling network is datasheet-mechanical but must be COMPLETE.
+  Phase 6a sim checks adequacy; the schematic must have them all present.
+  This sub-phase ships every cap the datasheet calls for + every cap the
+  AN5354 hardware-dev guide adds.
+
+  Calibration this sub-phase: "surely-working > elegant" applied at the
+  Rule-13 reframe — netlist-only is surely-working (Phase 4 consumes it,
+  tested clean); drawn-schematic-via-router is unproven at scale; defer
+  to a dedicated investigation rather than block 3a on it.
+
+  Shared P0 miss captured for next retro: "investigation-phase smoke
+  tests must be realistically scaled to the actual workload, not toy-
+  sized." Both master and worker under-validated the 2-component P0
+  smoke test as predicting the MCU-sheet behavior.

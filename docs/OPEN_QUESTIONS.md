@@ -49,3 +49,24 @@ Raised 2026-05-20 (Phase 2-exit cruft inventory). Inherited from MatekH743 refer
 Keeping the hwdef lines until then costs ~10-30 KB flash + zero runtime risk.
 
 **Resolution path:** Phase 3 schematic init explicitly states whether novapcb has a MAX7456 chip populated. If "no" (master near-certain recommendation), a follow-up firmware PR strips the 5 lines listed above. If "yes" (would need an explicit reason against the recommendation), hwdef stays as-is and the chip drives the SPI2 OSD line.
+
+## phase3-render-1. Phase 3 drawn-schematic rendering
+
+Raised 2026-05-20 (Phase 3a Rule-13 stop — escalation #1 on `tasks/phase-3a-mcu.yaml`).
+
+**Problem.** SKiDL `generate_schematic()` auto-router does not scale past trivial circuits. On the 3a MCU sheet (STM32H743VITx LQFP-100 + 27 components / ~30 nets, with 95 unconnected peripheral pins on the MCU), it hangs in the router retry loop for 11+ minutes with no output produced. SKiDL `generate_netlist()` works instantly and cleanly (22 KB netlist, 0 errors). The Phase 3 Part 0 smoke test was only 2 components — it validated that the API EXISTS but did NOT validate that it SCALES. Both worker and master under-validated. (Captured as shared P0 miss for the next retro: investigation-phase smoke tests must be realistically scaled to the actual workload, not toy-sized.)
+
+**Why it matters.** A human-readable schematic is needed for **Phase 6.5 forum review** — EEs expect a schematic. Phases 3.5 / 4 / 5 / 6 do NOT need it; they consume the netlist directly (which works). So the drawn-schematic problem is bounded: it blocks Phase 6.5, nothing earlier.
+
+**Resolution path.** Dedicated investigation + resolution scheduled IN the Phase 3.5–6 window (BEFORE Phase 6.5 prep), evaluating:
+
+- **(a)** SKiDL router flags / timeout / hierarchical-subcircuit options — does SKiDL's auto-router have a "place-only, don't route" mode? Does breaking into hierarchical subcircuits help?
+- **(b)** kicad-skip programmatic placement — but note: kicad-skip itself is an auto-place/route problem, the same hard thing `generate_schematic()` fails at; front-loading it is premature until (a) and (c) are evaluated.
+- **(c)** One-time manual KiCad-GUI layout pass from the netlist — open the netlist in eeschema GUI, hand-tidy the placement, render PDF via kicad-cli. Bounded human effort; produces highest-quality schematic for forum review.
+- **(d)** Per-small-sheet generation — the MCU sheet hangs, but small peripheral sheets (a few components each) may route fine. Generate per-sheet PDFs + concatenate.
+
+**Decision criteria:** whichever option (a)/(b)/(c)/(d) produces a forum-quality schematic with bounded effort, ranked by (i) reproducibility, (ii) developer effort, (iii) reviewer quality. (c) is the safest fallback (any-time-of-day a GUI Claude or supermaster can do it); (a)/(d) are the most attractive if they work.
+
+**Not blocking.** Phase 3.5 (reference-design audit) and Phase 4 (PCB layout) both consume the SKiDL-generated netlist, which works. Phase 5 (BOM) consumes the netlist + parts metadata. Phase 6 (sims) takes the netlist + footprint placements. The drawn-schematic gap blocks Phase 6.5 specifically.
+
+**Owner / when:** dedicated task scheduled within the Phase 3.5–6 window. Not blocking Phase 3 sub-phase advance (netlist-only mode is the agreed Phase 3 deliverable; see `tasks/phase-3a-mcu.yaml` escalation_log entry #1).

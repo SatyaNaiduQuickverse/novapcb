@@ -45,3 +45,6 @@ hailort.log
 
 # SKiDL REPL artefacts (created in cwd when running `python3 -c "import skidl..."`)
 skidl_REPL.*
+
+# SKiDL symbol-library cache (regenerated each run; not source-of-truth)
+hardware/kicad/novapcb/generate_sklib.py
