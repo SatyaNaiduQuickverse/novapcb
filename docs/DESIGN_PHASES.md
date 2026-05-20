@@ -75,6 +75,16 @@ Two doc clarifications landed in the Phase 2.5 PR (master adjudicated, supermast
 
 ## Phase 3 — Schematic in KiCad (3a-3h DONE — 2026-05-20; SCHEMATIC CAPTURE COMPLETE)
 
+## Phase 3.5 — Reference design audit (DONE 2026-05-20)
+
+Cross-check the schematic against available reference designs + resolve accumulated carry-forward / cross-check / deferred flags. See `docs/REFERENCE_AUDIT.md` for the structured report (one section per of 14 CONFIDENCE_MAP subsystems).
+
+Result: **No NEEDS-FIX items.** 9 subsystems OK-AS-IS, 3 subsystems DEFER-TO-Phase-6.5 (5V-input protection, external-connector ESD, EMC/RF coupling — no schematic-level reference obtainable, external EE review at Phase 6.5 is the honest resolution), 1 subsystem DEFER-TO-Phase-6j (thermal — layout-dependent), 1 subsystem with PRIORITY-for-Phase-9-bench flag (Mauch HS-200-LV calibration values 9.0/60.6 — web-research-sourced; per-unit calibration card refines). Plus 7 Phase 4 carry-forward items (symbols, footprints, trace routing) consolidated.
+
+BMP280-as-DPS310 pin-identity (Phase 3d stand-in) re-verified ×3 sources (Infineon DPS310 datasheet + Bosch BMP280 datasheet + KiCad BMP280 symbol pin map) — all 8 pins match exactly. NOT a NEEDS-FIX.
+
+REFERENCE_AUDIT.md also includes a "Candidate topologies for Phase 6.5 review" section (per master 07:00 cross-review "audit deep" emphasis) — researched candidate ESD + reverse-polarity-protection menus so Phase 6.5 starts with options rather than blank. Worker did NOT silently add any of these to the schematic (master 3e.5 directive holds: don't silently add non-inherited topology).
+
 - **Mode: netlist-only** per Phase 3a Rule-13 escalation #1 + `OPEN_QUESTIONS.phase3-render-1`. SKiDL `generate_schematic()` doesn't scale past trivial circuits (hangs on the MCU sheet); per-sub-phase delivery is Python source + netlist + SKiDL ERC. Drawn schematic deferred to a dedicated investigation scheduled before Phase 6.5 forum review (NOT blocking Phase 3.5/4/5/6, which consume the netlist).
 - Project at `hardware/kicad/novapcb/` (master-confirmed in P0 adjudication item 4). `novapcb.kicad_pro` held until Phase 4 / drawn-schematic landing.
 - Per-sheet sub-phases via modular SKiDL Python (`sheets/mcu_3a.py`, `sheets/power_3b.py`, ...). Each 3x sub-phase = one sheet = one PR, mirroring Phase 2 cadence.
@@ -83,21 +93,17 @@ Two doc clarifications landed in the Phase 2.5 PR (master adjudicated, supermast
 - Library strategy: standard KiCad 9 libs at `/usr/share/kicad/symbols/` + `/usr/share/kicad/footprints/`, referenced via committed `sym-lib-table` + `fp-lib-table`. No in-repo `lib/` needed unless a sub-phase surfaces a missing symbol.
 - Acceptance per sub-phase: SKiDL ERC clean (peripheral-pin warnings expected until all sheets ship); netlist parses; hwdef pin assignments match.
 
-## Phase 3.5 — Reference design audit (NEW, before Phase 4)
+### Phase 3.5 rule (recorded for posterity)
 
-Before laying out copper, lift verbatim what's been proven. For each subsystem in CONFIDENCE_MAP.md, compare our schematic against ≥3 open-schematic FCs:
+Before laying out copper, lift verbatim what's been proven. For each subsystem in CONFIDENCE_MAP.md, compare against ≥3 open-schematic FCs:
 
 | Rule | Action |
 |---|---|
 | ≥3 references agree on a value/topology | Our design **must** match. No "improvement" without an explicit risk note. |
 | References diverge | Pick one, document why. Diff becomes part of CONFIDENCE_MAP row evidence. |
-| No reference exists | Subsystem is novel. Confidence drops to LOW automatically. |
+| No reference exists | Subsystem is novel — confidence stays LOW + routes to Phase 6.5 forum review (external EE eyes ARE a form of reference review). |
 
-Reference designs to compare against: MatekH743 (primary, since DECISIONS.md §2 v1 forks from it), Pixhawk6X (for parts where 6X happens to use similar single-PCB topology), Pixhawk6C, Mateksys H743-Slim.
-
-Output: `docs/REFERENCE_AUDIT.md` with one section per subsystem. Becomes input to Phase 4 layout.
-
-This single phase is probably worth more than half of the simulation regime — most novapcb subsystems are already solved problems and we shouldn't redesign them.
+Reference availability honest report (per the actual 3.5 audit): MatekH743 full schematic NOT obtainable (Matek doesn't publish; ArduPilot tree has only hwdef). Pixhawk6X / FMUv6X published as DS-012 but H753-based + 2-board pattern (partial applicability). ArduPilot hwdefs across the H743 family provide pin maps but not full schematics. Component datasheet typical-app-circuits used as proxy where appropriate. Where references genuinely weren't obtainable, subsystems routed to Phase 6.5 as the honest answer — no faked cross-checks.
 
 ## Phase 4 — PCB layout (NOT STARTED)
 
