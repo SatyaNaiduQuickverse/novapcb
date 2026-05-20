@@ -77,6 +77,14 @@ Two doc clarifications landed in the Phase 2.5 PR (master adjudicated, supermast
 
 Phase 3i (telem JST-GH 6P connector — USART1) added as 8-sheet-breakdown omission fix caught by Phase 3-exit A2 hwdef-completeness check (master adjudication: NEEDS-FIX). Plus Phase 3-exit CLOSED-decision: CAN1 deliberately omitted from v1 — Nova drone uses zero CAN peripherals; hwdef CAN1 retained as harmless firmware capability for future v1.x/v2 expansion. See `docs/OPEN_QUESTIONS.md` "CLOSED phase3exit-can" entry.
 
+## Phase 3-exit — Re-audit + carry-forward consolidation (DONE 2026-05-20)
+
+Phase 3 close-out audit per the Phase 2-exit pattern. See `docs/PHASE3_AUDIT.md` for the structured report (Parts A re-audit + B Phase-4 carry-forward consolidation + C 08:00 retro fold).
+
+Result: **0 Cat-B real omissions.** A1 cold rebuild + ERC + guard PASS; A2 hwdef-completeness PASSES CLEAN (63 hwdef-assigned MCU pins → 46 connected + 25 Cat-A intentional cruft + 3 Cat-C deliberate v1-omit CAN); A3 CONFIDENCE_MAP 14/14 rows coherent; A4 OPEN_QUESTIONS consistent. 7 Phase 4 carry-forward items consolidated (symbols, footprints, trace routing); 11 DEFER-to-Phase-6.5/6-sim items passed through; Mauch HS-200-LV 9.0/60.6 calibration PRIORITY-flagged for Phase 9 bench.
+
+After this phase merges, **Phase 3 is fully closed** (3a-3i + 3.5 + 3-exit). Phase 4 (PCB layout) opens with its own P0 routing-approach investigation (master 06:00 heads-up).
+
 ## Phase 3.5 — Reference design audit (DONE 2026-05-20)
 
 Cross-check the schematic against available reference designs + resolve accumulated carry-forward / cross-check / deferred flags. See `docs/REFERENCE_AUDIT.md` for the structured report (one section per of 14 CONFIDENCE_MAP subsystems).

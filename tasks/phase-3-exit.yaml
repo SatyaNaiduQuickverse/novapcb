@@ -1,0 +1,92 @@
+id: phase-3-exit
+phase: "3"
+subphase: "3-exit"
+title: "Phase 3 re-audit (hwdef-completeness + carry-forward consolidation + 08:00 retro fold)"
+status: in_progress
+depends_on:
+  - phase-3-5-reference-audit
+  - phase-3i-telem
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - hardware/kicad/novapcb/novapcb.net
+    - hardware/kicad/novapcb/generate.py
+    - hardware/kicad/novapcb/sheets/*.py
+    - docs/CONFIDENCE_MAP.md
+    - docs/REFERENCE_AUDIT.md
+    - docs/OPEN_QUESTIONS.md
+    - docs/DESIGN_PHASES.md
+  refs:
+    - "Phase 3-exit dispatch (master 2026-05-20 07:00): A1/A2/A3/A4 + Parts A/B/C structure"
+    - "Phase 3-exit A2 dispatch follow-up: telem NEEDS-FIX → Phase 3i; CAN deliberate v1-omit recorded; A2 re-run after 3i merges"
+    - "Phase 2-exit pattern (tasks/phase-2-exit.yaml) — Part A re-audit, Part B inventory/consolidation, Part C retro fold"
+    - "Master 3h.7 housekeeping flag — reconcile exact Cat-A pin count (headline 28 vs enumeration ~25 vs label 22)"
+
+decision_forks_watched:
+  a2-recheck:
+    fork: "A2 re-run on post-3i netlist: every hwdef-assigned pin is connected OR a documented-intentional omission?"
+    expected_classes: [a2-pass-clean, a2-residual-cat-b]
+    pre_recommendation: "Expect PASS: USART1 PA9/PA10 now connected (3i); CAN1 PD0/PD1/PD3 reclassified Cat-C (deliberate v1-omit per OPEN_QUESTIONS CLOSED phase3exit-can); remaining unconnected pins all in documented Cat-A (Phase 2-exit Part B intentional Matek-inheritance cruft)."
+    actual_resolution: "A2 PASSED CLEAN. 63 hwdef-assigned MCU pins; 46 connected to nets; 28 unconnected = 25 Cat-A intentional cruft + 3 Cat-C deliberate v1-omit (CAN) + **0 Cat-B real omissions**. USART1 confirmed connected via 3i. Telem and CAN both resolved per master adjudication."
+    resolved_via: "inline (A2 enumeration script reproduces classification; per-pin Cat assignment with reason cite)"
+
+  cat-a-count:
+    fork: "Cat-A pin count reconciliation (master 3h.7 housekeeping flag)"
+    expected_classes: [count-exact-28-25-3, count-different]
+    pre_recommendation: "Re-enumerate from script output; previously cited 22/25/28 numbers were partial enumerations. The 28-total is correct: 25 Cat-A intentional + 3 Cat-C CAN."
+    actual_resolution: "Exact reconciled: 28 total unconnected = 25 Cat-A + 3 Cat-C + 0 Cat-B. Both Cat-A 25 and total 28 documented in PHASE3_AUDIT.md A2 section with per-pin enumeration table."
+    resolved_via: "inline"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-3-exit.yaml
+    - docs/PHASE3_AUDIT.md
+    - retrospectives/2026-05-20T0800.md
+  files_modified:
+    - docs/DESIGN_PHASES.md   # Phase 3-exit row → DONE
+  pr:
+    title: "Phase 3-exit: re-audit (A2 PASS clean) + carry-forward consolidation + 08:00 retro fold"
+    branch: hw/phase-3-exit-2026-05-20
+
+pass_criteria:
+  # PART A — re-audit (high-value, gating)
+  - "A1: Cold rebuild of novapcb.net + generate.erc — verify SKiDL ERC 0 errors / 67 warnings (post-3i baseline); netlist 0 errors; rail-uniqueness guard PASS. Reproducible from generate.py alone."
+  - "A2: hwdef-completeness re-check post-3i. Every hwdef-assigned MCU pin is either connected to a net in novapcb.net OR a documented-intentional omission (Cat-A inherited cruft per Phase 2-exit Part B / Cat-C deliberate v1-omit per OPEN_QUESTIONS CLOSED entries). PASS clean = 0 Cat-B real omissions remaining. FAIL = Rule 13 STOP."
+  - "A3: CONFIDENCE_MAP rows 1-14 coherent — every row cites a 3x sheet (or DEFER-to-Phase-X) and reflects the merged state on main (post-3i)."
+  - "A4: OPEN_QUESTIONS.md internal consistency — Phase 3 CLOSED-entries (phase3-render-1 dispatched; phase3exit-can deliberate v1-omit) correctly labeled; v2-1 + phase2a-1 + phase2exit-1 remain open."
+
+  # PART B — Phase 4 carry-forward consolidation
+  - "B1: PHASE3_AUDIT.md lists the 7 Phase 4 carry-forward items from REFERENCE_AUDIT.md consolidated single-table — items + which row/subsystem + Phase 4 owner placeholder. NOT re-litigated; this is a hand-off."
+  - "B2: DEFER-TO-6.5 + Phase 6 sim consolidated table (mirrors REFERENCE_AUDIT.md 'DEFER-TO-Phase-6.5' section) — passes through to Phase 4 unchanged + flagged for Phase 4 task-contract dispatch."
+  - "B3: PRIORITY-Phase-9-bench (Mauch HS-200-LV 9.0/60.6 calibration) flagged in PHASE3_AUDIT.md so Phase 4/9 work doesn't lose it."
+
+  # PART C — 08:00 retro fold
+  - "C1: retrospectives/2026-05-20T0800.md created per RETROSPECTIVES.md template. Worker section (~5 bullets per of 4 sections) + cross-review. Master section paste-in placeholder (master 08:00 retro section was attached to the Phase 3-exit dispatch; post-compaction text not in worker context — master pastes verbatim on audit or chat-in)."
+
+  # Standing
+  - "Three-dot diff origin/main...HEAD verified before push."
+  - "Working tree clean (no stray SKiDL artifacts)."
+  - "DESIGN_PHASES.md Phase 3-exit row → DONE; Phase 3 fully closed (3a-3i + 3.5 + 3-exit)."
+
+estimated_context_kb: 50
+estimated_wallclock: "60-90 min (A2 re-run + Parts B + C + doc updates)"
+
+notes: |
+  Phase 3-exit is the Phase 3 gate. A2 (hwdef-completeness) is the
+  load-bearing check — it caught the USART1 telem omission on the
+  first pass (master adjudicated NEEDS-FIX → Phase 3i). With 3i
+  merged, A2 re-runs and is expected to PASS clean.
+
+  Cat-A pin count reconciliation (master 3h.7 housekeeping flag): the
+  prior pings cited 22, 25, and 28 in different places — the 28-total
+  is correct (25 Cat-A intentional + 3 Cat-C deliberate v1-omit + 0
+  Cat-B = 28 unconnected). PHASE3_AUDIT.md A2 section has the
+  per-pin enumeration table to settle the count.
+
+  After this PR merges, Phase 3 is fully closed (3a-3i + 3.5 + 3-exit).
+  Phase 4 (PCB layout) opens with its own P0 routing-approach
+  investigation (master 06:00 heads-up: Freerouting vs pcbnew-scripted
+  vs hybrid; realistic-scale-tested per Phase 3 smoke-test lesson).
