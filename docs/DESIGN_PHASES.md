@@ -123,7 +123,29 @@ Before laying out copper, lift verbatim what's been proven. For each subsystem i
 
 Reference availability honest report (per the actual 3.5 audit): MatekH743 full schematic NOT obtainable (Matek doesn't publish; ArduPilot tree has only hwdef). Pixhawk6X / FMUv6X published as DS-012 but H753-based + 2-board pattern (partial applicability). ArduPilot hwdefs across the H743 family provide pin maps but not full schematics. Component datasheet typical-app-circuits used as proxy where appropriate. Where references genuinely weren't obtainable, subsystems routed to Phase 6.5 as the honest answer — no faked cross-checks.
 
-## Phase 4 — PCB layout (P0 + 4a DONE; 4b-4f IN PROGRESS)
+## PIVOT — sim-driven re-layout (2026-05-20, Sai-approved)
+
+**The dense 36×36 / 4-layer board (Phase 4a-4e, in `hardware/kicad/novapcb-layout/`) is SET ASIDE — kept in repo as history but no longer the active layout.**
+
+**Why**: density on the 36×36 mini-FC form drove the visible errors — the 17 stuck nets at 4e/4d2, the AP2112K LDO thermal margin (Phase 6j Tj=88°C), the EMC harmonic intersections (Phase 6k). Sai is relaxing the form-factor constraints to buy a real factor of safety.
+
+**What carries over unchanged**: Phase 3 schematic, Phase 5 BOM, Phase 1/2 firmware hwdef, Phase 4a footprints. Only the LAYOUT is being redone.
+
+**New 6-step plan (replaces the original Phase 4 sub-phase ladder)**:
+1. **Sim tooling install** (this PR / `infra/sim-tooling-pivot-2026-05-20`) — Elmer FEM + OpenEMS + Palace on the Pi (with `sudo apt` build prereqs).
+2. **Close the inrush schematic item** — Phase 6a finding (3.39A peak) → NTC limiter vs criterion review; finalize the netlist.
+3. **Deliberate physics-guided placement** — subsystems separated (power / sensitive analog+IMU / digital / connectors); generous spacing; board sized to the placement; rectangle allowed; **6-layer TBD**.
+4. **Sim-validate the placement** — EMI/EMC (OpenEMS/Palace) + thermal (Elmer) on the placement; iterate cheaply (placement+sim, NO routing yet).
+5. **Route once** — when placement is sim-validated, route the roomy board.
+6. **Final routed-board SI** sims + gerber export.
+
+**Open dimensions now (pending Sai's airframe-dim input — see `OPEN_QUESTIONS.md` "pivot-2026-05-20")**:
+- Board outline shape (square vs rectangle)
+- Board size (no longer 36×36)
+- Layer count (4-layer vs 6-layer)
+- Mounting pattern (vs the previous Pixhawk 30.5×30.5 M3)
+
+## Phase 4 — PCB layout — SUPERSEDED for v1 (Phase 4a-4e archived in repo)
 
 Phase 4 P0 (routing-approach investigation) merged 2026-05-20 — see `hardware/kicad/PHASE4_P0_REPORT.md`. Recommendation: **(c) hybrid** (placement + Freerouting bulk + scripted critical-net hand-route) with documented **(d) supermaster GUI** fallback. Toolchain (kinet2pcb + pcbnew + Java 25 + Freerouting v2.2.4) validated headless on the real novapcb netlist via 3-iteration scale-test.
 

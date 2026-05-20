@@ -17,7 +17,21 @@ All 9 scoping decisions for the v1 FC, signed off 2026-05-18. Each section shows
 
 ## 2. Form factor
 
-**Resolved 2026-05-18; mechanical specs disambiguated 2026-05-20 (Phase 2.5 P1.1):** **v1 = Pixhawk-standard mini-FC single-PCB — board outline 36 × 36 mm, mounting holes 30.5 × 30.5 mm center-to-center M3** (4 holes; the "30.5×30.5 M3" Pixhawk-standard pattern, matching MatekH743 reference). Functional drop-in against the Holybro Pixhawk 6X — same electrical + software interface, airframe gets a new mounting tray; **not** a mechanical drop-in. **v2 = FMUv6X mechanical drop-in** (FMU + isolated IMU on vibration mounts, exact 6X footprint and connectors), deferred until v1 flies — see `OPEN_QUESTIONS.md` for the v2 mechanical questions still to settle.
+**SUPERSEDED 2026-05-20 (Sai pivot, mid-Phase-4)**: the 36×36 / 30.5×30.5 M3 v1 spec is set aside. New direction:
+
+**v1 = RECTANGULAR, sized to the placement.** No standard-dimension constraint. Board outline shape (length × breadth) is an OUTPUT of deliberate physics-guided placement (Phase pivot Step 3), not a fixed input. Sai's explicit direction 2026-05-20 ("don't confine to Pixhawk 30.5 / 36×36"). Mounting pattern + airframe tray follow the resulting board outline; a new tray is acceptable.
+
+**Reliability mandate** (Sai 2026-05-20, verbatim: "it working 100% is the priority", "strong resilient stuff that won't fail"): use the freed board area for generous spacing, clean subsystem separation, robust margins — design so EMI/EMC/thermal failure modes simply don't arise. Quality + real workability over time-to-build.
+
+**Open dimensions** (Sai's input pending — see `OPEN_QUESTIONS.md pivot-2026-05-20`):
+- Aspect ratio (the rectangle's length:breadth)
+- Layer count (4 vs 6 — Phase 0.6 pivot Step 3 assesses)
+- Mounting pattern (driven by the airframe envelope Sai will provide)
+
+**v2 = FMUv6X mechanical drop-in** — still deferred (separate FMU + isolated-IMU boards, exact 6X mechanical match); see OPEN_QUESTIONS.
+
+**Original-v1 record kept here for traceability:**
+- *Resolved 2026-05-18; mechanical specs disambiguated 2026-05-20 (Phase 2.5 P1.1)*: v1 = Pixhawk-standard mini-FC single-PCB — board outline 36 × 36 mm, mounting holes 30.5 × 30.5 mm center-to-center M3 (4 holes; the "30.5×30.5 M3" Pixhawk-standard pattern, matching MatekH743 reference). Functional drop-in against the Holybro Pixhawk 6X. **Superseded by 2026-05-20 pivot above** because density on the 36×36 mini-FC drove the Phase 6 P0 findings (PDN anti-resonance at 100 kHz, AP2112K LDO Tj=88°C, inrush 3.39A, EMC harmonic intersections in GPS L1). Roomier rectangle + reliability mandate addresses all four.
 
 - **Pixhawk standard 30.5×30.5 mm M3, single-PCB** (chosen for v1) — well-trodden form factor; closest reference design is MatekH743 (36×36 board, 30.5×30.5 c-to-c M3 holes). Functional swap only; the airframe needs a new tray since the Pixhawk 6X uses the FMUv6X pattern, not the 30.5×30.5 mini-FC pattern.
 - **FMUv6X form factor, two-board (FMU + isolated IMU)** (chosen for v2) — true mechanical drop-in against the 6X. Significantly more complex (vibration isolation, exact connector pin-out, dual-board assembly); not worth blocking v1 on.
@@ -66,11 +80,15 @@ JST-GH (Pixhawk standard) vs JST-SH 1.0 vs solder pads. JST-GH is bulky but matc
 
 ## 8. PCB stack-up
 
-**Resolved 2026-05-18:** 4-layer for v1 — clean ground plane under the IMU is the load-bearing requirement; 6-layer is reserved for a v2 spin only if on-board RF lands.
+**SUPERSEDED 2026-05-20 (Sai pivot)**: 4-layer was right for the tight 36×36 board; the new rectangular roomier outline reopens the 4 vs 6 question. Phase 0.6 pivot Step 3 (placement) assesses which is appropriate given:
+- The reliability mandate ("won't fail") favors 6-layer if it materially reduces SI/EMI failure modes.
+- Phase 6k EMC analytical found 4 harmonics above -40 dB in GPS L1 / ELRS bands — a 6-layer with a second clean GND or split power plane can reduce those.
+- 6-layer ~25-40% more expensive at JLCPCB but trivial against the resilience priority.
 
-4-layer minimum for a clean ground plane under the IMU. 6-layer if RF gets integrated.
+**Recommendation pending Step-3 analysis**: lean 6-layer if it provides quantifiable EMI/SI improvement; stay 4-layer if 6 only adds cost without measurable failure-mode reduction.
 
-**Recommendation:** 4-layer for v1; 6-layer only if RF integrates in v2.
+**Original v1 record:**
+- *Resolved 2026-05-18*: 4-layer for v1 — clean ground plane under the IMU is the load-bearing requirement; 6-layer is reserved for a v2 spin only if on-board RF lands.
 
 ## 9. USB VID/PID for the FC
 
@@ -86,3 +104,35 @@ The FC's USB descriptor must include strings that produce `/dev/serial/by-id/usb
 **Recommendation:** (a). Aligning with the ArduPilot allocation keeps us inside the family that downstream tools already expect; pid.codes is a fine fallback only if the ArduPilot path stalls.
 
 Note: udev by-id resolution only requires the *string* prefix to match (`USB_VENDOR_STRING` starting with `ArduPilot`), not the VID/PID. So even before VID/PID is locked, firmware bring-up that depends only on the by-id symlink will work.
+
+---
+
+## 10. Reliability-first design priority (Sai pivot 2026-05-20)
+
+**Resolved 2026-05-20 — Sai's directive, verbatim:** "it working 100% is the priority", "strong resilient stuff that won't fail", "quality + real workability over everything; time is not a constraint."
+
+This is a **design principle**, not a specific component choice. Applied across the entire post-pivot design:
+
+- **Spacing**: generous, not packed. The freed board area from the §2 form-factor pivot is spent on margin, not features.
+- **Subsystem separation**: power tree at one end, sensitive analog+IMU at the far end, MCU central, connectors on edges. EMI / thermal / mechanical-cable-strain failure modes don't arise if the physical layout prevents them.
+- **Failure-mode mitigation over justification**: when a Phase 6 sim surfaces a CAUTION (e.g. inrush 3.39A over the <2A criterion; AP2112K Tj=88°C borderline), the design FIXES it. We don't argue why the failure mode "probably won't trigger in practice." See §11 (inrush) for the first instance.
+- **Worst-case boundary conditions**: thermal modeling at 50-60°C ambient (drone bay / sun-soaked), still-air convection (no airflow assumed). If it works there, it works in flight.
+- **Deterministic over heuristic**: prefer designs whose failure-recovery behavior is predictable + repeatable. E.g. MOSFET-based soft-start beats NTC thermistor for inrush limiting because NTC has reliability caveats (steady-state voltage drop; fails to reset on fast warm power-cycle).
+- **No premature optimization for cost / area / BOM count**: if a small upgrade materially reduces a failure mode, it lands.
+
+This principle resolves design forks where reliability and another axis (cost, board area, BOM count) conflict — reliability wins.
+
+---
+
+## 11. Inrush limiting on the +5V BEC input (Step 2 of pivot)
+
+**To be resolved by Phase 0.6 pivot Step 2 (inrush mitigation PR)**, in progress.
+
+Background: Phase 6a found inrush peak ~3.39 A at power-on (over the <2A SIMULATION_PLAN §6a criterion + likely over a 3A BEC's transient tolerance). Per §10 reliability mandate, this is FIXED in the design.
+
+**Options under evaluation** (Step 2 PR will resolve):
+- **MOSFET-based active soft-start** — P-MOSFET in the 5V path with an RC on the gate that slowly turns the FET on over ~10 ms. Deterministic; resets cleanly on any power-cycle; no steady-state voltage drop. Master's steer: this is the most-resilient option, favor it.
+- **NTC inrush limiter** — series NTC thermistor (e.g. 5Ω cold → ~50mΩ hot). Simple, one part. **Caveats**: real steady-state voltage drop (~150mV at 350mA load) wasted as heat; FAILS to reset on a fast warm power-cycle (NTC stays low-resistance after a quick brownout, then the next inrush event isn't limited). Per §10 these are real reliability caveats.
+- **EN-pin RC soft-start on AP2112K** — 10 nF + 100 kΩ to GND on the LDO's EN pin slows turn-on by ~10 ms; gradual LDO output ramp absorbs input transient. Lighter-weight than MOSFET soft-start but only addresses LDO inrush, not the input cap charging spike.
+
+**Recommendation pending Step 2 PR**: MOSFET soft-start per master + §10. The §6.5 forum-review can sanity-check the topology.

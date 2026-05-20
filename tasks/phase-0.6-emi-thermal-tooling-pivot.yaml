@@ -1,0 +1,106 @@
+id: phase-0.6-emi-thermal-tooling-pivot
+phase: "0.6"
+title: "EMI/thermal sim tooling install on Pi — Step 1 of Sai's pivot 6-step plan"
+status: in_progress
+depends_on:
+  - phase-0.5-sim-toolchain   # base sim toolchain (PySpice, ngspice, scikit-rf)
+parent_pivot:
+  decision_date: "2026-05-20"
+  decided_by: "Sai (supermaster)"
+  rationale: |
+    Phase 6 P0 surfaced density-driven concerns on the 36×36 mini-FC layout
+    (PDN anti-resonance, AP2112K Tj=88°C, inrush 3.39A, EMC harmonics in GPS L1).
+    Sai's decision: re-layout on a roomier board with deliberate physics-guided
+    placement + sim validation at the placement stage (before routing). The
+    layout-specific Phase 4d2/4d3 routing-completion work is abandoned; the
+    36×36 board stays in repo as history.
+
+    6-step plan: (1) THIS — sim tooling install + smoke-test;
+    (2) close inrush schematic item; (3) physics-guided placement;
+    (4) sim-validate placement, iterate; (5) route once; (6) routed-board SI.
+
+inputs:
+  files:
+    - sims/TOOLCHAIN.md
+    - docs/SIMULATION_PLAN.md
+    - sims/PHASE6_P0_RESULTS.md
+  refs:
+    - "Sai directive 2026-05-20: 'for now do sims on Pi only. install tools there and do. make simulations really good. it's not that simulation won't run on a Pi, it's just everyone runs on big computers so it's ASSUMED it's better. mathematics is same.'"
+    - "Master dispatch 2026-05-20 — install Elmer FEM + OpenEMS + Palace by WHATEVER route works; Sai is engaged and will grant sudo if escalated; do real smoke-tests (not import-checks); report runtime honestly (slow on Pi is fine)"
+    - "TOOLCHAIN.md §3 + §4 — earlier Phase 0.5 deferral of OpenEMS + Elmer based on multi-day source-build assumption; this pivot supersedes that — with apt build prereqs, source-build collapses to hours"
+
+# Falsifiable pre-prediction
+prediction:
+  worker_pre_run_prediction: |
+    Routes survey complete:
+      - Conda-forge linux-aarch64: NONE of the 3 are packaged (verified via micromamba search).
+      - pip: pyEMS is a different package; pyelmer is a Python wrapper that needs the binary.
+      - Spack: Palace IS packaged (`palace`), Elmer IS packaged (`elmerfem`); OpenEMS NOT. Spack
+        builds from source, multi-day on Pi.
+      - apt (Debian trixie): the 3 tools are NOT in apt main, but all critical build prereqs ARE
+        — including libmfem-dev (Palace's main dep). With sudo + apt prereqs, source-build of
+        the 3 tools collapses from multi-day yak-shave to hours.
+    Sai engaged + granted sudo (one-liner pasted in chat with `!` prefix).
+
+    Predict — assuming sudo + apt prereqs land cleanly:
+      Elmer FEM    — clean source build via the ElmerCSC/elmerfem CMake (~30-60 min on Pi 5,
+                     minus ElmerGUI/Qt which we skip for headless). Smoke: 1D heat conduction
+                     analytical match. CONFIDENCE: HIGH.
+      OpenEMS      — clean source build via thliebig/openEMS + CSXCAD (~60-90 min). Smoke:
+                     parallel-plate capacitor E-field analytical match V/d = 1000 V/m.
+                     CONFIDENCE: HIGH (deps are well-known apt packages now).
+      Palace       — clean source build via awslabs/palace using system libmfem-dev (~60-120 min).
+                     Smoke: rectangular cavity TE101 eigenmode analytical match.
+                     CONFIDENCE: MEDIUM-HIGH (Palace is newer, less tested on aarch64; the
+                     awslabs/palace CMake should handle it, but per master's directive escalate
+                     if it fails).
+
+    Net: predict 3 of 3 clean installs in 2-4 hours total wall.
+
+decision_forks_watched:
+  install-routes:
+    fork: "Which install route for each of the 3 tools"
+    expected_classes: [conda-forge, pip, spack, source-with-apt-prereqs, escalate-to-sudo, escalate-to-master]
+    pre_recommendation: "source-with-apt-prereqs (after Sai's sudo) — fastest practical route given conda-forge/pip don't carry these"
+    actual_resolution: "Sai-granted-sudo apt install of build prereqs; source-build all three using apt-provided deps (libmfem-dev, libmumps-dev, libsuitesparse-dev, libpetsc-real-dev, libslepc-real-dev, libboost-all-dev, libhdf5-dev, libtinyxml-dev, libcgal-dev, libfparser-dev, libqhull-dev, libopenmpi-dev, libscalapack-mpi-dev, libmetis-dev, libnlopt-dev, libvtk9-dev, cmake, openmpi-bin) + bison/flex for ngspice + ngspice/gerbv/octave to system PATH"
+    resolved_via: "Phase 0.6 install"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-0.6-emi-thermal-tooling-pivot.yaml
+    - sims/em-fem-smoke-tests/   # smoke-test scripts + analytical baselines
+  files_modified:
+    - sims/TOOLCHAIN.md   # add Elmer + OpenEMS + Palace per-tool entries
+    - docs/DESIGN_PHASES.md   # PIVOT section + Phase 4 SUPERSEDED note
+    - docs/OPEN_QUESTIONS.md  # pivot-2026-05-20 entry (form factor / layer count / size open)
+  pr:
+    title: "Phase 0.6: EMI/thermal sim tooling on Pi (Elmer + OpenEMS + Palace) — pivot Step 1"
+    branch: infra/sim-tooling-pivot-2026-05-20
+
+pass_criteria:
+  - "0.6.1: apt build prereqs installed via Sai-granted sudo (libboost-all-dev, libhdf5-dev, libtinyxml-dev, libcgal-dev, libfparser-dev, libqhull-dev, cmake, openmpi-bin, libopenmpi-dev, libmumps-dev, libmetis-dev, libscalapack-mpi-dev, libsuitesparse-dev, libmfem-dev, libpetsc-real-dev, libslepc-real-dev, libnlopt-dev, libvtk9-dev) + ngspice/gerbv/octave to system PATH + bison/flex for completeness."
+  - "0.6.2: Elmer FEM source-built userspace at ~/local/elmer/ (ElmerSolver + ElmerGrid; no Qt/GUI). Smoke test: 1D steady-state heat conduction with analytical baseline (T(midpoint)=50°C ±1%). Runtime reported."
+  - "0.6.3: OpenEMS source-built userspace at ~/local/openems/ (CSXCAD + openEMS C++ + python_openEMS wrapper). Smoke test: parallel-plate capacitor E-field at center = V/d = 1000 V/m ±5%. Runtime reported."
+  - "0.6.4: Palace source-built userspace at ~/local/palace/. Smoke test: rectangular cavity TE101 eigenmode = 6.18 GHz ±1%. Runtime reported."
+  - "0.6.5: sims/TOOLCHAIN.md updated — per-tool entry (install route, version, smoke-test result + runtime, reproduce command). NEEDS-SUDO-HANDOFF section closes for these 3."
+  - "0.6.6: docs/DESIGN_PHASES.md PIVOT section landed. Phase 4 marked SUPERSEDED for v1; new 6-step plan documented. docs/OPEN_QUESTIONS.md pivot-2026-05-20 entry recording the open form-factor / size / layer-count / mounting questions."
+  - "0.6.7: Honest escalation if any of the 3 fails to build even with apt prereqs — Rule 13 stop with measured evidence, NOT iteration. Per master: 'if a build genuinely fails... escalate honestly per the tripwire — don't grind iterations.'"
+
+estimated_context_kb: 60
+estimated_wallclock: "2-4 hours (apt 10-20min + Elmer 30-60min + OpenEMS 60-90min + Palace 60-120min + smoke tests + write-up)"
+
+notes: |
+  Phase 0.6 is Step 1 of Sai's 6-step pivot plan. It is INFRA work — installing
+  tools — and it unblocks Steps 3-4 (sim-validated placement) which are the
+  real engineering work for the re-layout.
+
+  The previous 36×36 / 4-layer board (Phase 4a-4e) stays in repo as history;
+  Phase 6 P0 results stand (8 Tier-1 sims merged, findings inform the new
+  placement). What carries over from the old board: schematic, BOM, footprints,
+  firmware. Only the layout changes.
+
+  Runtime on Pi is acceptable per Sai's explicit directive — "mathematics is
+  the same." Smoke tests use known-analytical baselines so a slow result is
+  still verifiable against a closed-form answer.

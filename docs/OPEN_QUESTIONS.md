@@ -100,6 +100,37 @@ Raised 2026-05-20 (Phase 4a — master adjudication of the `icm42688p-footprint`
 
 ---
 
+## pivot-2026-05-20. Re-layout dimensions — form factor, size, layer count, mounting
+
+**Raised 2026-05-20** (Sai-directed pivot, mid-Phase-4-routing).
+**Sai dimension-freedom update 2026-05-20 (later)**: Sai released the standard-dimension constraint — the board is a free RECTANGLE; size + aspect-ratio are an OUTPUT of deliberate placement, not a fixed input. See `DECISIONS.md §2 + §10`.
+
+The dense 36×36 / 4-layer board is being set aside in favor of a deliberate, sim-driven, physics-guided placement on a roomier board. The previous form-factor decisions (`DECISIONS.md §2` 36×36 mm; `DECISIONS.md §8` 4-layer; Pixhawk-standard 30.5×30.5 M3 mounting) are **superseded** — see DECISIONS.md §2 §8 §10 §11 for the post-pivot direction.
+
+### Sai-resolved 2026-05-20 (the dimension-freedom update)
+1. **Board outline shape** — RECTANGLE. Aspect ratio is an OUTPUT of placement (Step 3), not pre-decided.
+2. **Board size** — sized to the placement. No fixed dim constraint. ✓
+3. **Layer count** — **OPEN**. 4 vs 6 to be decided in Step 3 based on whether 6-layer measurably reduces EMI/SI failure modes per the §10 reliability mandate.
+4. **Mounting pattern** — driven by the resulting board outline + the airframe envelope; new tray is acceptable per §2.
+5. **Airframe envelope** — **OPEN** (Sai will provide; not blocking Step 2 inrush mitigation or thermal-sim input prep).
+
+### What's locked
+- Schematic (Phase 3, in `hardware/kicad/novapcb/`) — unchanged
+- BOM (Phase 5) — unchanged
+- Firmware / hwdef — unchanged
+- Footprints (Phase 4a custom + KiCad standard) — unchanged
+- USB-CDC + CRSF + MAVLink interface contracts — unchanged
+
+### What's open until Sai answers
+- `hardware/kicad/novapcb-layout-v2/` (new project) — placement + planes + routing
+- DECISIONS.md §2 §8 — revised
+- Mounting tray (downstream airframe work)
+
+### Why this matters
+The Phase 6 P0 sim results surfaced real density-driven concerns: PDN anti-resonance at 100 kHz, AP2112K LDO Tj=88°C, inrush 3.39A, EMC harmonic intersections in GPS L1. A roomier layout + 6-layer option directly mitigates each of those.
+
+---
+
 # Closed decisions (recorded here for traceability)
 
 ## CLOSED phase3exit-can. CAN: novapcb v1 deliberately ships no CAN connector / transceiver
