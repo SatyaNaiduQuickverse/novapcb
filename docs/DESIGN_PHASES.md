@@ -138,14 +138,33 @@ Sub-phases per the P0.6-approved breakdown:
 - JST-GH connectors per DECISIONS §7.
 - Acceptance: DRC clean; 3D view inspected; mechanical envelope matches the planned mounting tray.
 
-## Phase 5 — BOM finalization (NOT STARTED)
+## Phase 5 — BOM finalization (IN PROGRESS — PR open 2026-05-20)
 
-- `bom/v1.csv`: one row per line item with footprint, manufacturer
-  part, alt parts, sourcing URL, last-checked price + date.
-- Cost target: track against ~$70-100/board BOM (DIY).
-- Every internal part number resolves to a real supplier with stock.
-- Acceptance: every footprint in the schematic has a BOM row; total
-  cost documented.
+- `bom/novapcb-bom.csv`: 34 rows covering 70 components — refdes, qty, value,
+  footprint, MPN, manufacturer, LCSC#, JLCPCB type (basic/extended), datasheet,
+  last-checked date, alt-part, assembled-yes/no flag.
+- `bom/SOURCING_NOTES.md`: fab-target choice (JLCPCB per fork resolution),
+  two-sided SMT assembly callout (B.Cu carries J2 + J9 + U4 + R51-R55),
+  ICM-42688-P footprint carry-forward (OPEN_QUESTIONS phase4a-1), Mauch
+  DF-13→JST-GH adapter procurement note (external), solder-pad land
+  patterns (J10/J11-J18/H1-H4) explained as PCB-only.
+- Cost target: ~25 assembled line items; ~19 JLCPCB-basic + ~6 extended;
+  estimated one-time extended-part loading fee ~$18-24; per-board BOM cost
+  feeds into Phase 7 fab-quote workflow.
+- Acceptance: 70 netlist refdes all accounted for in CSV; every assembled
+  non-passive has real MPN + LCSC# + datasheet URL; no sole-source / no
+  long-lead items.
+
+**Sai-decision flags blocking fab order** (defer to Phase 7):
+- ICM-42688-P footprint (phase4a-1) — must close before fab.
+- Surface finish (ENIG recommended for LGA-14 / LGA-8 sensors).
+- Quantity, soldermask, lead-free vs leaded.
+
+## Phase 5-exit — task contract closure (PENDING)
+
+After Sai's GUI routing pass + Phase 4f gerber export land, Phase 5 task
+contract closes alongside Phase 4-exit re-audit. Decision-fork
+`fab-target` resolved JLCPCB.
 
 ## Phase 6 — Simulation regime (NOT STARTED — GO/NO-GO GATE)
 

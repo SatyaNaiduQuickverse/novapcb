@@ -1,0 +1,107 @@
+id: phase-5-bom
+phase: "5"
+subphase: "5"
+title: "Phase 5 — BOM: enumerate every component with MPN + LCSC# + JLCPCB basic/extended"
+status: in_progress
+depends_on:
+  - phase-3-exit-audit
+  - phase-4b-placement
+  - phase-4c-planes
+
+inputs:
+  files:
+    - hardware/kicad/novapcb/novapcb.net                       # netlist (Phase 3) — 70 non-virtual components
+    - hardware/kicad/novapcb-layout/novapcb-layout.kicad_pcb   # board (Phase 4b/4c option-θ — J10-J18 are solder pads)
+    - docs/DECISIONS.md
+    - docs/OPEN_QUESTIONS.md
+  refs:
+    - "CLAUDE.md §5 BOM rules — CSV preferred, one row per line item, footprint + alt-parts + sourcing URL + last-checked"
+    - "CLAUDE.md §3.5 sensor recs: ICM-42688-P (primary IMU), DPS310 (baro), IST8310/RM3100 (mag — external)"
+    - "DECISIONS.md §1 MCU = STM32H743VIT6 (LQFP-100, 14×14mm)"
+    - "DECISIONS.md §5 voltage/current via external Mauch power module (FC has ADC input + 6P JST-GH J4); no on-board INA226 etc."
+    - "DECISIONS.md §6 microSD (Hirose DM3AT-SF-PEJM5 — Phase 3h)"
+    - "DECISIONS.md §7 JST-GH connector standard (Pixhawk DS-009)"
+    - "DECISIONS.md §9 USB VID/PID — ArduPilot allocation (post-Phase-1/2 firmware), no impact on BOM"
+    - "OPEN_QUESTIONS phase4a-1 — ICM-42688-P land pattern HARD carry-forward must-resolve before Phase 6m DFM"
+    - "Option-θ (PR #44) — J10 CRSF + J11-J18 ESC reduced to solder-pad land patterns (no JST connectors assembled)"
+
+# Pre-task prediction (Rule-13-with-options + commit-prediction-before-verification discipline):
+prediction:
+  worker_pre_run_prediction: |
+    Netlist enumeration ran on hardware/kicad/novapcb/novapcb.net:
+      - 70 non-virtual components → 34 BOM line items after grouping passives.
+      - Component classes: 1× MCU, 4× IC (LDO/IMU/baro/USB ESD), 1× crystal,
+        16× 0402 100nF, 4× 1uF, 3× 2.2uF, 2× 18pF, 3× 0805 4.7uF, 1× ferrite,
+        16× resistors (mixed 0Ω/1k/4.7k/5.1k/10k/47k 0402),
+        5× JST-GH connectors actually populated (J1 USB-C, J2 microSD, J3 telem,
+        J4 Mauch, J5 GPS+mag, J9 SWD 2x5 1.27mm),
+        9× PCB-only solder pads (J10 CRSF + J11-J18 ESC × 8),
+        4× M3 mounting holes (PCB-only).
+    Assembled-part line items: ~25. PCB-only line items: ~10.
+
+    Fab-target fork prediction: JLCPCB (4-layer free at ≤100×100mm; min drill 0.20mm
+    < our 0.25mm). JLCPCB basic-part library covers virtually all our 0402 + 0805
+    passives + USBLC6 + AP2112K-3.3; extended for STM32H743VIT6 + ICM-42688-P +
+    DPS310. Two-sided assembly required (B.Cu has J2 microSD + U4 DPS310 + R51-R55 +
+    J9 SWD); JLCPCB SMT assembly supports two-sided.
+
+    Carry-forward flagged:
+      - ICM-42688-P footprint (OPEN_QUESTIONS phase4a-1) — current LGA-14
+        standard library footprint must be cross-checked against TDK ICM-42688-P
+        datasheet land pattern before fab. HARD pre-Phase-6m item.
+      - Mauch power module = external; adapter cable (Mauch DF-13 → JST-GH 6P) is
+        sourced separately by Sai (not on this PCB BOM).
+
+decision_forks_watched:
+  fab-target:
+    fork: "Which fab + assembly house for v1 prototype run"
+    expected_classes: [JLCPCB, PCBWay, OSHPark+separate-asm, other]
+    pre_recommendation: "JLCPCB — 4-layer free tier covers our 36×36 board + has the largest basic-parts library (lowest assembly cost) + accepts our 0.25mm min drill (their min is 0.20mm). Two-sided SMT supported."
+    actual_resolution: "JLCPCB (per pre_recommendation — no contraindication)"
+    resolved_via: "Phase 5 BOM contract"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-5-bom.yaml
+    - bom/novapcb-bom.csv
+    - bom/SOURCING_NOTES.md
+  files_modified:
+    - docs/DESIGN_PHASES.md
+  # Note: docs/CONFIDENCE_MAP.md NOT modified — BOM is paper sourcing for
+  # already-rated subsystems; topology unchanged, confidence ratings unchanged.
+  # ICM-42688-P footprint carry-forward (#4) is already cited there.
+  pr:
+    title: "Phase 5: BOM with LCSC# + JLCPCB basic/extended + sourcing notes"
+    branch: hw/phase-5-bom-2026-05-20
+
+pass_criteria:
+  - "5.1: bom/novapcb-bom.csv has one row per BOM item (refdes/qty/value/footprint/MPN/manufacturer/LCSC#/JLCPCB-type/datasheet/last-checked/alt-part/assembled/notes). Header row + ≥34 data rows. Passives grouped by (value, footprint); ICs + connectors per-refdes."
+  - "5.2: every assembled non-passive component has a real MPN + manufacturer + datasheet URL. STM32H743VIT6, ICM-42688-P, DPS310, AP2112K-3.3, USBLC6-2P6, USB-C HRO TYPE-C-31-M-12, Hirose DM3AT-SF-PEJM5, JST SM04B/SM06B/SM10B-GHS-TB, 1.27mm 2x5 SMD pin header, 8MHz SMD3225 crystal — all sourced."
+  - "5.3: every assembled passive (R/C/L) has a chosen LCSC# + JLCPCB-type (basic / extended). Basic-part preference applied (lowest assembly cost on JLCPCB)."
+  - "5.4: SOURCING_NOTES.md covers — fab-target reasoning (JLCPCB per fork); two-sided SMT assembly callout (B.Cu has J2 + U4 + R51-R55 + J9); ICM-42688-P footprint carry-forward (OPEN_QUESTIONS phase4a-1) cited prominently; Mauch DF-13→JST-GH adapter procured separately by Sai; option-θ solder-pad fields (J10 + J11-J18) explained as PCB-only (no parts ordered)."
+  - "5.5: any Sai-decision flagged: e.g. picking final ICM-42688-P footprint requires Sai/Phase-6m gate; choosing GPS module (downstream cable into J5) is Sai's airframe-build call; ESC choice (downstream of solder pads) is Sai's choice."
+  - "5.6: cross-check: every refdes that appears in the netlist + on the board is accounted for in BOM CSV (assembled=yes OR assembled=no/PCB-only). No orphan refdes; no BOM row without a board refdes."
+  - "5.7: SOTA self-audit. Phase 5 is paper sourcing; Phase 6 sim / Phase 7 fab order is where real-world cost + lead-time data feeds back into BOM."
+
+estimated_context_kb: 50
+estimated_wallclock: "2-4 hours (passive sourcing + JST-GH part-number verification + footprint datasheet cross-check)"
+
+notes: |
+  Phase 5 fires in parallel with Sai's 17-net GUI routing pass (per Phase 4
+  handoff in PR #49) — they don't touch the same files. BOM is paper sourcing;
+  routing edits novapcb-layout.kicad_pcb. Master TASK B dispatch authorized
+  the parallel run.
+
+  ICM-42688-P land pattern is OPEN_QUESTIONS phase4a-1 (HARD carry-forward) —
+  current footprint Package_LGA:LGA-14_3x2.5mm_P0.5mm_LayoutBorder3x4y is a
+  standard KiCad library choice; the TDK datasheet land pattern needs explicit
+  cross-check before Phase 6m DFM gate. BOM cites the MPN but flags the
+  footprint as carry-forward.
+
+  Mauch power module (4S-6S, ≥3A 5V BEC + voltage/current sense) is an EXTERNAL
+  module — not on the FC PCB. The PCB exposes J4 JST-GH 6P with the Mauch
+  pinout (VBAT_sense, CURRENT_sense, GND, +5V_BEC); Sai provisions a Mauch
+  module + DF-13→JST-GH 6P adapter cable separately (off-BOM for this PCB,
+  but cited in SOURCING_NOTES for the integrator).
