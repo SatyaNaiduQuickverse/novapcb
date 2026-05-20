@@ -39,3 +39,13 @@ Phase 2a locked the primary IMU as ICM-42688-P on SPI1 (CS = `IMU1_CS` / PC15) i
 - (c) Wait until Phase 4 PCB layout reveals which pins are physically convenient, then circle back.
 
 **Recommendation:** (a) polled for v1; revisit only if we see IMU-thread jitter in bring-up (Phase 9).
+
+## phase2exit-1. MAX7456 analog OSD chip — populate on novapcb v1 schematic?
+
+Raised 2026-05-20 (Phase 2-exit cruft inventory). Inherited from MatekH743 reference.
+
+**RECOMMENDATION: omit.** MAX7456 is analog-FPV-FC hardware; novapcb is a Pixhawk-class autopilot replacement (`CLAUDE.md §0` / `§1`) and Pixhawk-class boards have no onboard analog OSD. Nova drone video is fully digital (Pi Camera / Hailo, `§2.1`); no analog video path exists. When Phase 3 schematic confirms "no MAX7456", a follow-up PR strips the 5 hwdef lines (PB12 CS, SPIDEV osd, OSD_ENABLED, HAL_OSD_TYPE_DEFAULT, ROMFS_WILDCARD fonts) — frees ~10-30 KB flash.
+
+Keeping the hwdef lines until then costs ~10-30 KB flash + zero runtime risk.
+
+**Resolution path:** Phase 3 schematic init explicitly states whether novapcb has a MAX7456 chip populated. If "no" (master near-certain recommendation), a follow-up firmware PR strips the 5 lines listed above. If "yes" (would need an explicit reason against the recommendation), hwdef stays as-is and the chip drives the SPI2 OSD line.

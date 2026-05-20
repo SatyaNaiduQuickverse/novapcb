@@ -1,0 +1,101 @@
+id: phase-2-exit
+phase: 2
+subphase: 2-exit
+title: "Phase 2 re-audit + Matek-cruft inventory + conservative strip + 02:00 retro fold-in"
+status: in_progress
+depends_on:
+  - phase-2h-usb-sdmmc
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - firmware/hwdef-novapcb/hwdef-bl.dat
+    - firmware/hwdef-novapcb/defaults.parm
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md
+    - docs/CONFIDENCE_MAP.md
+    - docs/INTERFACE_CONTRACT.md
+    - docs/DECISIONS.md
+    - docs/DESIGN_PHASES.md
+    - CLAUDE.md
+  refs:
+    - "All Phase 2a-2h BUILD_BASELINE.md sections — the recorded sha256s, flash numbers, board_id"
+    - "git log main — the squash-merge commits for PRs #11,#13,#14,#15,#16,#18,#19,#20"
+    - "MatekH743 + MatekH743-bdshot hwdef.dat — for the cruft inventory cross-reference"
+    - "Phase 1 sha 7f3cfc25... Phase 2a b34eb835... 2b 12a4d50d... 2c 86fec69e... 2d 86fec69e (bit-identical) 2e 8c3adbfa... 2f 0ec597c1... 2g 9ddb37d4... 2h 9ddb37d4 (bit-identical) per BUILD_BASELINE top summary"
+    - "01:00 retro cross-review action items: (i) re-audit before Phase 3, (ii) watch retro-becomes-ceremony, (iii) two-dot vs three-dot diff discipline (added action: pre-PR three-dot check)"
+
+outputs:
+  files_created:
+    - tasks/phase-2-exit.yaml
+    - firmware/hwdef-novapcb/PHASE2_AUDIT.md  # the structured re-audit report (Parts A + C)
+  files_modified:
+    - firmware/hwdef-novapcb/hwdef.dat        # ONLY unambiguous strips per Part B
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md  # append Phase 2-exit section
+    - docs/CONFIDENCE_MAP.md                  # corrections from re-audit, if any
+    - docs/OPEN_QUESTIONS.md                  # Phase 3 cruft-decision DEFER items
+  pr:
+    title: "Phase 2-exit: re-audit + Matek-cruft inventory + conservative strip"
+    branch: fw/hwdef-phase2-exit-2026-05-20
+
+pass_criteria:
+  # PART A — re-audit (high-value)
+  - "A1: Clean rebuild (rm -rf build/novapcb-v1 + CCACHE_DISABLE=1 ./waf configure + ./waf copter). Verify arducopter.bin sha256 reproduces 9ddb37d420c166ab7b425cf6aa0fd7cdaf234dc250ecd31adf2a9419c06b1db7. Non-reproduce → Rule 13 STOP."
+  - "A2: Re-grep BUILD_BASELINE.md per-phase sections. Verify per-phase shas + flash numbers internally consistent + cumulative delta arithmetic adds up across 2a→2b→2c→2d→2e→2e-amend→2f→2g→2h. Report the full chain."
+  - "A3: Re-verify board_id 5350 preserved across all Phase 2 commits."
+  - "A4: Cross-check CONFIDENCE_MAP rows 1-10 (Phase 2 touched). Verify cited line numbers still resolve on current main + confidence monotonic + evidence-backed."
+  - "A5: Re-verify 4 master Rule-3 slip corrections (DPS310 consensus claim, DECISIONS sensor selection ref, Phase 2c compass broad-probe, Phase 2e BIDIR matrix) — confirm CORRECTED on main (not just flagged)."
+  - "A6: Write firmware/hwdef-novapcb/PHASE2_AUDIT.md structured report. A1-A5 PASS clean → say so. A1-A5 FAIL anywhere → Rule 13 stop before Part B."
+
+  # PART B — conservative cruft inventory + strip
+  - "B1: Complete inventory of Matek-specific items in novapcb hwdef.dat that novapcb may not need. Per item: name, hwdef.dat line, what it is, what Matek hardware it serves, whether DECISIONS/CLAUDE commits for/against. Candidates: onboard OSD chip (MAX7456), onboard dataflash/W25N, onboard LED/WS2812, buzzer GPIO, BATT2 scaffolding, replaced sensors, Matek SERIAL defaults."
+  - "B2: Classify each: KEEP / REMOVE / DEFER. Conservative bar: REMOVE only if DECISIONS|CLAUDE explicitly commits against AND strip is safe with cited reason. Ambiguous → DEFER."
+  - "B3: Strip ONLY REMOVE items. 'Don't lose what surely works' calibration: err toward KEEP/DEFER."
+  - "B4: BATT2 specifically: re-evaluate under B2/B3. v1 single-battery per DECISIONS §5. Clean REMOVE → strip; any v2-ambiguity → DEFER. Worker call with reasoning; Rule 13 stop if genuinely unsure."
+  - "B5: PA15 buzzer + HAL_BUZZER_PIN: a buzzer is useful (arming/GPS-lock/failsafe tones). Lean KEEP unless DECISIONS explicitly rejects. If KEEP, note Phase 3 schematic decides population."
+  - "B6: Any REMOVE-vs-DEFER judgement call → Rule 13 stop, give master inventory line + options. No silent strip on ambiguous items."
+
+  # PART C — 02:00 retro fold-in
+  - "C1: Append '## 02:00 UTC Retrospective' section to PHASE2_AUDIT.md. Master section pasted verbatim (provided in dispatch); worker section per template; cross-review each side 2-3 lines."
+
+  # standing
+  - "Build: if Part B strips anything, ./waf copter exits 0 + Werror clean + capture new sha (it WILL change — expected). If Part B strips nothing, sha stays 9ddb37d4..."
+  - "BUILD_BASELINE.md: append Phase 2-exit section with re-audit result summary + what was stripped + new sha + flash delta."
+  - "Three-dot diff origin/main...HEAD verified before push."
+
+estimated_context_kb: 70
+estimated_wallclock: "90-150 minutes"
+
+decision_forks_watched:
+  1: |
+    A1 reproduce fork: clean rebuild produces a different sha than
+    9ddb37d4... → Rule 13 STOP. Indicates either ccache was masking
+    non-determinism, or some env-dependent input changed. Don't fix
+    silently; escalate with the diff.
+  2: |
+    A5 slip-correction fork: if any of the 4 Rule-3 slips ARE still
+    present on main → Rule 13 STOP. Don't backfill silently — master
+    needs to know which retro action item didn't actually land.
+  3: |
+    B4 BATT2 fork: clean-REMOVE vs DEFER. Master expects either
+    decision; if ambiguous, escalate with the specific lines + a
+    recommendation.
+  4: |
+    B-anything fork: any item where REMOVE/DEFER is a judgement
+    call. Escalate with inventory line + options per criterion B6.
+
+notes: |
+  Phase 2-exit is the Phase 2 gate. Part A is the substantive work
+  (re-audit before Phase 3 builds on top). Part B is deliberately
+  conservative — inventorying is the goal; stripping is the
+  exception. Part C folds 02:00 retro into PHASE2_AUDIT.md to avoid
+  ceremony per retro #1 cross-review.
+
+  The clean-rebuild sha reproduction (A1) is the single strongest
+  check. If it reproduces, the Phase 2 binary chain is sound.
+
+  Re Part B: an unused driver costs a few KB of flash and zero
+  runtime risk; removing something we later want costs a re-spin.
+  Asymmetry → KEEP/DEFER when unsure.
+
+  Master 02:00 retro section content provided verbatim in dispatch;
+  worker pastes under "## 02:00 UTC Retrospective → Master".
