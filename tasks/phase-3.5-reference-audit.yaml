@@ -1,0 +1,85 @@
+id: phase-3.5-reference-audit
+phase: "3.5"
+title: "Reference design audit — cross-check schematic vs available references"
+status: done
+depends_on:
+  - phase-3h-power-sd-swd
+
+inputs:
+  files:
+    - hardware/kicad/novapcb/sheets/   # all 8 sheets 3a-3h
+    - hardware/kicad/novapcb/novapcb.net
+    - firmware/hwdef-novapcb/hwdef.dat
+    - docs/CONFIDENCE_MAP.md
+    - docs/DECISIONS.md
+    - docs/DESIGN_PHASES.md
+  refs:
+    - "All 8 Phase 3 sheets — grep for Phase 3.5 / carry-forward / deferred / sourceable / flagged"
+    - "ArduPilot hwdef family — MatekH743, MatekH743-bdshot, Pixhawk6X, CUAV-Nora, CUAV-X7, CarbonixF405. In-tree at ~/ardupilot/libraries/AP_HAL_ChibiOS/hwdef/"
+    - "Component datasheets: STM32H743 (ST DS12110), AP2112 (Diodes DS39724), ICM-42688-P (TDK ds-000347 v1.6), DPS310 (Infineon v01.02), BMP280 (Bosch v1.26), USBLC6-2P6 (ST), Mauch HS-200-LV (Infineon)"
+    - "Pixhawk Connector Standard DS-009 (canonical, GitHub pixhawk/Pixhawk-Standards) — JST-GH connector pinouts"
+    - "Pixhawk Autopilot v6X Standard DS-012 (canonical) — H753-based reference; topology applicable but pin maps differ"
+    - "SD Association SDMMC 4-bit spec"
+    - "ARM Cortex Debug Connector standard (verified via KiCad symbol pin labels)"
+    - "ELRS RP4TD wiring + USB-C UFP spec"
+
+decision_forks_watched:
+  reference-availability:
+    fork: "Honest depth-per-subsystem vs faked cross-checks for un-sourceable references"
+    expected_classes: [audit-deep, defer-where-honest, faked-cross-check]
+    pre_recommendation: "audit-deep where references obtainable; defer-to-6.5 honestly where they're not. No faked cross-checks per master 3.5 directive."
+    actual_resolution: "Applied honest framing per master 3.5 + 07:00 cross-review emphasis. 9 subsystems received real cross-check (some multi-reference, some single-source) → OK-AS-IS. 3 subsystems honestly route to Phase 6.5 (5V protection / external-connector ESD / EMC) — no schematic-level reference obtainable. 1 to Phase 6j (thermal — layout-dependent, not 6.5 territory). 1 PRIORITY-Phase-9-bench (Mauch calibration values, master 02:00 retro flagged). Plus 7 Phase 4 carry-forward items (production symbols/footprints, trace routing)."
+    resolved_via: "inline (per-subsystem in REFERENCE_AUDIT.md)"
+  dps310-bmp280-pin-identity:
+    fork: "BMP280-as-DPS310 stand-in pin-identity (master 3.5.4 load-bearing re-confirmation)"
+    expected_classes: [matches-needs-fix-if-not, matches-confirmed]
+    pre_recommendation: "re-verify pin-by-pin against Infineon DPS310 datasheet; if even one pin differs, NEEDS-FIX"
+    actual_resolution: "MATCHES across 3 sources (Infineon DPS310 datasheet + Bosch BMP280 datasheet + KiCad BMP280 symbol pin map). All 8 pins identical (1=GND, 2=CSB, 3=SDI, 4=SCK, 5=SDO, 6=VDDIO, 7=GND, 8=VDD). Phase 3d stand-in verified ✓. NOT a NEEDS-FIX."
+    resolved_via: "inline (web-research ×2 sources + KiCad pin query)"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-3.5-reference-audit.yaml
+    - docs/REFERENCE_AUDIT.md
+  files_modified:
+    - docs/CONFIDENCE_MAP.md       # row 5 +1% (DPS310 pin-identity re-verified), row 14 +3% (POR/BOR pattern verified)
+    - docs/DESIGN_PHASES.md        # Phase 3.5 marked DONE with summary
+  pr:
+    title: "Phase 3.5: reference design audit (no NEEDS-FIX; 3 subsystems route to 6.5)"
+    branch: hw/phase-3.5-reference-audit-2026-05-20
+
+pass_criteria:
+  - "3.5.1: Carry-forward list enumerated via grep across all 8 sheets + CONFIDENCE_MAP. ~12 items identified (AP2112K choice, BMP280-as-DPS310 pin-identity, 5V-input protection, ESD on 3 external connectors, Mauch DF-13-vs-JST-GH, SDMMC 47k value, Conn_01x14-as-ICM-42688, VREF+ topology, custom symbol Phase 4 items)."
+  - "3.5.2: Subsystem-by-subsystem audit complete — 14 rows in REFERENCE_AUDIT.md. Each cites references used + match/deviation + verdict. Reference availability honestly stated; no faked cross-checks."
+  - "3.5.3: DESIGN_PHASES Phase 3.5 rule applied. ≥3-refs subsystems (rows 1, 5, 6, 8): MUST-MATCH verified ✓. 1-ref subsystems (3, 7): OK-AS-IS with caveat. No-ref subsystems (11, 12): LOW + Phase 6.5 mandatory."
+  - "3.5.4: BMP280-as-DPS310 pin-identity load-bearing re-verification: PASSED ✓ (8/8 pins match across 3 sources). NOT a NEEDS-FIX."
+  - "3.5.5: NO NEEDS-FIX items found. No Rule-13 stop required before PR ships."
+  - "3.5.6: CONFIDENCE_MAP updated — row 5 +1% (DPS310 pin re-verified), row 14 +3% (POR/BOR pattern verified). Other rows already at their audit-justified levels post-3h."
+  - "3.5.7: REFERENCE_AUDIT.md ships as the deliverable. Includes 'Candidate topologies for Phase 6.5 review' section per master 07:00 'audit deep, not just broad' emphasis — surveyed standard topologies for the DEFER-TO-6.5 items (5V P-FET gate; SP3010 / TPD4S012 multi-channel TVS arrays for external connectors), explicitly NOT silently adding any per master 3e.5 'don't silently add a non-inherited topology' directive."
+
+estimated_context_kb: 80
+estimated_wallclock: "2.5 hours (whole-schematic audit + reference research + candidate-topology survey + 07:00 cross-review emphasis follow-up)"
+
+notes: |
+  3.5 surfaced ZERO NEEDS-FIX items — the 8-sheet schematic capture
+  was correct at the references that could be cross-checked. The
+  honest "DEFER-TO-6.5" route applies for 3 subsystems where no
+  schematic-level reference is obtainable (Matek doesn't publish full
+  schematics; FMUv6X is H753-based + 2-board pattern that doesn't
+  directly apply to a single-board 36×36 mini-FC).
+
+  The pin-identity verification for BMP280-as-DPS310 (master 3.5.4
+  directive) passed clean across 3 sources — the Phase 3d stand-in
+  was load-bearing-correct. That was the most important verifiable
+  carry-forward; resolved.
+
+  Per master 07:00 "audit deep, not just broad" emphasis, the
+  REFERENCE_AUDIT.md added a "Candidate topologies for Phase 6.5
+  review" section so external EE reviewers + master start with a
+  researched candidate menu rather than blank. Worker did NOT
+  silently add any topologies (per master 3e.5 standing directive).
+  Phase 6.5 + Phase 6 sim regime resolve.
+
+  Phase 3-exit can proceed.
