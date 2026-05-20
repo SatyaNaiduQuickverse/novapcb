@@ -1,0 +1,151 @@
+id: phase-4c-planes
+phase: "4"
+subphase: "4c"
+title: "Copper plane pour — GND + split power planes on the inner layers"
+status: rule13_stop  # 4c.6 re-check shows 5 shorting_items did NOT resolve under planes
+depends_on:
+  - phase-4b-placement
+
+inputs:
+  files:
+    - hardware/kicad/novapcb-layout/novapcb-layout.kicad_pcb
+    - hardware/kicad/novapcb-layout/generate_board.py
+    - hardware/kicad/PHASE4_P0_REPORT.md
+    - tasks/phase-4a-footprints-rules.yaml
+    - docs/CONFIDENCE_MAP.md
+  refs:
+    - "PHASE4_P0_REPORT §P0.2 iter-#3 + the 5 pre-conditions"
+    - "4a stackup — 4-layer (F.Cu/In1.Cu/In2.Cu/B.Cu)"
+    - "pcbnew Python ZONE API"
+    - "Standard 4-layer FC plane practice"
+
+decision_forks_watched:
+  power-plane-split:
+    fork: "In2.Cu split between +3V3 / +5V / VBAT zones"
+    expected_classes: [3v3-dominant-5v-corner, per-consumer-geometry]
+    pre_recommendation: "+3V3 dominant largest zone; +5V to LDO+USB+connectors; VBAT small"
+    actual_resolution: |
+      Implemented as 5 In2.Cu zones (with z-priority via add-order):
+      - +3V3 (dominant rectangle, low priority/large area)
+      - +5V top band (Y>22): USB-C + top half of right edge
+      - +5V LDO strip (SW corner X<8, Y<22): U2 LDO input
+      - VBAT small rect at MCU south + J4 Mauch
+      - +3V3A tiny zone at MCU VDDA (W edge, between FB1 and MCU)
+      Plus In1.Cu GND solid + B.Cu GND fill in unused areas.
+
+  bcu-gnd-fill:
+    fork: "B.Cu — pure signal, or signal + GND fill"
+    expected_classes: [signal-only, signal-plus-gnd-fill]
+    pre_recommendation: "signal-plus-gnd-fill (EMC + return paths)"
+    actual_resolution: "signal-plus-gnd-fill — B.Cu GND zone over entire board area; J2 microSD + DPS310 + C51/C52 + J9 SWD coexist (zone fills around their pads)."
+    resolved_via: "inline"
+
+  zone-fill-mechanism:
+    fork: "Zone fill — pcbnew.ZONE_FILLER vs deferred to GUI/kicad-cli auto-fill"
+    expected_classes: [pcbnew-zone-filler, deferred-to-kicad-cli]
+    pre_recommendation: "pcbnew.ZONE_FILLER.Fill(zones) per pcbnew API standard"
+    actual_resolution: "DEFERRED — pcbnew.ZONE_FILLER.Fill() segfaults on this board (KiCad 9.0.2 aarch64 Python binding bug; 7 zones / 4 copper layers / kinet2pcb-derived board). Workaround: save zones UNFILLED — kicad-cli pcb drc auto-fills before checking + KiCad GUI fills on open. Zone OUTLINES + net assignments persist in the .kicad_pcb (load-bearing for 4d Freerouting DSN export). Documented in KICAD9_NOTES.md."
+    resolved_via: "inline (with documented binding-bug workaround)"
+
+  swig-outline-reference:
+    fork: "ZONE.SetOutline(SHAPE_POLY_SET) — value vs reference semantics"
+    expected_classes: [holds-by-value, holds-by-reference]
+    pre_recommendation: "n/a — discovered debugging"
+    actual_resolution: "SWIG binding holds outline by REFERENCE not by value: if the SHAPE_POLY_SET is gc'd (function-local), the zone's outline becomes empty/invalid on save. Workaround: module-level _zone_outline_refs list keeps SHAPE_POLY_SET objects alive past the add_zone() function return. Documented in KICAD9_NOTES.md."
+    resolved_via: "inline (KICAD9_NOTES.md addition)"
+
+escalation_log:
+  - id: 1
+    when: "4c.6 DRC re-check after plane pour"
+    issue: |
+      Master's 4b adjudication conditionally accepted the 5 shorting_items
+      with the explicit prediction: "you claim these auto-resolve at the 4c
+      plane pour. PROVISIONALLY accepted, but it MUST be verified at 4c, not
+      assumed. If any do NOT resolve, that's a Rule 13 stop — they were
+      assumed-resolved-at-4c and the assumption failed."
+
+      Post-plane-pour DRC: **ALL 5 shorting_items PERSIST.** Plane pour on
+      inner copper layers (In1.Cu GND + In2.Cu power) does NOT resolve F.Cu
+      pad-pad physical overlaps. The 4b assumption was wrong.
+
+      Specific unresolved shorts:
+        1. U2 (LDO) pad-2 [GND] @ (4.86, 9.00) ↔ C34 pad-1 [+3V3] @ (4.00, 8.95)
+           Physical X-gap = 0.86mm, Y-gap = 0.05mm; pads overlap on F.Cu
+        2. U5 (USBLC6) pad-5 [+5V] @ (13.14, 31.00) ↔ J1 (USB-C) PTH-shield S1 [GND] @ (13.68, 29.87)
+        3. U5 pad-6 [USB_DP] @ (13.14, 30.05) ↔ J1 PTH-shield S1 [GND] @ (13.68, 29.87)
+        4. C62 [BATT_CURRENT_SENS] @ (27.02, 14.50) ↔ C19 [+3V3A] @ (27.02, 14.00)
+           Same X-column; Y-gap 0.5mm; pads overlap
+        5. C26 [NRST] @ (11.52, 9.50) ↔ C32 [GND] @ (10.95, 10.00)
+           Diagonal overlap in LDO south cluster
+
+      All 5 are F.Cu placement-precision issues — fixable by ~1-2mm
+      targeted nudges:
+        - C34 west to (3.0, 9.0) — clears U2 GND pad
+        - U5 west to (10.5, 31.0) + R31/R32 east to (24.0, 30/32) — clears J1 SW shield
+        - C62 west to (25.5, 14.5) — clears C19 column
+        - C26 east + C32 west — clears LDO south cluster
+
+      Worker did NOT apply these in 4c — scope discipline (4c is planes,
+      not placement). Per master's 4b-rev guidance + 4c.6 Rule 13 trigger,
+      escalating for adjudication.
+
+    options:
+      - id: A
+        title: "Accept residual 5 shorts as bounded SUPERMASTER REVIEW list; proceed to 4d"
+        consequence: "5 specific F.Cu placement conflicts ship into 4d Freerouting; routing may auto-route around them or DRC may catch them at 4f. They're real physical pad overlaps — will need fix before fab."
+      - id: B
+        title: "Phase 4b-rev3: apply the 4 targeted nudges + re-DRC, then merge 4c"
+        consequence: "Adds one more placement-rev cycle (~30 min). Likely resolves all 5 + may surface 1-2 new conflicts (precision tetris). Cleanest path to 0 shorts."
+        worker_preference: true
+      - id: C
+        title: "Supermaster GUI fine-tune of the 5 specific pad positions"
+        consequence: "Reserved for supermaster's return; meanwhile 4d proceeds on the current 4c board with 5 known issues to be fixed."
+    worker_recommendation: "B — the 4 nudges are well-defined positional adjustments at the SAME scope as 4b-rev's finer-precision pass. Doing it here closes 4c cleanly. C is the (d)-fallback if B doesn't actually resolve."
+
+outputs:
+  files_created:
+    - tasks/phase-4c-planes.yaml
+    - hardware/kicad/PHASE4C_PLANE_REPORT.md
+  files_modified:
+    - hardware/kicad/novapcb-layout/generate_board.py
+    - hardware/kicad/novapcb-layout/novapcb-layout.kicad_pcb
+    - hardware/kicad/KICAD9_NOTES.md   # ZONE_FILLER segfault + SetOutline ref-bug notes
+    - docs/CONFIDENCE_MAP.md
+    - docs/DESIGN_PHASES.md
+  pr:
+    title: "Phase 4c: copper plane pour (Rule 13 stop at 4c.6 — 5 shorts persist)"
+    branch: hw/phase-4c-planes-2026-05-20
+
+pass_criteria:
+  - "4c.1: In1.Cu solid GND zone — DONE (full board minus 0.2mm edge inset)"
+  - "4c.2: In2.Cu power zones — DONE (+5V top band + LDO strip; VBAT small; +3V3A VDDA; +3V3 dominant)"
+  - "4c.3: B.Cu GND fill — DONE (per bcu-gnd-fill fork: signal-plus-gnd-fill)"
+  - "4c.4: Thermal relief — DONE (ZONE_CONNECTION_THERMAL default; 0.5mm gap; 0.5mm spoke)"
+  - "4c.5: Zone fill — DEFERRED to kicad-cli/GUI auto-fill (ZONE_FILLER segfault). Zone outlines + nets persist for DSN export."
+  - "4c.6: DRC re-check MANDATORY: **5 shorting_items DO NOT RESOLVE → Rule 13 STOP** (escalation_log #1). Total 18 violations: 13 clearance + 5 shorting. unconnected_items = 0 (planes connecting pads correctly ✓)."
+  - "4c.7: U4×2 + U5×2 'self' from 4b residual — U5 self-shorts ARE among the 5 unresolved (they were near-J1, not internal); U4 self-clearance violations resolved by plane fill (U4 B.Cu pads now connect to plane). 4 → 2 effectively. The 2 remaining U5 shorts are real cross-component (U5-J1)."
+  - "4c.8: NO signal routing — 4c scope preserved."
+
+estimated_context_kb: 55
+estimated_wallclock: "1.5-3 hours (used ~2.5; included ZONE_FILLER segfault debug + SWIG outline-reference bug debug — KICAD9_NOTES.md captures both)"
+
+notes: |
+  Phase 4c implemented copper planes per the iter-#3 P0 pre-conditions:
+    - In1.Cu solid GND
+    - In2.Cu split power (+3V3 dominant, +5V LDO+USB+connectors, VBAT
+      small, +3V3A tiny)
+    - B.Cu GND fill in unused areas
+
+  The mandatory 4c.6 DRC re-check delivered the honest answer master
+  asked for: the 4b assumption "cap-GND shorts auto-resolve at 4c plane
+  pour" was WRONG. Plane pour adds inner-copper but doesn't move F.Cu
+  pads — the 5 shorts are F.Cu pad-pad physical overlaps and persist.
+
+  Rule 13 stop at 4c.6 per master's 4b adjudication. Awaiting
+  adjudication on options A/B/C in escalation_log.
+
+  Two pcbnew Python binding bugs discovered + worked around (logged in
+  KICAD9_NOTES.md for cross-machine reuse):
+    - ZONE_FILLER.Fill() segfaults on multi-layer kinet2pcb boards
+    - ZONE.SetOutline() holds SHAPE_POLY_SET by reference; function-
+      local outlines get gc'd → empty zones on save
