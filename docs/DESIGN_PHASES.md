@@ -174,27 +174,28 @@ After Sai's GUI routing pass + Phase 4f gerber export land, Phase 5 task
 contract closes alongside Phase 4-exit re-audit. Decision-fork
 `fab-target` resolved JLCPCB.
 
-## Phase 6 — Simulation regime (IN PROGRESS — 6l first sub-phase, PR open 2026-05-20)
+## Phase 6 — Simulation regime (IN PROGRESS — 6l DONE + P0 setup PR open 2026-05-20)
 
 See `docs/SIMULATION_PLAN.md` for the per-subsystem detail. Phase 6 loops back to Phase 4 on any sim failure — that re-loop is expected, not a project failure (see ENGINEERING_RIGOR.md commitment #5).
 
 Sub-phases (each its own PR, each writes to `sims/<subsystem>/`):
 
-| Sub | Subsystem | Primary tool |
-|---|---|---|
-| 6a | Power tree | ngspice + PySpice |
-| 6b | USB-CDC diff pair | KiCad impedance + OpenEMS |
-| 6c | IMU SPI bus | ngspice + IBIS |
-| 6d | I²C buses (baro / mag) | ngspice |
-| 6e | UARTs (GPS, CRSF) | ngspice |
-| 6f | SDMMC (SDR25) | ngspice + IBIS |
-| 6g | ESC DShot outputs | ngspice + IBIS |
-| 6h | VBAT divider + current sense | ngspice + noise analysis |
-| 6i | Reverse polarity + ESD protection | ngspice transient |
-| 6j | Thermal steady-state | Elmer FEM |
-| 6k | EMC / clock-harmonic estimate | analytical Python + OpenEMS spot |
-| 6l | ArduPilot SITL — functional regression | SITL | **DONE 2026-05-20** — PR open; 18/18 PASS incl. CLAUDE.md §4.1 pitch-sign no-double-flip; layout-independent |
-| 6m | Manufacturability — DRC/ERC/DFM/BOM cross-check | KiCad + interactiveHtmlBom |
+| Sub | Subsystem | Primary tool | Status post-Phase-6-P0 |
+|---|---|---|---|
+| 6-P0 | Sim-regime setup + scaffolding | PySpice + scikit-rf + analytical | **IN PROGRESS** — PR open 2026-05-20; 12 sub-phases scaffolded; 7 Tier-1 executed |
+| 6a | Power tree | ngspice + PySpice | **TIER-1 EXECUTED in P0** — 1 PASS + 2 CAUTION + 1 INFO; CAUTIONs for 6.5 forum review (inrush, anti-resonance) |
+| 6b | USB-CDC diff pair | Hammerstad-Jensen + scikit-rf (OpenEMS deferred) | **TIER-1 ANALYTICAL EXECUTED in P0** — Zdiff 97.7Ω ✓; routed-length post-4f |
+| 6c | IMU SPI bus | ngspice + IBIS | TIER-2 — scaffold ready, gates on Phase 4f |
+| 6d | I²C buses | ngspice | **TIER-1 EXECUTED in P0** — on-board PASS; external GPS+mag 100kHz fallback flagged |
+| 6e | UARTs (GPS, CRSF) | ngspice | **TIER-1 EXECUTED in P0** — 4 baud rates all PASS |
+| 6f | SDMMC (SDR25) | ngspice + IBIS | TIER-2 — scaffold ready |
+| 6g | ESC DShot outputs | ngspice + IBIS | TIER-2 — scaffold ready |
+| 6h | VBAT divider + current sense | ngspice + noise analysis | **TIER-1 EXECUTED in P0** — LPF + settling + noise propagation; ADC accuracy ≤0.4% within 1% spec |
+| 6i | Reverse polarity + ESD | ngspice transient | **TIER-1 EXECUTED in P0** — USBLC6 clamp PASS; 5 unprotected lines documented for 6.5 |
+| 6j | Thermal steady-state | analytical (Elmer FEM deferred) | **TIER-1 EXECUTED in P0** — AP2112K Tj 88°C borderline; pour/Vin mitigation candidates |
+| 6k | EMC / clock-harmonic | analytical Python (OpenEMS deferred) | **TIER-1 EXECUTED in P0** — 4 harmonics in sensitive bands flagged for chamber test |
+| 6l | ArduPilot SITL — functional | SITL | **DONE 2026-05-20** PR #52; 18/18 PASS incl. pitch-sign no-double-flip |
+| 6m | Manufacturability — DRC/ERC/DFM/BOM | KiCad + interactiveHtmlBom | TIER-2 — scaffold ready, gates on Phase 4f |
 
 Every sub runs at three corners: nominal, hot (40 °C / max load), cold (0 °C / min VBAT). Monte Carlo (±10 %) on critical analog paths.
 

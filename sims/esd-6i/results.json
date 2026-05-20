@@ -1,0 +1,76 @@
+{
+  "tool": "ngspice + analytical inventory",
+  "tier": "1 partial (USB clamp test runs; coverage gap inventory + Phase 6.5 forum-review queue)",
+  "checks": [
+    {
+      "check": "6i.1_protection_inventory",
+      "status": "INFO",
+      "result": {
+        "USB-C D+/D-": {
+          "protected": true,
+          "device": "U5 USBLC6-2P6 (ST)"
+        },
+        "VBAT input (Mauch)": {
+          "protected": "external",
+          "device": "Mauch HS-200-LV module"
+        },
+        "+5V BEC input": {
+          "protected": false,
+          "device": null,
+          "risk": "Reverse polarity = LDO destruction; ESD on bare connector"
+        },
+        "GPS+mag J5 I\u00b2C/UART": {
+          "protected": false,
+          "device": null,
+          "risk": "Long external cable; static buildup"
+        },
+        "CRSF J10 solder pads": {
+          "protected": false,
+          "device": null,
+          "risk": "User-soldered wires; less risky but still exposed"
+        },
+        "Telem J3 UART": {
+          "protected": false,
+          "device": null,
+          "risk": "External telem cable; static buildup"
+        }
+      },
+      "notes": "novapcb v1 ESD/reverse-polarity protection: USB-C only. 5 unprotected lines flagged for Phase 6.5 forum review."
+    },
+    {
+      "check": "6i.2_USBLC6_clamp_HBM_2kV",
+      "status": "PASS",
+      "result": {
+        "v_mcu_peak_V": 3.715925,
+        "spec_max_abs_V": 4.0,
+        "interpretation": "USBLC6 clamps the ESD strike to ~15V at the line; MCU pin via series Rmcu+Cmcu_pin sees the residual transient. Pass if mcu_peak < 4V (STM32H743 abs max VDD+0.5V on 3.3V-tolerant pin).",
+        "pass": true
+      },
+      "notes": "USB-C D+/D- HBM \u00b12kV strike clamped by U5 USBLC6-2P6. MCU pin should see <4V."
+    }
+  ],
+  "gap_analysis": {
+    "v1_protected": [
+      "USB-C D+/D- (USBLC6-2P6)"
+    ],
+    "v1_unprotected": [
+      "+5V BEC",
+      "GPS+mag I\u00b2C/UART",
+      "CRSF UART",
+      "Telem UART"
+    ],
+    "phase_6_5_forum_review_topics": [
+      "Add TVS arrays on GPS+mag J5 and Telem J3 connectors? (Standard practice on production FCs.)",
+      "Reverse-polarity protection on +5V BEC: P-MOSFET vs Schottky diode trade-off?",
+      "Bulk inrush limiter NTC at BEC input \u2014 see 6a.3 inrush finding (3.39A peak)."
+    ],
+    "v2_carry_forward": true,
+    "v1_acceptable_with_caveats": "User must (a) verify BEC polarity before connecting; (b) avoid static discharge to FC during ground handling; (c) accept v1 is 'engineering sample' protection level. v2 adds TVS arrays."
+  },
+  "summary": {
+    "total": 2,
+    "pass": 1,
+    "fail": 0,
+    "info": 1
+  }
+}

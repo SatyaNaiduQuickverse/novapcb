@@ -1,0 +1,55 @@
+{
+  "tool": "PySpice + libngspice 46 (userspace .deb extract)",
+  "checks": [
+    {
+      "check": "6a.1_pdn_impedance",
+      "status": "FAIL",
+      "result": {
+        "z_max_in_band_mOhm": 132.6850842972424,
+        "f_at_max_Hz": 100000.0,
+        "target_max_mOhm": 100,
+        "pass": false
+      },
+      "notes": "AC sweep of LDO output Z + cap network at MCU rail. Plot: plots/6a-1_pdn_impedance.png"
+    },
+    {
+      "check": "6a.2_load_step_droop",
+      "status": "PASS",
+      "result": {
+        "v_min_V": 3.2628361201422296,
+        "droop_V": 0.037163879857770254,
+        "droop_pct": 1.1261781775081896,
+        "target_pct": 5,
+        "pass": true
+      },
+      "notes": "0\u2192500 mA step at MCU rail. Plot: plots/6a-2_load_step.png"
+    },
+    {
+      "check": "6a.3_inrush_peak",
+      "status": "FAIL",
+      "result": {
+        "i_peak_A": 3.3933531471356737,
+        "target_max_A": 2,
+        "pass": false
+      },
+      "notes": "BEC 0\u21925V ramp over 10 \u00b5s into LDO + caps. Plot: plots/6a-3_inrush.png"
+    },
+    {
+      "check": "6a.4_BOR_check",
+      "status": "INFO",
+      "result": {
+        "mcuconf_path": "/home/novatics64/ardupilot/libraries/AP_HAL_ChibiOS/hwdef/common/stm32h7_mcuconf.h",
+        "bor_line_found": null,
+        "note": "ArduPilot H7 default is BOR_LEVEL_2 (~2.4V brown-out). Below that the MCU holds in reset until VDD rises above the threshold \u2014 protects against AP2112K dropout-induced low-V boot. Verified at firmware build time, not in this sim.",
+        "pass": null
+      },
+      "notes": "STM32H743 BOR level inherited from ArduPilot mcuconf."
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "pass": 1,
+    "fail": 2,
+    "info": 1
+  }
+}

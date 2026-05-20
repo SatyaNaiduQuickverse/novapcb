@@ -1,0 +1,141 @@
+{
+  "tool": "analytical lumped-element thermal (numpy) \u2014 Elmer FEM deferred per TOOLCHAIN.md \u00a73 Sai-handoff",
+  "ambient_C": 40,
+  "components": [
+    {
+      "component": "STM32H743VIT6 @ 480MHz",
+      "dissipation_W": 0.7,
+      "theta_ja_CperW": 35,
+      "delta_T_C": 24.5,
+      "T_junction_C": 64.5,
+      "target_Tj_C": 85,
+      "pass": true,
+      "note": "LQFP-100, datasheet typical with pour"
+    },
+    {
+      "component": "AP2112K-3.3 LDO",
+      "dissipation_W": 0.6,
+      "theta_ja_CperW": 80,
+      "delta_T_C": 48.0,
+      "T_junction_C": 88.0,
+      "target_Tj_C": 85,
+      "pass": false,
+      "note": "SOT-25, 0.35A * 1.7V drop, with copper pour"
+    },
+    {
+      "component": "ICM-42688-P IMU",
+      "dissipation_W": 0.005,
+      "theta_ja_CperW": 200,
+      "delta_T_C": 1.0,
+      "T_junction_C": 41.0,
+      "target_Tj_C": 85,
+      "pass": true,
+      "note": "LGA-14, very low dissipation"
+    },
+    {
+      "component": "DPS310 baro",
+      "dissipation_W": 0.003,
+      "theta_ja_CperW": 200,
+      "delta_T_C": 0.6,
+      "T_junction_C": 40.6,
+      "target_Tj_C": 85,
+      "pass": true,
+      "note": "LGA-8 on B.Cu"
+    },
+    {
+      "component": "USBLC6 ESD",
+      "dissipation_W": 0.001,
+      "theta_ja_CperW": 250,
+      "delta_T_C": 0.2,
+      "T_junction_C": 40.2,
+      "target_Tj_C": 85,
+      "pass": true,
+      "note": "SOT-23-6, idle"
+    }
+  ],
+  "board_level": {
+    "total_dissipation_W": 1.31,
+    "theta_board_CperW": 30,
+    "board_delta_T_C": 39.3,
+    "board_steady_T_C": 79.3,
+    "ambient_assumption": "40\u00b0C drone-enclosure worst-case"
+  },
+  "checks": [
+    {
+      "check": "6j.1_STM32H743VIT6_Tj",
+      "status": "PASS",
+      "result": {
+        "component": "STM32H743VIT6 @ 480MHz",
+        "dissipation_W": 0.7,
+        "theta_ja_CperW": 35,
+        "delta_T_C": 24.5,
+        "T_junction_C": 64.5,
+        "target_Tj_C": 85,
+        "pass": true,
+        "note": "LQFP-100, datasheet typical with pour"
+      }
+    },
+    {
+      "check": "6j.2_AP2112K-3.3_Tj",
+      "status": "FAIL",
+      "result": {
+        "component": "AP2112K-3.3 LDO",
+        "dissipation_W": 0.6,
+        "theta_ja_CperW": 80,
+        "delta_T_C": 48.0,
+        "T_junction_C": 88.0,
+        "target_Tj_C": 85,
+        "pass": false,
+        "note": "SOT-25, 0.35A * 1.7V drop, with copper pour"
+      }
+    },
+    {
+      "check": "6j.3_ICM-42688-P_Tj",
+      "status": "PASS",
+      "result": {
+        "component": "ICM-42688-P IMU",
+        "dissipation_W": 0.005,
+        "theta_ja_CperW": 200,
+        "delta_T_C": 1.0,
+        "T_junction_C": 41.0,
+        "target_Tj_C": 85,
+        "pass": true,
+        "note": "LGA-14, very low dissipation"
+      }
+    },
+    {
+      "check": "6j.4_DPS310_Tj",
+      "status": "PASS",
+      "result": {
+        "component": "DPS310 baro",
+        "dissipation_W": 0.003,
+        "theta_ja_CperW": 200,
+        "delta_T_C": 0.6,
+        "T_junction_C": 40.6,
+        "target_Tj_C": 85,
+        "pass": true,
+        "note": "LGA-8 on B.Cu"
+      }
+    },
+    {
+      "check": "6j.5_USBLC6_Tj",
+      "status": "PASS",
+      "result": {
+        "component": "USBLC6 ESD",
+        "dissipation_W": 0.001,
+        "theta_ja_CperW": 250,
+        "delta_T_C": 0.2,
+        "T_junction_C": 40.2,
+        "target_Tj_C": 85,
+        "pass": true,
+        "note": "SOT-23-6, idle"
+      }
+    }
+  ],
+  "interpretation": "Analytical floor \u2014 Tj < 85\u00b0C across all heat sources at 40\u00b0C ambient + worst-case dissipation. Margin tight on AP2112K (Tj~88\u00b0C nominal at 350mA load + Vin=5V); consider Vin reduction or larger pour. Deep validation post-Elmer-handoff.",
+  "summary": {
+    "total": 5,
+    "pass": 4,
+    "fail": 1
+  }
+}

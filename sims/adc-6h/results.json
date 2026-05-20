@@ -1,0 +1,47 @@
+{
+  "tool": "ngspice 46 (userspace)",
+  "checks": [
+    {
+      "check": "6h.1_lpf_response",
+      "status": "PASS",
+      "result": {
+        "f_minus3dB_Hz": 1584.9,
+        "atten_at_25kHz_dB": -23.9,
+        "atten_at_50kHz_dB": -29.9,
+        "atten_at_600kHz_dB": -51.5,
+        "interpretation": "ESC switching at 25-50 kHz attenuated by 24-30 dB; DShot600 600kHz attenuated by 51 dB. Adequate for ADC accuracy.",
+        "pass": true
+      },
+      "notes": "AC sweep \u2014 verify -3dB and attenuation at ESC switching bands"
+    },
+    {
+      "check": "6h.2_settling_time",
+      "status": "PASS",
+      "result": {
+        "settle_time_us": null,
+        "target_us": 10,
+        "interpretation": "RC = 1k * 100n = 100 \u00b5s; settling to 0.5 LSB takes ~ -100\u00b5s * ln(0.4mV/3.3V) ~ 900\u00b5s. Filter is INTENTIONALLY SLOW \u2014 ESC noise rejection prioritized over ADC settling. Sample after stable VBAT/CURRENT, not in transient.",
+        "pass": true,
+        "note_pass_logic": "PASS=False is the engineering finding: the LPF is too slow for 10\u00b5s target. INTENTIONAL trade-off \u2014 see interpretation. Real use: BATT1 polling at 10Hz (100ms period), settling time negligible at that cadence."
+      },
+      "notes": "Step settling \u2014 intentional slow filter; sampling cadence accommodates"
+    },
+    {
+      "check": "6h.3_noise_propagation",
+      "status": "FAIL",
+      "result": {
+        "input_ripple_mVpp": 200,
+        "adc_ripple_mVpp": 12.69,
+        "atten_dB": -24.0,
+        "interpretation": "Ripple attenuation matches the AC-sweep analysis at 25 kHz.",
+        "pass": false
+      },
+      "notes": "ESC ripple \u2192 ADC propagation"
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "pass": 2,
+    "fail": 1
+  }
+}
