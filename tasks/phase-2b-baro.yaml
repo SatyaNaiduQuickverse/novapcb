@@ -39,7 +39,7 @@ pass_criteria:
   - "DPS310 driver line present in hwdef.dat with correct I²C address"
   - "Legacy baro driver lines (MS5611 / BMP280 / BMP388 / etc.) removed if MatekH743 had them"
   - "BUILD_BASELINE.md appended with Phase 2b section: hwdef state diff summary, build wall-clock, sha256, flash delta vs 2a"
-  - "I²C bus + address choice matches MatekH743 (cite hwdef.dat line as SOTA source). Pixhawk6X uses different baros (BMP388/BMP581/ICP201XX) so no cross-design consensus on DPS310 — DPS310 is selected per CLAUDE.md §3.5 (preferred for noise floor) + DECISIONS.md sensor selection."
+  - "I²C bus + address choice matches MatekH743 (cite hwdef.dat line as SOTA source). Pixhawk6X uses different baros (BMP388/BMP581/ICP201XX) so no cross-design consensus on DPS310 — DPS310 is selected per CLAUDE.md §3.5 (preferred for noise floor) + DECISIONS.md (general — no sensor-numbered section)."
 
 estimated_context_kb: 35
 estimated_wallclock: "30-90 minutes"

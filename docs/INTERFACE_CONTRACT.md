@@ -54,7 +54,7 @@ The RC link arrives via an ELRS RP4TD receiver. Today this is bridged through an
 | IMU (primary) | **ICM-42688-P on SPI1**, MODE3, 2 MHz init / 16 MHz operational. CS = `IMU1_CS` (PC15). Polled (DRDY pin deferred — see `OPEN_QUESTIONS.md` "IMU DRDY pin"). Driver: ArduPilot `Invensensev3`. Locked Phase 2a 2026-05-18 — `DECISIONS #5 / CLAUDE.md §3.5`. |
 | IMU (secondary) | Parked. CLAUDE.md §3.5 allows "ICM-42688-P or BMI088"; sub-phase TBD. Don't add a second IMU until that decision lands. |
 | Barometer | **DPS310 on I²C2 at 0x76** (SDO tied to GND). Bus index 0 in I2C_ORDER. Driver: ArduPilot built-in `DPS310` baro driver. Locked Phase 2b 2026-05-20 — `CLAUDE.md §3.5` (DPS310 preferred over BMP388 per noise floor). Divergence from Pixhawk6X intentional (6X uses BMP388/BMP581/ICP201XX). |
-| Magnetometer | External via I²C (IST8310 / RM3100) — internal mag is usually too noisy (Phase 2c) |
+| Magnetometer | **External via I²C, IST8310 (primary) + RM3100 (alternative), both on `ALL_EXTERNAL` buses**. IST8310 at 0x0E, RM3100 at 0x20, both `ROTATION_NONE` defaulted with `HAL_COMPASS_AUTO_ROT_DEFAULT 2` for runtime auto-detect. No internal compass per `CLAUDE.md §3.5`. Specific I²C bus → GPS-connector mapping is a Phase 4 layout decision. Locked Phase 2c 2026-05-20. SOTA: CUAV-Nora/X7/CarbonixF405 same pattern. |
 | GPS | UART, plus I²C for compass (Phase 2d) |
 
 ## Power

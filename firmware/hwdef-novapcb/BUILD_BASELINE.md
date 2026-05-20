@@ -7,10 +7,13 @@ Recorded ArduCopter build results per sub-phase. Each section is self-contained:
 | Phase 1 (identity fork) | 1,545,872 | 158,060 | `7f3cfc25…95bc1297` |
 | Phase 2a (IMU → ICM-42688-P only) | 1,534,644 | 169,284 | `b34eb835…b685c6fa` |
 | Phase 2b (baro → DPS310 only) | 1,534,572 | 169,356 | `12a4d50d…d7444aa8` |
+| Phase 2c (mag → IST8310+RM3100, drop broad-probe) | 1,519,948 | 183,980 | `86fec69e…f788ac70` |
 
 Phase 2a delta from Phase 1: text −11,228 B, BSS −1,860 B → total flash used **−11,224 B**, free flash **+11,224 B**. Drop comes from un-linking the three legacy IMU drivers (`mpu6000`, `icm20602`, `icm42605`) we removed.
 
 Phase 2b delta from Phase 2a: text **−72 B**, BSS 0 → total flash used **−72 B**, free flash **+72 B**. Tiny because MS5611 + BMP280 baro drivers share probe-loop infrastructure with the DPS310 driver we kept.
+
+Phase 2c delta from Phase 2b: text **−14,624 B**, BSS 0 → total flash used **−14,624 B**, free flash **+14,624 B**. Big drop from removing `AP_COMPASS_PROBING_ENABLED` — unlinks all the compass drivers we no longer probe (BMM150, BMM350, LIS2MDL, IIS2MDC, AK8963, AK09916, QMC5883L/P, MMC3416, MMC5xx3, HMC5843, plus probe infrastructure). Only IST8310 + RM3100 driver code remains linked. Free-flash headroom now ~10.8% of image_maxsize.
 
 ---
 
@@ -245,3 +248,65 @@ sha256  12a4d50d0fc3d4cb548c6b17c05eefa8678bade162e625569a280b1dd7444aa8  arduco
 - I²C pull-up sizing not analyzed; deferred to Phase 6d (`SIMULATION_PLAN.md §6d` — pull-up sizing for 400 kHz, rise time vs total bus cap).
 - DPS310 INT pin (data-ready interrupt, equivalent to IMU DRDY) not wired or referenced. DPS310 driver in ArduPilot polls by default; ArduPilot does not currently require an INT line for the baro. If Phase 9 bring-up shows baro-thread jitter, this becomes an open question similar to `phase2a-1 IMU DRDY pin`.
 - Rotation N/A for baro.
+
+---
+
+## Phase 2c — External compass lock to IST8310 + RM3100 (2026-05-20)
+
+Phase 2c replaces MatekH743's broad-probe compass approach (`define AP_COMPASS_PROBING_ENABLED 1` — probes for every compass chip ArduPilot knows about) with two explicit `COMPASS` driver lines for novapcb-v1's only supported chips: **IST8310 at 0x0E** (primary) + **RM3100 at 0x20** (alternative). Both on `I²C:ALL_EXTERNAL`, both `ROTATION_NONE`, both flagged `true` (external). `HAL_COMPASS_AUTO_ROT_DEFAULT 2` retained for runtime auto-detect.
+
+**Reference-design grounding:** 3-reference convergence on the explicit-COMPASS-no-broad-probing pattern — `CUAV-Nora/hwdef.dat:253-254` (IST8310 + RM3100), `CUAV-X7/hwdef.dat:261-266` (same), `CarbonixF405/hwdef.dat:131` (IST8310 only). MatekH743 uses the broad-probe alternative — both are valid SOTA patterns; novapcb v1 picks explicit-lock to match `CLAUDE.md §3.5`'s "IST8310 or RM3100" two-chip lock and to save flash for unfielded compass drivers.
+
+Per `HAL_I2C_INTERNAL_MASK 0` (inherited from MatekH743, retained), both novapcb I²C buses are external — so `ALL_EXTERNAL` probes both. Specific I²C bus → GPS-connector pin assignment is a Phase 4 layout decision; the hwdef stays bus-agnostic for now.
+
+### hwdef identity (unchanged from Phase 2b)
+
+| Field | Value |
+|---|---|
+| `APJ_BOARD_ID` | `5350` |
+| `USB_STRING_MANUFACTURER` | `"ArduPilot"` |
+| `USB_STRING_PRODUCT` | `"novapcb-v1"` |
+
+### Build wall-clock
+
+| Step | Time |
+|---|---|
+| `./waf configure --board novapcb-v1` | 2.056 s |
+| `./waf copter` | **3 min 37.7 s** (hwdef.h regen invalidated ccache for compass-using TUs; same pattern as 2a/2b regens) |
+| Real / user / sys | 3m38.531s / 7m32.063s / 1m11.851s |
+| Compiler warnings | **0** (Werror build) |
+
+### Flash budget (`bin/arducopter`)
+
+| Section | Bytes | Δ vs Phase 2b |
+|---|---:|---:|
+| Text | 1,515,340 | **−14,624** |
+| Data | 4,608 | 0 |
+| BSS | 136,200 | 0 |
+| **Total flash used** | **1,519,948** | **−14,624** |
+| **Free flash** | **183,980** | **+14,624** |
+| External flash used | Not Applicable | — |
+
+**Big delta — 14.6 KB recovered.** Dropping `AP_COMPASS_PROBING_ENABLED` unlinks every compass driver ArduPilot would otherwise probe for (BMM150, BMM350, LIS2MDL, IIS2MDC, AK8963, AK09916, QMC5883L, QMC5883P, MMC3416, MMC5xx3, HMC5843, plus their probing infrastructure). Only IST8310 + RM3100 driver code remains linked. Free-flash headroom now ~10.8% of image_maxsize, up from ~9.9% at Phase 2b. Useful margin for Phase 2d-2h additions.
+
+### Checksums
+
+```
+sha256  86fec69e894e08fe4555477c2752b566bc2f0dde00c83de39f5f77fff788ac70  arducopter.bin
+```
+
+### Verification
+
+- `board_id` in `arducopter.apj` = `5350` ✓ (preserved through Phase 2c hwdef changes).
+- `image_size: 1519956`, `image_maxsize: 1703936` ✓ (well within H743 partition; headroom ~12%).
+- Exit code from `./waf copter` = `0`.
+- Grep-confirmed: `COMPASS IST8310 I2C:ALL_EXTERNAL:0x0E true ROTATION_NONE` + `COMPASS RM3100 I2C:ALL_EXTERNAL:0x20 true ROTATION_NONE` both present; `AP_COMPASS_PROBING_ENABLED` absent.
+- `No APP_DESCRIPTOR found` informational line at step 1255 (unchanged across phases).
+
+### What this Phase 2c build is NOT
+
+- Not flight-validated. Compass driver lines are declared correctly; the chip is not physically on a board yet — IST8310 / RM3100 lives on the external GPS+MAG module connected via the GPS connector's I²C lines.
+- Specific I²C bus → GPS-connector pin mapping is **deferred to Phase 4 layout**. Currently `ALL_EXTERNAL` probes both I²C1 and I²C2; once the GPS connector is wired to a specific bus, the COMPASS lines can be narrowed to `I2C:1:0x0E` (or whichever bus is the GPS bus).
+- DPS310 + IST8310 + RM3100 sharing I²C2 (where DPS310 lives) would be allowed by ALL_EXTERNAL — fine in practice (different addresses, no collision) but worth noting if Phase 4 puts the GPS connector on I²C1 and we want to narrow.
+- Rotation: `ROTATION_NONE` is the default-if-auto-fails. `HAL_COMPASS_AUTO_ROT_DEFAULT 2` lets ArduPilot auto-detect rotation during compass calibration — actual rotation depends on the user's GPS module orientation.
+- I²C pull-up sizing not analyzed (deferred to Phase 6d).

@@ -1,0 +1,74 @@
+id: phase-2c-mag-external
+phase: 2
+subphase: 2c
+title: "Lock external magnetometer to IST8310 + RM3100 via I²C ALL_EXTERNAL; drop broad-probe approach"
+status: in_progress
+depends_on:
+  - phase-2a-imu-primary
+  - phase-2b-baro
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md
+    - docs/CONFIDENCE_MAP.md
+    - docs/INTERFACE_CONTRACT.md
+    - docs/DECISIONS.md
+    - CLAUDE.md
+  refs:
+    - "IST8310 datasheet (iSentek)"
+    - "MatekH743 hwdef.dat compass + I²C bus section (~/ardupilot/libraries/AP_HAL_ChibiOS/hwdef/MatekH743/hwdef.dat)"
+    - "Pixhawk6X hwdef.dat external-compass + GPS I²C section (cross-reference)"
+    - "CLAUDE.md §3.5 (sensor list: magnetometer = IST8310 or RM3100 external via I²C; internal mag too noisy on most FCs)"
+    - "DECISIONS.md (general — no sensor-numbered section)"
+    - "CONFIDENCE_MAP.md row 6 (External mag + GPS I²C/UART, currently HIGH ~93%)"
+    - "SOTA 3-reference convergence pattern (explicit COMPASS lines, no broad probing): CUAV-Nora hwdef.dat:253-254, CUAV-X7 hwdef.dat:261-266, CarbonixF405 hwdef.dat:131"
+
+outputs:
+  files_created:
+    - tasks/phase-2c-mag-external.yaml  # this file
+  files_modified:
+    - firmware/hwdef-novapcb/hwdef.dat        # COMPASS driver lines + drop broad-probe define
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md  # append Phase 2c section
+    - docs/CONFIDENCE_MAP.md                  # row 6 evidence note
+    - docs/INTERFACE_CONTRACT.md              # mag row locked
+    - tasks/phase-2b-baro.yaml                # one-line citation fix: replace "DECISIONS.md sensor selection" with "DECISIONS.md (general — no sensor-numbered section)"
+
+  pr:
+    title: "Phase 2c: lock external mag to IST8310 + RM3100 (drop broad-probe)"
+    branch: fw/hwdef-phase2c-mag-external-2026-05-20
+
+pass_criteria:
+  - "./waf copter exits 0, zero warnings"
+  - "board_id 5350 preserved (arducopter.apj cross-check)"
+  - "Two explicit COMPASS driver lines: IST8310 at I²C ALL_EXTERNAL 0x0E + RM3100 at I²C ALL_EXTERNAL 0x20, both ROTATION_NONE, on a true (external) flag. No internal compass."
+  - "AP_COMPASS_PROBING_ENABLED define removed (was inherited from MatekH743's broad-probe approach). HAL_I2C_INTERNAL_MASK 0 retained (no internal I²C compass). HAL_COMPASS_AUTO_ROT_DEFAULT 2 retained."
+  - "BUILD_BASELINE.md appended with Phase 2c section: hwdef diff summary, build wall-clock, sha256, flash delta vs 2b (1,534,572 used / 169,356 free)"
+  - "SOTA cite (Rule 3 / Rigor §10): MatekH743 hwdef.dat exact line for IST8310 + GPS-port I²C bus exposure. Grep-then-state."
+  - "Phase 2b YAML citation fix included (single-line edit to tasks/phase-2b-baro.yaml as listed under files_modified above)"
+
+estimated_context_kb: 35
+estimated_wallclock: "30-90 minutes"
+
+notes: |
+  External mag means the IST8310 (or RM3100 alternative) lives on the
+  GPS daughter module (off-board) and reaches the FC via the GPS
+  connector's I²C lines. The FC's job in hwdef.dat is to (a) expose
+  the I²C bus on the GPS port pin assignment, and (b) tell ArduPilot
+  which compass chips to expect.
+
+  Per CLAUDE.md §3.5, internal magnetometers are explicitly avoided —
+  "Internal mag is too noisy on most FCs." So no internal compass
+  driver lines.
+
+  Master+worker iteration 2026-05-20 settled on option (A): explicit
+  COMPASS lines for IST8310 + RM3100, drop AP_COMPASS_PROBING_ENABLED.
+  Reasoning: matches CLAUDE.md §3.5 "IST8310 or RM3100" exactly; SOTA
+  pattern across CUAV-Nora / CUAV-X7 / CarbonixF405 converges on this
+  layout; saves flash for compass drivers we don't field; ALL_EXTERNAL
+  keeps bus assignment layout-flexible (specific bus → GPS connector
+  is a Phase 4 layout decision).
+
+  The Phase 2b YAML citation fix is bundled here per master's
+  scope-bundling pattern (small doc edit causally tied to the previous
+  sub-phase's catch).
