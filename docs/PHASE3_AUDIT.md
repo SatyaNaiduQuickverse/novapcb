@@ -192,9 +192,10 @@ Routed to external EE review (Phase 6.5 forum) + simulation (Phase 6 series). Un
 4. Physical-possibility sanity check (master + worker mirror; Phase 2.5 P1.1 lesson)
 5. Relax retro cadence hourly → 2-hourly / phase-boundary-triggered (master pushback 05:00 still standing — supermaster sign-off needed)
 
-Plus one new item raised by REFERENCE_AUDIT.md §"Note on adding these to the schematic":
+Plus two new items raised this Phase 3-exit cycle:
 
-6. (Optional) ESD/protection topology elevated to ENGINEERING_RIGOR-grade policy (e.g., "all external connectors carrying signals over 100 mm of cable require TVS protection captured at Phase 3"). Would move row 12 from DEFER-TO-6.5 bucket into Phase 3 default-required. Worth surfacing to supermaster alongside the 5 existing.
+6. (Optional) ESD/protection topology elevated to ENGINEERING_RIGOR-grade policy (e.g., "all external connectors carrying signals over 100 mm of cable require TVS protection captured at Phase 3"). Would move row 12 from DEFER-TO-6.5 bucket into Phase 3 default-required. Worth surfacing to supermaster alongside the 5 existing. (Source: `docs/REFERENCE_AUDIT.md` §"Note on adding these to the schematic".)
+7. **Sub-phase-breakdown completeness check at P0 approval time** (master + worker mirror). Master 08:00 process-change proposal + worker 08:00 cross-review mirror: when a phase proposes a sub-phase breakdown (e.g., Phase 3 P0 8-sheet plan), include an explicit completeness line — "every relevant hwdef peripheral / every netlist subsystem / every connector is covered by a sub-phase" — in the proposal itself. Master can refuse approval if the completeness line is missing. Catches breakdown gaps at P0 (cheap) instead of at exit-audit (the Phase 3i telem omission was caught at A2 exit-audit; would have been caught at P0 under this rule). Source: `retrospectives/2026-05-20T0800.md` master process-changes + worker cross-review point 2.
 
 ---
 
