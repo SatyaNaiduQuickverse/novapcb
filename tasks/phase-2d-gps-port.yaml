@@ -1,0 +1,66 @@
+id: phase-2d-gps-port
+phase: 2
+subphase: 2d
+title: "Verify + lock GPS-port UART + I²C config (inherited from MatekH743)"
+status: in_progress
+depends_on:
+  - phase-2c-mag-external
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md
+    - docs/CONFIDENCE_MAP.md
+    - docs/INTERFACE_CONTRACT.md
+    - CLAUDE.md
+  refs:
+    - "MatekH743 hwdef.dat — GPS port serial assignment + I²C bus exposure (verify by grep)"
+    - "u-blox M8/M9 datasheet + NMEA-0183 baud/protocol spec (typical: 38400/115200 8N1)"
+    - "ArduPilot SERIALn_PROTOCOL table (5 = GPS, 23 = RobotisServo, etc.)"
+    - "STM32H743V datasheet alt-function table — UART pin capability (which UARTs are available on which pins; we don't change anything here without a reason)"
+    - "Pixhawk6X hwdef.dat GPS section (cross-reference — may diverge since 6X is two-board, but the protocol/baud should match)"
+    - "ALL_EXTERNAL mask in hwdef macros — must include the I²C bus that the GPS connector exposes (consistency-check with the COMPASS lines we set in Phase 2c)"
+
+outputs:
+  files_created:
+    - tasks/phase-2d-gps-port.yaml  # this file
+  files_modified:
+    - firmware/hwdef-novapcb/hwdef.dat        # ONLY if MatekH743 inheritance is wrong; otherwise no change
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md  # append Phase 2d section even if flash delta = 0
+    - docs/CONFIDENCE_MAP.md                  # row 6 evidence note (now has UART + I²C bus citation)
+    - docs/INTERFACE_CONTRACT.md              # if GPS port spec needs an update
+  pr:
+    title: "Phase 2d: verify + lock GPS-port UART + I²C (inherited from MatekH743)"
+    branch: fw/hwdef-phase2d-gps-port-2026-05-20
+
+pass_criteria:
+  - "Grep MatekH743 hwdef.dat for the GPS-port SERIALn assignment and the I²C bus exposed on the GPS connector. Report which SERIALn (probably SERIAL3) and which I²C bus, with hwdef.dat line citations."
+  - "Verify the I²C bus exposed on GPS connector is included in the ALL_EXTERNAL mask (consistency with Phase 2c COMPASS lines using ALL_EXTERNAL). If they're misaligned, that's a Rule 13 stop — escalate before editing."
+  - "If MatekH743's inherited config is correct as-is for novapcb: NO hwdef.dat edit. Document the verification in the PR body + BUILD_BASELINE.md Phase 2d section + CONFIDENCE_MAP row 6 evidence note. Flash delta = 0 is the expected case."
+  - "If MatekH743's inherited config is wrong (e.g. wrong I²C bus number, wrong SERIALn_PROTOCOL default): change minimally to align, cite the source for the corrected value (datasheet + Pixhawk6X comparison)."
+  - "./waf copter exits 0, zero warnings. board_id 5350 preserved."
+  - "BUILD_BASELINE.md appended with Phase 2d section: SERIALn + I²C bus locked, sha256, flash delta vs 2c (1,519,948 used / 183,980 free)."
+  - "Surely-working > SOTA: default is to keep MatekH743's GPS-port config unchanged. Any deviation needs an explicit reason cited in PR body."
+
+estimated_context_kb: 35
+estimated_wallclock: "15-60 minutes (likely near-no-op)"
+
+notes: |
+  This is verification + documentation more than driver-line changes.
+  MatekH743 ships and flies as-is — its GPS-port config is "surely
+  working" by definition. Don't change it unless you find a specific
+  bug or misalignment.
+
+  Pixhawk6X is a two-board design with potentially different UART
+  numbering — cross-reference for protocol/baud sanity only, not for
+  pin assignments.
+
+  The key consistency check: the I²C bus number that ALL_EXTERNAL
+  masks against (set in some hwdef macro or hwdef-bl.dat) must
+  include the bus exposed on the GPS connector. If Phase 2c COMPASS
+  lines use ALL_EXTERNAL and they probe successfully in real
+  hardware (Phase 6c + Phase 9), this constraint holds.
+
+  Honest expectation: 0-byte flash delta, no hwdef.dat changes, ~30
+  min wall-clock for the verification + docs. If you find something
+  unexpected, Rule 13 stop and escalate.
