@@ -90,6 +90,35 @@ Raised 2026-05-20 (Phase 4a — master adjudication of the `icm42688p-footprint`
 
 **This is HARD carry-forward, not a soft "confirm at 6.5."** A leadless IMU footprint must not reach fab on a generic stand-in. Track it through Phase 4 sub-phases until resolved.
 
+### Focused-attempt status 2026-05-21 (per master PR #58 review directive)
+
+Research agent spent ~30 min reading every public TDK source for the LGA-14 land pattern:
+
+- **ICM-42688-P datasheet DS-000347 v1.5 + v1.6**: read end-to-end. NO package outline drawing, NO land-pattern figure. Section 18 (References) explicitly defers PCB Design Guidelines to controlled-distribution document **AN-IVS-0002A-00**.
+- **ICM-42605 datasheet DS-000292** (same LGA-14 package family): same — no package outline, no land pattern.
+- **TDK AN-000262 "PCB Design Guidelines"**: provides only the parametric template (`A = LGA pin length, B = LGA pin width, C/D = mask opening = land + 0.1 mm`). States "recommended pad size is provided within the IMU device datasheets" — but for ICM-42688-P that section does not exist in the public datasheet.
+- **TDK CDN** (`invensense.tdk.com/wp-content/uploads/...`): blocks both WebFetch and direct curl, so AN-IVS-0002A-00 not retrievable headlessly.
+
+**Conclusion**: TDK does NOT publish the LGA-14 land pattern in the public ICM-42688-P datasheet. Headless paths (a)/(b)/(c) above are not viable for an authoritative source — the canonical land pattern lives in AN-IVS-0002A-00 (controlled distribution) only.
+
+### Sai escalation (path (d), now the only authoritative path)
+
+Two safe non-headless paths exist; Sai action needed:
+
+1. **Request AN-IVS-0002A-00 from TDK directly**: free, requires email/account registration on TDK Developer portal (https://invensense.tdk.com/developers/). The document contains the canonical LGA-14 package mechanical drawing + recommended PCB land pattern.
+2. **Vendor-library import + source citation**: download the ICM-42688-P KiCad footprint from one of:
+   - Ultra Librarian: https://app.ultralibrarian.com/details/0a4080d3-d392-11ed-b159-0a34d6323d74/TDK-InvenSense/ICM-42688-P
+   - SnapEDA: https://www.snapeda.com/parts/ICM-42688-P/TDK/view-part/
+   Both vendor libs cite the source datasheet/app-note; record the source URL in the footprint's `descr` field for traceability.
+
+Recommend Sai pursues path 1 (authoritative + reusable for the secondary IMU + other TDK parts on future boards). Path 2 is the fallback if Sai doesn't want to register on TDK Developer portal.
+
+### Current placement state (Step 3 P1-rev, PR #58)
+
+Placement uses the KiCad-stock `Package_LGA:LGA-14_3x2.5mm_P0.5mm_LayoutBorder3x4y` (pads 0.625 × 0.35 mm at 0.5 mm pitch → 0.15 mm pad-edge gap < 0.2 mm netclass clearance). Causes 14 footprint-internal DRC clearance violations on U3. These are NOT placement-caused (would be present at any board position) and do not block Step 3 acceptance per master's allowance "0 violations, OR only the IMU ones if footprint genuinely can't be sourced and gets escalated to Sai." Step 4 (sim-validate) can proceed since the sims operate at net/footprint level, not sub-pitch pad-edge level.
+
+Footprint correction lands as a follow-up PR after Sai escalation closes path (d).
+
 **Why HARD:**
 
 - IMU is flight-critical (vibration sensing → attitude control → flight stability)
@@ -97,6 +126,45 @@ Raised 2026-05-20 (Phase 4a — master adjudication of the `icm42688p-footprint`
 - IPC-7351-generic ≠ TDK-recommended — generic may be wider (more tolerant) or narrower (potentially insufficient solder joint) than the part designer recommended
 
 **Raised by:** Phase 4a `decision_forks_watched.icm42688p-footprint` resolution + master 2026-05-20 adjudication.
+
+---
+
+## phase0.6-2. OpenEMS microstrip Z0-extraction — Phase 6b deep-dive required
+
+**Raised 2026-05-21** (Phase 0.6 PR #56 follow-up; convergence re-run after the one-line ref_impedance fix).
+
+Phase 0.6 validated OpenEMS as a SOLVER (rectangular-cavity TE₁₀₁ notch test: 0.03% error vs analytical resonance frequency). The microstrip Z0-extraction script v2 was thought to need only a one-line API fix (omit `ref_impedance=50` in `CalcPort()`, read `port.Z_ref` directly per `openEMS/ports.py:376`). PR #56 applied that fix and launched a background convergence re-run.
+
+### Re-run interim results (n=5 + n=10 of 5/10/15 sweep)
+
+  | Mesh density (cells across W) | Z0_avg (Ω) | Std (Ω) | vs analytical 69 Ω |
+  |---|---|---|---|
+  | n = 5 | **194,448** | 20,146 | wrong by 2818× |
+  | n = 10 | **132,496** | 29,227 | wrong by 1920× |
+
+n=15 still running at last check (~12% in). Even if it improves to ~60kΩ, the result is still 1000× wrong. Reading `port.Z_ref` directly did NOT fix the extraction — it produces a different wrong value than the v1 ratio-of-uf-tot/if-tot, but both are wildly off.
+
+### Phase 6b deep-dive scope (worker action: NONE further on this script)
+
+Per master 2026-05-21: "if the energy keeps oscillating (non-monotonic decay) and the result still scatters, that's the honest Phase 6b deep-dive outcome — flag it, don't re-iterate." Worker has stopped at the tripwire.
+
+100s-of-kΩ result is a GROSS bug class — likely best fixed by starting fresh from a known-good OpenEMS impedance-extraction tutorial and adapting it, NOT by debugging the current script line-by-line. Candidate references for the Phase 6b deep-dive (NOT for headless implementation now — these are research starting points for whoever picks up the deep-dive):
+
+- The OpenEMS Python tutorial `MSL_NotchFilter.py` — extracts a notch from an MSL filter, but uses Z0 as a known input not output; not directly applicable.
+- The OpenEMS bend / coupler tutorials that *do* extract Z0 from S-parameter fits over a long line of known length.
+- The OpenEMS C++ source for MSLPort (`Common/processports/processvoltage.cpp` etc.) to understand exactly how Et/Ht integration paths are constructed and what could go wrong on our mesh geometry.
+
+### What this does NOT block
+
+- **OpenEMS the solver stays validated** (notch 0.03% error). Future Phase 6b/4 routing of differential pairs (USB D+/D−) can still use OpenEMS for full S-parameter sims that don't rely on the broken Z0-extraction script.
+- **Step 4 (sim-validate) on the current placement** proceeds — Step 4's thermal sim is Elmer-FEM (independent of OpenEMS), and the EM sims it does run are for plane-coupling / harmonic intersection, not microstrip Z0 extraction.
+- **Step 5 (route once) controlled-impedance traces** can use analytical Hammerstad-Jensen (Pozar §3.8, IPC-2141 thickness-corrected) as the impedance floor, with bench measurement at Phase 9 as the delivery-time verification. OpenEMS Z0 extraction is the *cross-check* that's deferred.
+
+### Status
+
+- **Phase 0.6 PR #56**: closed. Solver validated, the one-line "diagnosis" fix applied, the re-run honestly demonstrates a deeper bug.
+- **Z0-extraction script**: broken; awaits Phase 6b deep-dive. Don't grind further.
+- **Critical path**: NOT blocking Step 3 (placement) or Step 4 (sim-validate) or Step 5 (routing). Becomes a real conversation if + when Step 5's controlled-impedance traces need OpenEMS verification beyond analytical Hammerstad-Jensen.
 
 ---
 
