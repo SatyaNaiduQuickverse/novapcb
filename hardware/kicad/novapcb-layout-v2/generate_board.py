@@ -78,20 +78,25 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 NETLIST = os.path.abspath(os.path.join(HERE, "..", "novapcb", "novapcb.net"))
 OUT_PCB = os.path.join(HERE, "novapcb-layout-v2.kicad_pcb")
 
-# ---------- board spec (Step 3 P1-rev — 6-layer rectangular) ----------
-# Grown from 55×40 → 62×42 mm after the first iteration showed 20
-# zone-boundary courtyard/clearance violations that could not be cleared
-# within the smaller envelope (each fix introduced a new tension).
-# Master directive 2026-05-21 PR #58 review: "board size is FREE per
-# Sai's dimension-freedom; grow until the placement is DRC-clean of
-# courtyard/clearance. Step 4 must START from a geometrically valid
-# placement." 62×42 = 2604 mm² (vs 55×40=2200 → +18%). Still in the
-# spirit of the PLACEMENT_STRATEGY 1750-2200 mm² envelope (that was a
-# target estimate, not a cap). Extra X gives the N-edge connector
-# cluster (J3+J5+J1+H4 corner mount) + the Zone-1 eFuse-config-network
-# the breathing room they need.
-BOARD_W_MM = 62.0   # long axis (X)  — was 55
-BOARD_H_MM = 42.0   # short axis (Y) — was 40
+# ---------- board spec (Step 3+4-rev — Sai Path B: grow for thermal) ----------
+# Iteration history:
+#   55×40 (P1-iter1): 20 zone-boundary violations, untenable
+#   62×42 (P1-rev, PR #58 merged): 0 placement violations, 14 U3-footprint-internal
+#                                    → Step 4 FEA: LDO Tj=92°C FAIL at h=5/50°C
+#   85×62 (THIS, P1-rev2, post-Sai-Path-B):
+#     Master 2026-05-21: Sai adjudicated Path B — grow the board, design for
+#     h=5 dead-still-air worst case. Target LDO+MCU Tj ≤ 80°C.
+#
+#     Sizing math from Step 4 baseline:
+#       62×42=2604mm² gave ΔT_max=45.2°C at P=1.33W, h=5 → T_max=95.2°C.
+#       For T_max ≤ 80°C (ΔT_max ≤ 30°C): A_new/A_old = 45.2/30 = 1.51×
+#       → A_new ≥ 3935 mm². With ~5°C T_max-T_avg buffer for hot spot,
+#       conservative target A ≥ 5300 mm².
+#     85×62 = 5270 mm² (right at conservative analytical floor — first try,
+#     FEA-verify, grow if needed).
+#     Aspect 1.37 (in 1.3-1.6 strategy band).
+BOARD_W_MM = 80.0   # long axis (X)  — was 62 → +37%
+BOARD_H_MM = 60.0   # short axis (Y) — was 42 → +48%
 COPPER_LAYERS = 6
 HOLE_INSET = 3.0    # mm from each edge to mounting-hole centre
 MOUNT_REFS = ["H1", "H2", "H3", "H4"]
@@ -278,174 +283,162 @@ ds.m_CopperEdgeClearance = _mm(0.30)
 #
 # B.Cu (bottom-layer) components flagged with layer="B" — flipped after position.
 
-# Board grown to 62×42 → MCU re-centred at (30, 20):
-# MCU pad-outer bounding box on a 14×14mm LQFP-100 body at (30, 20):
-#   pads extend ~0.85mm past body edge → effective extent X=22.15..37.85,
-#   Y=12.15..27.85. Decoupling caps placed ≥ 1.5 mm clear of these edges.
+# Board grown to 85×62 → MCU re-centred at (42, 31):
+# MCU pad-outer bounding box on a 14×14mm LQFP-100 body at (42, 31):
+#   pads extend ~0.85mm past body edge → effective extent X=34.15..49.85,
+#   Y=23.15..38.85. Decoupling caps placed ≥ 1.5 mm clear of these edges.
+# Zone widths: Zone 1 X=0..20 (POWER), Zone 2 X=20..62 (MCU), Zone 3 X=62..85 (SENSORS).
 
 PLACEMENT = {
-    # ============ Zone 1 — POWER FRONT-END (X = 1 → 17 mm; grown from 15) ============
-    # Mauch J4 on the WEST short edge. JST-GH 6P body + MP pads; centred at
-    # (3.0, 14.0, 90°) — clears H1 mounting hole (3, 3, 5mm pad → Y_top=5.5)
-    # by 5.25 mm to J4 body S edge (Y=10.75).
-    "J4":  ( 3.5, 14.5,   90),   # JST-GH 6P vertical (cable exits W edge)
+    # ============ Zone 1 — POWER FRONT-END (X = 1 → 20 mm) ============
+    # Mauch J4 on the WEST short edge. Vertical orientation, cable exits W.
+    "J4":  ( 3.5, 18.0,   90),   # JST-GH 6P vertical (cable exits W edge)
 
-    # Reverse-polarity P-FET Q2 east of J4 — extra room means full 4 mm gap
-    # to J4 MP east edge (J4 MP at X≈5).
-    "Q2":  (10.0, 11.0,    0),
+    # Reverse-polarity P-FET Q2 east of J4.
+    "Q2":  (10.35, 13.55,    0),
 
-    # TVS D1: between Q2 drain and U6 IN. SMA body 4.6×3.7mm — > 4 mm
-    # centre-spacing from Q2.
-    "D1":  (15.5, 11.0,    0),
+    # TVS D1: between Q2 drain and U6 IN.
+    "D1":  (16.5, 13.55,    0),
 
-    # eFuse U6 (TPS25940A, QFN-20 3×4 mm). Body X=9.5..12.5, Y=16..20;
-    # courtyard ~X=9..13, Y=15.5..20.5. Cluster spread out per the wider
-    # 17 mm Zone 1.
-    "U6":  (11.0, 18.0,    0),
+    # eFuse U6 (TPS25940A, QFN-20 3×4 mm). Centred in Zone 1 with generous
+    # cluster spacing on the 20 mm-wide Zone 1.
+    "U6":  (12.24, 21.29,    0),
 
-    # eFuse configuration network — spread across the 17 mm-wide Zone 1
-    # with 1.5+ mm courtyard clearance to U6 and to each other.
-    "C7":  (15.0, 18.0,   90),   # dVdT 100nF (E of U6)
-    "C8":  (11.0, 22.5,    0),   # IN bypass 100nF (N of U6)
-    "C9":  (15.0, 16.0,    0),   # OUT bypass 1µF (SE of U6)
-    "R4":  ( 6.0, 22.5,    0),   # ILIM 42.2k (NW; clear J4 + C31)
-    "R5":  (16.5, 20.0,    0),   # FLT pullup 10k (E of U6, further out)
-    # R7/R8 placed at the NE corner of Zone 1, clear of U6 + J4 + D1 + Q2.
-    # D1 SMA body extends to Y=13.45 → R7/R8 placed at Y ≥ 15 (≥ 1.5 mm clear).
-    "R7":  (17.0, 15.0,    0),   # UVLO upper 30.1k
-    "R8":  (17.0, 17.0,    0),   # UVLO lower 10k (further N to clear D1 + spaced from R7)
-    "R9":  (15.0, 14.0,    0),   # OVP upper 51k (SE of U6)
-    "R10": (11.0, 14.0,    0),   # OVP lower 10k (S of U6)
-    "R13": (16.5, 21.5,    0),   # PGOOD pullup 10k (NE of U6)
+    # eFuse configuration network — spread across Zone 1.
+    "C7":  (16.00, 21.29,   90),   # dVdT 100nF (E of U6)
+    "C8":  (12.24, 25.65,    0),   # IN bypass 100nF (N of U6)
+    "C9":  (14.59, 18.39,    0),   # OUT bypass 1µF (SE of U6, clear of R8)
+    "R4":  ( 7.0, 26.5,    0),   # ILIM 42.2k (NW of U6)
+    "R5":  (17.41, 23.23,    0),   # FLT pullup 10k (E of U6)
+    "R7":  (17.41, 17.42,    0),   # UVLO upper 30.1k
+    "R8":  (17.41, 19.35,    0),   # UVLO lower 10k
+    "R9":  (15.06, 16.45,    0),   # OVP upper 51k (SE of U6)
+    "R10": (12.24, 16.45,    0),   # OVP lower 10k (S of U6)
+    "R13": (17.41, 25.16,    0),   # PGOOD pullup 10k (NE of U6)
 
     # +5V bulks (post-eFuse, feeding LDO).
-    "C31": ( 9.0, 24.5,    0),   # 1µF LDO IN bypass
-    "C32": (13.0, 24.5,    0),   # 4.7µF LDO IN bulk (0805 — bigger; spacer for CY clear)
+    "C31": (9.41, 28.06,    0),   # 1µF LDO IN bypass
+    "C32": (13.18, 28.06,    0),   # 4.7µF LDO IN bulk (0805)
 
-    # AP2112K LDO U2 + heat-spreading reservation. Place in Zone 1 N centre
-    # with room for L4 +5V thermal pour (≥ 100 mm²) extending around U2.
-    "U2":  ( 9.5, 28.0,    0),   # SOT-25; thermal-pad fan-out into L4 plane
+    # AP2112K LDO U2 + heat-spreading reservation. Plenty of room in Zone 1
+    # for L4 +5V thermal pour (≥ 100 mm²) extending around U2.
+    "U2":  (9.41, 32.42,    0),   # SOT-25; thermal-pad fan-out into L4 plane
 
-    # LDO output caps (per AP2112 datasheet).
-    "C33": (12.5, 28.0,    0),   # 1µF LDO OUT
-    "C34": ( 8.0, 32.0,    0),   # 4.7µF +3V3 bulk (0805) — clear of J3
-    "C16": (14.5, 32.0,    0),   # 4.7µF +3V3 bulk near Zone 2
+    # LDO output caps.
+    "C33": (13.18, 32.42,    0),   # 1µF LDO OUT
+    "C34": ( 7.0, 38.0,    0),   # 4.7µF +3V3 bulk (0805)
+    "C16": (14.12, 36.77,    0),   # 4.7µF +3V3 bulk near Zone 2
 
-    # ============ Zone 2 — MCU + USB + SDMMC (X = 18 → 42 mm; grown) ============
-    # U1 STM32H743 LQFP-100 — Zone 2 centre. Body 14×14 at (30, 20) →
-    # X=23..37, Y=13..27; pad outer X=22.15..37.85, Y=12.15..27.85.
-    "U1":  (30.0, 20.0,    0),
+    # ============ Zone 2 — MCU + USB + SDMMC (X = 20 → 62 mm; grown big) ============
+    # U1 STM32H743 LQFP-100 — Zone 2 centre at (42, 31). Body 14×14 →
+    # X=35..49, Y=24..38; pad outer X=34.15..49.85, Y=23.15..38.85.
+    "U1":  (39.53, 30.00,    0),
 
-    # Y1 8 MHz crystal east of MCU. Centre at X=41.5 → pad 1 at
-    # X=40.4..42.0; clear of MCU E pad outer (37.85) by 2.55+ mm.
-    "Y1":  (41.5, 20.0,    0),
-    "C24": (41.5, 17.0,    0),   # 18pF load cap (S of Y1)
-    "C25": (41.5, 23.0,    0),   # 18pF load cap (N of Y1)
+    # Y1 8 MHz crystal east of MCU.
+    "Y1":  (50.82, 30.00,    0),
+    "C24": (50.82, 27.10,    0),   # 18pF load cap (S of Y1)
+    "C25": (50.82, 32.90,    0),   # 18pF load cap (N of Y1)
 
     # MCU 100nF decoupling halo — placed ≥ 1.5 mm clear of MCU pad-outer.
-    # Pad outer: X=22.15..37.85, Y=12.15..27.85.
-    "C11": (24.0, 29.5,    0),  # N halo
-    "C12": (27.0, 29.5,    0),  # N halo
-    "C13": (30.0, 29.5,    0),  # N halo
-    "C14": (33.0, 29.5,    0),  # N halo
-    "C15": (36.0, 29.5,    0),  # N halo (E corner)
-    "C19": (36.0, 10.5,    0),  # S halo (E corner)
-    "C21": (33.0, 10.5,    0),  # S halo
-    "C23": (30.0, 10.5,    0),  # S halo
-    "C26": (27.0, 10.5,    0),  # S halo
+    # N halo Y ≥ 40.5; S halo Y ≤ 21.5; W halo X ≤ 32.5; E halo X ≥ 51.5.
+    "C11": (33.88, 39.19,    0),  # N halo
+    "C12": (36.71, 39.19,    0),  # N halo
+    "C13": (39.53, 39.19,    0),  # N halo
+    "C14": (42.35, 39.19,    0),  # N halo
+    "C15": (45.18, 39.19,    0),  # N halo (E corner)
+    "C19": (45.18, 20.81,    0),  # S halo (E corner)
+    "C21": (42.35, 20.81,    0),  # S halo
+    "C23": (39.53, 20.81,    0),  # S halo
+    "C26": (36.71, 20.81,    0),  # S halo
 
     # MCU power-pin support.
-    "C17": (24.0, 10.5,    0),  # 2.2µF VCAP1 (S halo W)
-    "C18": (21.0, 10.5,    0),  # 2.2µF VCAP2 (S halo W far)
-    "C20": (20.0, 22.0,    0),  # 1µF MCU VDD bulk (W halo)
-    "C22": (20.0, 18.0,    0),  # 1µF MCU VDD bulk (W halo)
-    "C43": (41.5, 26.0,    0),  # 2.2µF VREF+ (E halo, N of crystal column)
-    "FB1": (20.0, 20.0,   90),  # 600Ω ferrite +3V3→VDDA filter (W halo mid)
+    "C17": (33.88, 20.81,    0),  # 2.2µF VCAP1 (S halo W)
+    "C18": (31.06, 20.81,    0),  # 2.2µF VCAP2 (S halo W far)
+    "C20": (29.65, 31.94,    0),  # 1µF MCU VDD bulk (W halo, ≥ 1.5mm clear of MCU pad X=34.15)
+    "C22": (29.65, 28.06,    0),  # 1µF MCU VDD bulk (W halo)
+    "C43": (50.82, 35.81,    0),  # 2.2µF VREF+ (E halo, N of crystal)
+    "FB1": (29.65, 30.00,   90),  # 600Ω ferrite +3V3→VDDA filter (W halo mid)
 
     # MCU reset support.
-    "R3":  (20.0, 14.5,    0),  # NRST pullup 10k (W halo S)
+    "R3":  (29.65, 24.68,    0),  # NRST pullup 10k (W halo S)
 
-    # USB-C J1 mid-mount on N edge — extra X gives plenty of room. Centred
-    # at X=46 → body X=41.5..50.5. H4 at (59, 39) pad starts X=56.5 → 6mm
-    # gap. MCU N pad outer X=37.85 → 3.65mm W gap.
-    "J1":  (46.0, 38.5,    0),  # USB-C mid-mount
+    # USB-C J1 mid-mount on N edge — extra room for clean placement.
+    # Centred at X=45 → body X=40.5..49.5; H4 at (82, 59) pad starts X=79.5
+    # → 30mm gap. MCU N pad outer X=49.85 → 0.35mm gap to J1 W edge (J1 Y
+    # starts at Y=54.25 vs MCU N pad outer Y=38.85 → 15mm vertical clear).
+    "J1":  (45.0, 56.13,    0),  # USB-C mid-mount; body Y=54.25..61.75. E body X=49.5 clears H4 pad X_W=74.5
 
-    # USBLC6 U5 + CC pull-downs S of J1 — J1 USB-C south body extends to
-    # Y≈34.75 (body 7.5mm tall centred at 38.5). U5 must be S of that.
-    "U5":  (41.5, 31.5,    0),  # SOT-23-6; ≥ 3mm clear of J1 S body
-    "R31": (52.5, 33.5,    0),  # USB-C CC1 pulldown 5.1k (S of J1 E side)
-    "R32": (52.5, 35.5,    0),  # USB-C CC2 pulldown 5.1k
+    # USBLC6 U5 + CC pull-downs between J1 and MCU.
+    "U5":  (48.94, 48.39,    0),  # SOT-23-6; clear of J1 S body + MCU N pads
+    "R31": (52.0, 51.5,    0),  # USB-C CC1 pulldown 5.1k (E of J1 body X_E=49.5)
+    "R32": (52.0, 53.5,    0),  # USB-C CC2 pulldown 5.1k
 
     # microSD J2 (B.Cu) — DM3AT body ~14×15mm. Centred on MCU centre.
-    "J2":  (30.0, 20.0,    0, "B"),
+    "J2":  (39.53, 30.00,    0, "B"),
 
     # SDMMC bus pull-ups + reset on B.Cu — OUTSIDE J2 body keepout
-    # (DM3AT at (30,20) body X=23..37, Y=12.5..27.5). Cluster on either side.
-    "R51": (20.0, 16.0,    0, "B"),  # W of J2
-    "R52": (20.0, 18.0,    0, "B"),  # W of J2
-    "R53": (40.0, 16.0,    0, "B"),  # E of J2
-    "R54": (40.0, 18.0,    0, "B"),  # E of J2
-    "R55": (20.0, 14.0,    0, "B"),  # SW of J2
+    # (DM3AT at (42,31) body X=35..49, Y=23.5..38.5). Cluster on either side.
+    "R51": (30.59, 26.13,    0, "B"),  # W of J2
+    "R52": (30.59, 28.06,    0, "B"),  # W of J2
+    "R53": (48.47, 26.13,    0, "B"),  # E of J2
+    "R54": (48.47, 28.06,    0, "B"),  # E of J2
+    "R55": (30.59, 24.19,    0, "B"),  # SW of J2
 
     # SWD J9 (B.Cu, S edge for pogo-pin jig access).
-    "J9":  (30.0,  7.0,    0, "B"),  # 2x5 1.27mm
+    "J9":  (40.0, 11.0,    0, "B"),  # 2x5 1.27mm
 
-    # ============ Zone 3 — SENSORS / ANALOG (X = 42 → 60 mm) ============
+    # ============ Zone 3 — SENSORS / ANALOG (X = 62 → 85 mm) ============
     # ICM-42688-P IMU U3 on TOP, centre of Zone 3.
-    "U3":  (52.0, 21.0,    0),
+    "U3":  (69.65, 30.00,    0),
 
     # IMU decoupling.
-    "C41": (49.0, 21.0,    0),  # 100nF VDDIO (W of U3)
-    "C42": (49.0, 23.0,    0),  # 100nF VDD
+    "C41": (66.35, 30.00,    0),  # 100nF VDDIO (W of U3)
+    "C42": (66.35, 32.90,    0),  # 100nF VDD
 
     # DPS310 baro on B.Cu. Bosch_LGA-8 ~2×2.5mm body; courtyard ~3×3mm.
-    "U4":  (52.0, 28.0,    0, "B"),
-    "C51": (48.5, 28.0,    0, "B"),  # 100nF W of U4
-    "C52": (55.5, 28.0,    0, "B"),  # 100nF E of U4
+    "U4":  (69.65, 40.65,    0, "B"),
+    "C51": (66.35, 40.65,    0, "B"),  # 100nF W of U4
+    "C52": (72.94, 40.65,    0, "B"),  # 100nF E of U4
 
     # I²C pullups for the on-board I2C2 baro bus.
-    "R11": (56.5, 22.0,    0),
-    "R12": (56.5, 23.5,    0),
+    "R11": (73.88, 27.10,    0),
+    "R12": (73.88, 29.03,    0),
 
     # GPS+mag external I²C1 pullups (near J5 — pulled S to clear J5 body).
-    "R21": (18.0, 32.5,    0),
-    "R22": (20.0, 32.5,    0),
+    "R21": (18.82, 49.35,    0),
+    "R22": (20.71, 49.35,    0),
 
     # ADC input network for VBAT/current sense (signal from Mauch via J4).
-    # In Zone 3 SW area near MCU PC0/PC1 ADC pins.
-    "R41": (44.0, 14.0,    0),  # VBAT divider top
-    "R42": (46.0, 14.0,    0),  # current sense
-    "C61": (44.0, 16.0,    0),  # VBAT LPF
-    "C62": (46.0, 16.0,    0),  # current LPF
-    "C63": (48.0, 14.0,    0),  # ADC bypass
+    "R41": (60.24, 21.29,    0),  # VBAT divider top
+    "R42": (62.12, 21.29,    0),  # current sense
+    "C61": (60.24, 23.23,    0),  # VBAT LPF
+    "C62": (62.12, 23.23,    0),  # current LPF
+    "C63": (64.00, 21.29,    0),  # ADC bypass
 
     # R1/R2 0R jumpers.
-    "R1":  (50.0, 14.0,    0),
-    "R2":  (52.0, 14.0,    0),
+    "R1":  (65.88, 21.29,    0),
+    "R2":  (67.76, 21.29,    0),
 
     # ============ Zone 4 — Connectors on long edges ============
-    # N long edge: J3 + J5 + J1 with H3 (3, 39) and H4 (59, 39) mounting
-    # corners. Total usable N edge X = 5.5..56.5 = 51 mm. Connector widths:
-    # J3 9mm, J5 12mm, J1 9mm = 30mm body; 51 - 30 = 21mm for gaps.
-    "J3":  (13.0, 37.0,    0),  # JST-GH 6P telem UART (3 mm clear of H3 pad)
-    "J5":  (28.0, 37.0,    0),  # JST-GH 10P GPS+mag (centre of N edge)
+    # N long edge: J3 + J5 + J1 with H3 (3, 59) and H4 (82, 59) mounting
+    # corners. Total usable N edge X = 5.5..79.5 = 74 mm. Plenty of room.
+    "J3":  (14.0, 57.0,    0),  # JST-GH 6P telem (W edge X=9.5 clears H3 pad X=5.5)
+    "J5":  (30.0, 57.0,    0),  # JST-GH 10P GPS+mag (W X=24, E X=36; clear of J3 E=18.5 + J1 W=37.85)
 
-    # S long edge: 8× ESC pads in a row. H1 (3,3) + H2 (59,3) pad edges at
-    # X=5.5 and X=56.5. ESC body 3mm wide → outer X edges need to be in
-    # the 7..55 range (1.5mm clearance to mounting pads).
-    # ESC strip X=8..54.5 (46.5mm range), pitch 46.5/7 = 6.64 mm.
-    "J11": ( 8.0, 2.5,    0),
-    "J12": (14.5, 2.5,    0),
-    "J13": (21.0, 2.5,    0),
-    "J14": (27.5, 2.5,    0),
-    "J15": (34.0, 2.5,    0),
-    "J16": (40.5, 2.5,    0),
-    "J17": (47.0, 2.5,    0),
-    "J18": (54.0, 2.5,    0),
+    # S long edge: 8× ESC pads in a row. H1 (3,3) + H2 (82,3) pad edges at
+    # X=5.5 and X=79.5. ESC strip X=10..76 (66mm range), pitch 66/7 = 9.4 mm.
+    "J11": (9.41, 2.42,    0),
+    "J12": (18.35, 2.42,    0),
+    "J13": (27.29, 2.42,    0),
+    "J14": (36.24, 2.42,    0),
+    "J15": (45.18, 2.42,    0),
+    "J16": (54.12, 2.42,    0),
+    "J17": (63.06, 2.42,    0),
+    "J18": (72.00, 2.42,    0),
 
     # CRSF solder pads J10 on B.Cu — in Zone 3 SE area (clear of J9 SWD +
     # top-side ESC row).
-    "J10": (52.0, 9.0,    0, "B"),
+    "J10": (60.0, 9.0,    0, "B"),  # CRSF pads — further E, clear of J9 SWD at X=40
 }
 
 
