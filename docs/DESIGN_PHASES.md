@@ -73,7 +73,7 @@ Result: **fit confirmed plausible.** Area density ~56% (660 mm² components / 11
 
 Two doc clarifications landed in the Phase 2.5 PR (master adjudicated, supermaster-visibility flagged): KiCad 8→9 in `CLAUDE.md §6.1` + `§10.2` (escalation #1); 30.5×30.5 board-vs-hole-spacing disambiguation in `CLAUDE.md §1` + `DECISIONS.md §2` (escalation #2).
 
-## Phase 3 — Schematic in KiCad (3a-3e DONE — 2026-05-20)
+## Phase 3 — Schematic in KiCad (3a-3f DONE — 2026-05-20)
 
 - **Mode: netlist-only** per Phase 3a Rule-13 escalation #1 + `OPEN_QUESTIONS.phase3-render-1`. SKiDL `generate_schematic()` doesn't scale past trivial circuits (hangs on the MCU sheet); per-sub-phase delivery is Python source + netlist + SKiDL ERC. Drawn schematic deferred to a dedicated investigation scheduled before Phase 6.5 forum review (NOT blocking Phase 3.5/4/5/6, which consume the netlist).
 - Project at `hardware/kicad/novapcb/` (master-confirmed in P0 adjudication item 4). `novapcb.kicad_pro` held until Phase 4 / drawn-schematic landing.
