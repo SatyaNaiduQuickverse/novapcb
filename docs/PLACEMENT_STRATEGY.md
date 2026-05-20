@@ -27,7 +27,7 @@ constraints that drive every placement decision below.
 |---|---|---|---|---|
 | 1 | ~~Inrush 3.39 A at power-on~~ | 6a.3 | partially | **FIXED** by Step 2 eFuse front-end (PR #55) |
 | 2 | PDN anti-resonance 133 mΩ at 100 kHz | 6a (PDN sweep) | YES — mixed power plane | Layer-count uplift to 6 → separate 3V3 + 5V planes (§3 below) |
-| 3 | AP2112K LDO Tj = 88°C at 40°C ambient | 6j.2 | YES — thermal-pour constrained | Zoning + LDO copper pour ≥ 100 mm² on inner power plane (§2.1 + THERMAL_BUDGET §2.3) |
+| 3 | AP2112K LDO Tj = 88°C at 40°C ambient | 6j.2 | YES — thermal-pour constrained | Architecture evaluated (linear LDO retained — THERMAL_BUDGET §2.5) + zoning + LDO copper pour ≥ 100 mm² on inner power plane (§2.1 + THERMAL_BUDGET §2.3) |
 | 4 | 4 USB-self-band harmonics > −40 dB | 6k | partially — coupling-distance | Zone separation: SDMMC + DShot aggressors at one end, USB+IMU at the other (§2 + §4) |
 | 5 | 5 unprotected external lines (no TVS on telem/GPS/CRSF/ESC) | 6i | NO — circuit-level not placement | Out of v1 scope per `docs/CONFIDENCE_MAP.md` row 11; v2 candidate |
 
@@ -190,6 +190,18 @@ copper, lowering θ_JA to ≈ 50 °C/W. At that θ_JA the LDO sits at T_j ≈
 
 4-layer cannot meet the 50°C-ambient spec at the current LDO load. 6-layer
 can. This is the dispositive thermal reason.
+
+> **Architecture choice note**: the LDO topology itself was evaluated as an
+> explicit architecture decision rather than inherited from Step 2 (master
+> PR #57 review directive). See THERMAL_BUDGET §2.5 for the full
+> evaluation of linear LDO vs buck switcher vs switcher+LDO hybrid. The
+> recommendation is **retain the linear LDO** — the Mauch BEC is already
+> our upstream switcher, putting an on-board switcher within 20-40 mm of
+> the IMU would degrade sensor SNR more than it would save thermal margin,
+> and the 6-layer + pour solution brings the LDO comfortably under spec
+> anyway. Force 2 here is therefore *supportive* of the 6-layer call, not
+> the dispositive reason (Force 1 PDN is). The 6-layer call stands
+> independently.
 
 **Force 3 — EMC reference-plane integrity for the USB / SDMMC / DShot
 intersections**

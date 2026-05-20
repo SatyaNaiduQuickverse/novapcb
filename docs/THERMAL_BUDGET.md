@@ -108,6 +108,86 @@ If Step 3 P1+ Elmer-FEM shows the LDO cannot meet the 50°C-ambient spec even wi
 
 ---
 
+## 2.5 Power-architecture evaluation (the explicit architecture-level decision)
+
+> **Why this section exists**: master 2026-05-21 PR #57 review correctly flagged that "spend a 6-layer board to cool the LDO" solves a constraint without questioning it. A linear LDO dropping 5→3.3 V at 0.35 A burns 0.595 W as heat *by physics*; a switching regulator could largely eliminate the thermal constraint. This section makes the architecture choice an EXPLICIT decision (with a justified recommendation) rather than an inherited assumption. Sai's "best possible solution" mandate means the choice must be justified, not assumed.
+
+### 2.5.1 Three options on the table
+
+| Option | Topology | LDO heat | Switcher heat | Sensor-rail noise | BOM complexity | Board area |
+|---|---|---|---|---|---|---|
+| **(A) Linear LDO only** *(current Step 2 design)* | Mauch BEC 5 V → AP2112K LDO → 3.3 V (one active part) | **0.595 W** (V_drop × I_load = 1.7 V × 0.35 A) | n/a (Mauch BEC lives off-board) | **lowest** — LDO PSRR > 70 dB at audio; ripple at 3.3 V floor ≈ µV-class | 1 IC (AP2112K) | ~10 mm² |
+| **(B) Pure buck switcher** | Mauch BEC 5 V → buck → 3.3 V (one active switching part on board) | n/a | **0.10 W** (≈ 85% efficiency × 1.15 W output power) | **highest** — switcher ripple typ. 10-50 mV pk-pk at switching freq + harmonics directly on the sensor rail. Worst case for IMU/baro/ADC. | 1 IC + inductor + caps | ~80 mm² |
+| **(C) Switcher + LDO hybrid** | Mauch BEC 5 V → on-board buck → 3.6-4.0 V → AP2112K LDO → 3.3 V | **0.105-0.245 W** (depends on intermediate rail; smaller drop = less LDO heat) | **0.21-0.30 W** (buck conversion loss) | **moderate** — LDO cleans most switcher ripple; residual depends on LDO PSRR at switching freq (typ. 50-60 dB at 1 MHz for AP2112) | 2 ICs + inductor + caps | ~90 mm² |
+
+### 2.5.2 Why pure buck (Option B) is wrong for this rail
+
+The 3.3 V rail directly powers:
+- **ICM-42688-P IMU** (VDD + VDDIO): switcher ripple at the sensor VDD shows up as gyro/accel ADC noise. TDK ICM-42688-P datasheet §5.1 specifies VDD ripple < 10 mV pk-pk for spec-grade performance; switcher output ripple typ. 20-50 mV pk-pk without aggressive LC filtering.
+- **DPS310 baro** (VDD + VDDIO): pressure sensor noise floor depends on supply ripple per Bosch BST-DPS310 §3.3.
+- **STM32H743 VREF+ + VDDA** (via FB1 ferrite): ADC LSB is V_REF / 4096 ≈ 800 µV for the VBAT/current monitoring channel. Switcher ripple directly degrades ADC SNR.
+
+Production FC convention is unambiguous: the 3.3 V rail powering noise-sensitive sensors uses a linear regulator. Pure-buck for this rail trades 0.5 W of heat for several dB of sensor SNR degradation — a bad bargain for a flight controller.
+
+### 2.5.3 Why switcher+LDO hybrid (Option C) is the next-most-defensible
+
+The hybrid does the BULK voltage step efficiently in the switcher, then a small-drop LDO cleans the rail. With Mauch BEC 5 V → on-board buck to ~3.6 V → LDO 3.6 V → 3.3 V:
+
+- LDO drop = 0.3 V × 0.35 A = **0.105 W** of LDO heat (5.7× less than current 0.595 W).
+- Buck dissipation = 0.30 V × 0.35 A / 0.85 efficiency = **0.21 W** in the buck.
+- **Total heat on-board = 0.315 W** vs current 0.595 W → ~47% reduction, but distributed (buck heat + LDO heat in different package locations) → easier to dissipate than a single 0.6 W hotspot.
+
+**Why this is NOT being recommended for v1** (the decision):
+
+1. **The switcher would live on the FC**, ~20-40 mm from the IMU (Zone 1 to Zone 3 distance). The Mauch BEC switcher lives ON THE AIRFRAME, 200-500 mm from the FC — its switching noise dissipates over distance + intervening harness inductance + cap filtering at the BEC connector. An on-board switcher's noise reaches the IMU directly via the +5V rail return path.
+2. **The +3.3V LDO's switcher-ripple suppression at 1 MHz** (typical buck switching freq) is ~50-60 dB per Diodes AP2112 §Electrical Characteristics. A 30 mV buck ripple becomes ~30-100 µV at the LDO output. That's better than pure-buck but worse than the current sub-10 µV noise floor from Mauch-BEC + LDO topology.
+3. **The compounding switcher cascade**: Mauch BEC switcher (already present, ~100-300 kHz) + on-board buck switcher (~1-2 MHz) creates intermodulation products at sum + difference frequencies that may land in sensitive bands. Phase 6k EMC analysis would need a full re-run. Phase 6.5 forum review would flag the cascade as a concern.
+4. **Two-IC topology vs one-IC** = more BOM, more potential failure modes, more bring-up surface area, more parts to source. Hybrid is genuinely more complex.
+5. **The actual heat reduction (0.595 W → 0.315 W, ~280 mW saved) is small in absolute terms**: 6S 5000 mAh battery = 110 Wh capacity. 280 mW saved × 1 hour flight = 0.25% of battery capacity. Not load-bearing on flight time.
+6. **The "thermal constraint" the hybrid would solve is already solved** by the 6-layer + 100 mm² LDO pour strategy: T_j = 79.8°C at 50°C ambient. That's a comfortable junction temp with 5°C margin to the 85°C spec and 45°C margin to the AP2112K commercial-grade absolute-max 125°C. The hybrid would buy us another ~15°C of margin we don't need.
+
+### 2.5.4 Why retain linear LDO (Option A) — the recommendation
+
+The linear LDO is recommended for v1 on five grounds:
+
+**Ground 1 — Reference precedent across FC class.**
+- **MatekH743** (our schematic reference): uses a linear LDO for the 3.3 V rail. Confirmed via grep of the ArduPilot hwdef tree: no `SMPS_PWR` / `SMPS_EXT` defines → falls through to `PWR_CR3_LDOEN` in `hwdef/common/stm32h7_mcuconf.h:93`. The STM32H7 itself is in LDO mode, and the upstream 3.3 V rail is linear. (Per `docs/REFERENCE_AUDIT.md` line 61.)
+- **Holybro Pixhawk 6X** (the autopilot novapcb functionally replaces): uses linear LDOs for sensor rails on the isolated-IMU board. Dual-redundant power architecture; sensors are deliberately kept on linear regulators downstream of the switching upstream.
+- **General mini-FC practice**: when the input rail is already 5 V (i.e. there is already an upstream switcher in the BEC or main step-down), the 5 V → 3.3 V step is universally done with a linear LDO. The exception is when the input rail is direct VBAT (12-26 V); in that case a buck is mandatory because a linear LDO would burn 4-8 W.
+
+**Ground 2 — We already have a switcher: the Mauch BEC.**
+The Mauch power module is a switching regulator (typ. 90-95% efficient) that takes VBAT (16-26 V on 4-6S) down to 5 V at 3 A. By the time novapcb sees the 5 V rail, the big drop has already been done efficiently — we are NOT burning 4-8 W of heat to get from VBAT to 3.3 V. We are burning 0.595 W to do the FINAL 1.7 V trim with a clean linear LDO. That is the canonical FC topology and it is by design.
+
+**Ground 3 — The IMU + baro + ADC noise floor matters more than 280 mW of heat.**
+The 6-layer + LDO pour solution brings T_j to 79.8°C at 50°C ambient (THERMAL_BUDGET §2.3 prediction). That meets spec with 5°C margin. The hybrid would reduce LDO heat at the cost of putting a switcher on the FC within 20-40 mm of the IMU — directly hurting the thing the LDO was protecting. Net effect on the design's primary mission (clean inertial + barometric data): hybrid is a NET NEGATIVE.
+
+**Ground 4 — The "best possible solution" criterion (Sai's mandate) applied to power-tree topology.**
+The "best possible solution" is the one that maximizes the thing that matters (sensor SNR + reliability), at acceptable cost on the things that don't (280 mW of thermal margin). Linear LDO + 6-layer + pour wins on that ranking. A hybrid wins on thermal efficiency, but thermal efficiency is not what the FC is being optimized for — it is being optimized for reliable + clean inertial data delivery to ArduCopter.
+
+**Ground 5 — The 6-layer choice has independent justification.**
+Master accepted 6-layer in PR #57 review on grounds that are independent of the LDO thermal problem: PDN integrity (separate +3V3/+5V planes), USB-self-band EMC reference-plane integrity, and Sai's reliability mandate. The fact that 6-layer ALSO brings the LDO under spec is a happy consequence; the 6-layer call would be right even without the LDO thermal pressure. So the recommendation here is not "spend layers to fix the LDO" but "the LDO is fine on the 6-layer board we're building for independent reasons."
+
+### 2.5.5 The decision
+
+**Retain the AP2112K-3.3 linear LDO for the 3.3 V rail.**
+
+DECISIONS §10 (reliability mandate) interpretation for the power tree: the failure mode being prevented is sensor-data degradation under EMI/noise, NOT thermal failure. The LDO meets thermal spec on the 6-layer build (79.8°C at 50°C ambient, 5°C margin). No schematic change. Step 2's eFuse + LDO topology stands as-is.
+
+If future evidence (Phase 6.5 forum review or Phase 9 bench) shows the LDO topology has a real problem we haven't anticipated, the buck-vs-LDO question reopens AS A SCHEMATIC CHANGE — requires Phase-3-style schematic-update review with master + Sai sign-off, not a quiet swap. Not anticipating that need.
+
+### 2.5.6 When this would flip
+
+The architecture should be re-evaluated if any of these conditions occur:
+
+- **AP2112K Tj > 85°C in Elmer-FEM with realized placement** (Step 3 P1+ Round-2 sim). Means the thermal budget assumption was wrong.
+- **Phase 6.5 forum review flags the LDO topology** as inadequate for the load + ambient combo. External EE judgement overrides our internal calculus.
+- **Production load exceeds 350 mA** (Phase 9 bench measurement shows full-board draw closer to 500 mA). Means dissipation rises to ~0.85 W, breaking the thermal headroom on the 6-layer build.
+- **A second 3.3 V rail is added** (e.g. for an additional sensor stack or telemetry radio internal to the FC). At that point a hybrid becomes the right call.
+
+None of these are current.
+
+---
+
 ## 3. Material thermal model (FR-4 + copper stackup)
 
 Inputs for Elmer-FEM thermal sim (Step 3 P1+):
