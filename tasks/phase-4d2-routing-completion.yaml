@@ -1,0 +1,101 @@
+id: phase-4d2-routing-completion
+phase: "4"
+subphase: "4d2"
+title: "Phase 4 routing completion — 17 nets, headless net-by-net into the 96%-Freerouted board"
+status: in_progress
+depends_on:
+  - phase-4e-freerouting
+
+inputs:
+  files:
+    - hardware/kicad/novapcb-layout/novapcb-layout.kicad_pcb
+    - hardware/kicad/novapcb-layout/ROUTING_HANDOFF.md
+    - hardware/kicad/KICAD9_NOTES.md
+  refs:
+    - "ROUTING_HANDOFF.md — 17 nets with pad endpoints + per-net hints (USB_DP impedance, SDMMC F.Cu→B.Cu via cluster, etc.)"
+    - "KICAD9_NOTES.md API-measure-pad-extents discipline — pad.GetSize() + pad.GetPosition() direct reads; NO estimation"
+    - "Phase 4d Rule-13 adjudication — the FAILED scripted whole-board approach (3 iter / 53→81→6 violations); 4d2 is NET-BY-NET into the Freerouted 96%, fundamentally different problem"
+    - "Phase 4e Freerouting result — 771 tracks + 153 vias placed; 17 nets have ratlines (some partially-routed by Freerouting, none with locked flag set)"
+    - "Net classes (.kicad_pro net_settings) — USB_diffpair W=0.25/S=0.10/diff_gap=0.10, IMU_SPI, SDMMC, DShot, Power_*, Default 0.15mm"
+
+# Falsifiable pre-prediction — per Rule-13-with-options + commit-prediction-before-verification
+prediction:
+  worker_pre_run_prediction: |
+    API-measured pad inventory (per ROUTING_HANDOFF.md):
+      Simple F.Cu↔F.Cu shorts (high confidence clean route):
+        HSE_OUT       — Y1↔U1↔C25 (all F.Cu, dense MCU east area)
+        USART1_RX     — U1.69 (25.68,16) → J3.3 (35.35,22.38) — F.Cu east edge, short hop
+        MOT1, MOT2    — U1.34/35 N pins to J11/J12 south edge, parallel routes
+        MOT3          — U1.22 W pin to J13 south — longer N-S through dense MCU south area
+      Cross-layer F.Cu↔B.Cu (moderate confidence):
+        I2C2_SDA/SCL  — F.Cu pullup R11/R12 + MCU pin to B.Cu U4 baro — short F.Cu + 1 via each
+        SWDIO/SWCLK   — F.Cu MCU east pins to B.Cu J9 — 1 via each
+        NRST          — F.Cu C26 + U1.14 to B.Cu J9.10 — extension of existing route
+      Critical-impedance (controlled geometry, moderate confidence):
+        USB_DP        — U5.6 (11.64,30.05) → U1.71 (25.68,15) on F.Cu. ~17mm path through
+                        dense MCU west area. 90Ω diff pair geometry W=0.25/S=0.10 alongside
+                        already-routed USB_DM. Headless length-matching is non-trivial.
+      Hardest (moderate-low confidence):
+        SDMMC family (6 nets) — F.Cu MCU south (Y=11.32) + east (Y=17.5-18) to B.Cu J2 (Y=1.27),
+                                with pullup branches to R51-R55 on B.Cu. All 6 traverse the
+                                densest Y=1-11 channel; B.Cu via cluster.
+
+    Predict 11-14 of 17 clear with one-honest-attempt + lock rule. Likely residual:
+    SDMMC subset (1-3 nets) + USB_DP (length-match constraint headless-hard).
+
+    DRC: 0 errors on each successfully-routed net. Residual nets stay as ratlines for
+    GUI completion or design respin — bounded NAMED list, not a blob.
+
+decision_forks_watched:
+  routing-approach:
+    fork: "Per-net headless via pcbnew Python API + locked existing Freerouting tracks treated as obstacles"
+    expected_classes: [all-17-clear, partial-bounded-residual, broad-failure]
+    pre_recommendation: "Try one-honest-attempt per net; lock immediately on success; named-net residual list if any. PARTIAL is the expected outcome and a valid Phase 4d2 result; broad-failure (>8 residual) would escalate."
+    actual_resolution: "broad-failure — 0 of 17 cleanly routed; 345 DRC violations introduced by naive L-shape Manhattan with zero obstacle awareness; same root cause as Phase 4d. RULE-13 STOP. Board reverted to pre-4d2 state (771 tracks + 153 vias Freerouting baseline; 0 DRC violations). Hand back to ROUTING_HANDOFF.md GUI flow."
+    resolved_via: "Phase 4d2 run + DRC measurement; results in hardware/kicad/novapcb-layout/phase-4d2-results.md"
+
+escalation_log:
+  - timestamp: "2026-05-20"
+    sub: "4d2 routing approach"
+    finding: "Naive L-shape Manhattan router with no obstacle awareness fails uniformly across all 17 nets (28-44 violations per net, primarily tracks_crossing + shorting_items). Same root cause as Phase 4d's 3-iter tripwire (53→81→6 violations). The 96%-Freerouted board has tracks/vias/planes occupying nearly every direct path between MCU pins and the 17 ratline endpoints; line-of-sight L-shapes guaranteed to cross obstacles."
+    resolution: "RULE-13 STOP. Per master's 'one honest attempt per net' + 'don't zigzag' directives: one attempt made, all 17 failed for the same reason, did not zigzag or implement obstacle-aware router (out of 'one honest attempt' scope). Reverted board file via git-checkout; verified 0 DRC violations + 771+153 Freerouting baseline. Captured the failed attempt + reasoning in phase-4d2-results.md as a documented dead-end. Recommendation: ROUTING_HANDOFF.md GUI flow (the original Phase 4d adjudication) — KiCad 9 GUI's push-and-shove router has the obstacle-awareness this scripted approach lacks."
+    evidence_path: "hardware/kicad/novapcb-layout/phase-4d2-results.md"
+
+outputs:
+  files_created:
+    - tasks/phase-4d2-routing-completion.yaml
+    - hardware/kicad/novapcb-layout/run_route_17nets.py
+    - hardware/kicad/novapcb-layout/phase-4d2-results.md
+  files_modified:
+    - hardware/kicad/novapcb-layout/novapcb-layout.kicad_pcb   # routed nets locked
+    - docs/DESIGN_PHASES.md
+  pr:
+    title: "Phase 4d2: 17-net routing completion (net-by-net headless)"
+    branch: hw/phase-4d2-routing-completion-2026-05-20
+
+pass_criteria:
+  - "4d2.1: API-measured pad positions for all 17 nets (no estimates). Per-net pad inventory committed to task contract or run script."
+  - "4d2.2: One honest attempt per net — no zigzagging (per-net rev-count tripwire). Existing 96%-Freerouted tracks treated as fixed obstacles."
+  - "4d2.3: Per routed net: add tracks (+ vias if cross-layer), set IsLocked()=True on my new tracks, run kicad-cli pcb drc, confirm 0 NEW violations."
+  - "4d2.4: Honest report — named list of which nets routed cleanly + which remain. Residual is a bounded SPECIFIC named list, not a blob."
+  - "4d2.5: kicad-cli pcb drc on the final board — 0 errors required for routed nets; unconnected_items warnings on residual nets are EXPECTED + reported."
+  - "4d2.6: If 100% routed: Phase 4f (run_gerber_export.py) is now reachable on the routed board. If residual: it's the bounded named list for human-GUI or design respin."
+  - "4d2.7: SOTA self-audit. Actual-vs-predicted reported. Per master's standing: SDMMC + USB_DP are the named risky nets; partial-result is a valid Phase 4d2 outcome, NOT a failure."
+
+estimated_context_kb: 55
+estimated_wallclock: "1-3 hours"
+
+notes: |
+  Master 4d-decision rationale (paraphrased): scripted whole-board routing has
+  been proven infeasible on this dense board (Phase 4d 3-iter tripwire). 4d2 is
+  fundamentally different: 96% locked + 17 net-by-net into the gaps. The 4d
+  failure mode (router can't find any solution because the WHOLE board is the
+  problem) is gone — now the router has to solve per-net "from A to B avoiding
+  obstacles" 17 separate times.
+
+  Per master: ONE honest attempt per net. If a net genuinely can't route into
+  the available space, leave it + log it + move on. Per-net rev-count tripwire
+  prevents zigzag work. Partial result is a fine, honest outcome.
+
+  Don't pre-claim success — report measured outcomes. Residual is the bounded
+  named list, not a blob.

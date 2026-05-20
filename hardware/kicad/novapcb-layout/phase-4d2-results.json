@@ -1,0 +1,193 @@
+{
+  "per_net": [
+    {
+      "net": "HSE_OUT",
+      "plan": [
+        "U1.13",
+        "Y1.3",
+        "C25.1"
+      ],
+      "status": "routed",
+      "items_added": 4,
+      "note": "net_class=Default width=0.15mm via 3 pads"
+    },
+    {
+      "net": "USART1_RX",
+      "plan": [
+        "U1.69",
+        "J3.3"
+      ],
+      "status": "routed",
+      "items_added": 2,
+      "note": "net_class=Default width=0.15mm via 2 pads"
+    },
+    {
+      "net": "MOT1",
+      "plan": [
+        "U1.34",
+        "J11.1"
+      ],
+      "status": "routed",
+      "items_added": 2,
+      "note": "net_class=DShot width=0.2mm via 2 pads"
+    },
+    {
+      "net": "MOT2",
+      "plan": [
+        "U1.35",
+        "J12.1"
+      ],
+      "status": "routed",
+      "items_added": 2,
+      "note": "net_class=DShot width=0.2mm via 2 pads"
+    },
+    {
+      "net": "MOT3",
+      "plan": [
+        "U1.22",
+        "J13.1"
+      ],
+      "status": "routed",
+      "items_added": 2,
+      "note": "net_class=DShot width=0.2mm via 2 pads"
+    },
+    {
+      "net": "USB_DP",
+      "plan": [
+        "U5.6",
+        "U1.71"
+      ],
+      "status": "routed",
+      "items_added": 2,
+      "note": "net_class=USB_diffpair width=0.25mm via 2 pads"
+    },
+    {
+      "net": "I2C2_SDA",
+      "plan": [
+        "U1.47",
+        "R11.2",
+        "U4.3"
+      ],
+      "status": "routed",
+      "items_added": 5,
+      "note": "net_class=Default width=0.15mm via 3 pads"
+    },
+    {
+      "net": "I2C2_SCL",
+      "plan": [
+        "U1.46",
+        "R12.2",
+        "U4.4"
+      ],
+      "status": "routed",
+      "items_added": 5,
+      "note": "net_class=Default width=0.15mm via 3 pads"
+    },
+    {
+      "net": "SWDIO",
+      "plan": [
+        "U1.72",
+        "J9.2"
+      ],
+      "status": "routed",
+      "items_added": 3,
+      "note": "net_class=Default width=0.15mm via 2 pads"
+    },
+    {
+      "net": "SWCLK",
+      "plan": [
+        "U1.76",
+        "J9.4"
+      ],
+      "status": "routed",
+      "items_added": 3,
+      "note": "net_class=Default width=0.15mm via 2 pads"
+    },
+    {
+      "net": "NRST",
+      "plan": [
+        "U1.14",
+        "C26.1",
+        "J9.10"
+      ],
+      "status": "routed",
+      "items_added": 5,
+      "note": "net_class=Default width=0.15mm via 3 pads"
+    },
+    {
+      "net": "SDMMC1_CLK",
+      "plan": [
+        "U1.80",
+        "J2.5"
+      ],
+      "status": "routed",
+      "items_added": 3,
+      "note": "net_class=SDMMC width=0.15mm via 2 pads"
+    },
+    {
+      "net": "SDMMC1_CMD",
+      "plan": [
+        "U1.83",
+        "J2.2",
+        "R51.2"
+      ],
+      "status": "routed",
+      "items_added": 5,
+      "note": "net_class=SDMMC width=0.15mm via 3 pads"
+    },
+    {
+      "net": "SDMMC1_D0",
+      "plan": [
+        "U1.65",
+        "J2.7",
+        "R52.2"
+      ],
+      "status": "routed",
+      "items_added": 5,
+      "note": "net_class=SDMMC width=0.15mm via 3 pads"
+    },
+    {
+      "net": "SDMMC1_D1",
+      "plan": [
+        "U1.66",
+        "J2.8",
+        "R53.2"
+      ],
+      "status": "routed",
+      "items_added": 5,
+      "note": "net_class=SDMMC width=0.15mm via 3 pads"
+    },
+    {
+      "net": "SDMMC1_D2",
+      "plan": [
+        "U1.78",
+        "J2.9",
+        "R54.2"
+      ],
+      "status": "routed",
+      "items_added": 5,
+      "note": "net_class=SDMMC width=0.15mm via 3 pads"
+    },
+    {
+      "net": "SDMMC1_D3",
+      "plan": [
+        "U1.79",
+        "J2.1",
+        "R55.2"
+      ],
+      "status": "routed",
+      "items_added": 5,
+      "note": "net_class=SDMMC width=0.15mm via 3 pads"
+    }
+  ],
+  "summary": {
+    "total_nets": 17,
+    "routed_attempted": 17,
+    "fail_during_add": 0,
+    "drc_exit_code": 5,
+    "drc_violations_summary": [
+      "Found 348 violations"
+    ]
+  },
+  "drc_excerpt": "** Drc report for novapcb-layout.kicad_pcb **\n** Created on 2026-05-20T21:30:48+0530 **\n\n** Found 348 DRC violations **\n[items_not_allowed]: Items not allowed (keepout area)\n    Rule: keepout area; error\n    @(15.0000 mm, 1.2750 mm): Track [SDMMC1_CMD] on B.Cu, length 24.2150 mm\n[items_not_allowed]: Items not allowed (keepout area)\n    Rule: keepout area; error\n    @(17.0000 mm, 1.2750 mm): Track [SDMMC1_D0] on B.Cu, length 24.2150 mm\n[items_not_allowed]: Items not allowed (keepout area)\n    Rule: keepout area; error\n    @(19.0000 mm, 1.2750 mm): Track [SDMMC1_D1] on B.Cu, length 24.2150 mm\n[items_not_allowed]: Items not allowed (keepout area)\n    Rule: keepout area; error\n    @(21.0000 mm, 1.2750 mm): Track [SDMMC1_D2] on B.Cu, length 24.2150 mm\n[items_not_allowed]: Items not allowed (keepout area)\n    Rule: keepout area; error\n    @(23.0000 mm, 1.2750 mm): Track [SDMMC1_D3] on B.Cu, length 24.2150 mm\n[shorting_items]: Items shorting two nets (nets +3V3 and MOT3)\n    Local override; error\n    @(13.4900 mm, 7.2169 mm): Track [+3V3] on F.Cu, length 0.0782 mm\n    @(13.5000 mm, 23.5000 mm): Track [MOT3] on F.Cu, length 21.5000 mm\n[shorting_items]: Items shorting two nets (nets +3V3 and I2C2_SDA)\n    Local override; error\n    @(10.3891 mm, 27.8691 mm): Track [+3V3] on F.Cu, length 0.6657 mm\n    @(8.5000 mm, 27.9900 mm): Track [I2C2_SDA] on F.Cu, length 11.6750 mm\n[shorting_items]: Items shorting two nets (nets +3V3 and I2C2_SDA)\n    Local override; error\n    @(10.5000 mm, 27.9800 mm): Track [+3V3] on F.Cu, length 0.1568 mm\n    @(8.5000 mm, 27.9900 mm): Track [I2C2_SDA] on F.Cu, length 11.6750 mm\n[tracks_crossing]: Tracks crossing\n    Rule: netclass 'Power_3V3'; error\n    @(12.5000 mm, 28.0200 mm): Track [+3V3] on F.Cu, length 1.3450 mm\n    @(22.5000 mm, 26.6750 mm): Track [I2C2_SDA] on F.Cu, length 14.0000 mm\n[shorting_items]: Items shorting two nets (nets GND and SDMMC1_D2)\n    Local override; error\n    @(24.3983 mm, 4.1148 mm): Track [GND] on F.Cu, length 0.6372 mm\n  "
+}
