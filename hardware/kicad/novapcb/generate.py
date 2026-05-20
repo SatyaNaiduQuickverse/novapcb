@@ -37,7 +37,7 @@ setup()
 # Sheet imports are side-effecting: declaring Part() / Net() instances adds
 # them to SKiDL's default Circuit. Adding a new sheet = add an import here.
 from sheets import mcu_3a   # noqa: F401  (3a — MCU + clock + reset + decoupling)
-# from sheets import power_3b  # 3b — power tree (to land after 3a merges)
+from sheets import power_3b  # noqa: F401  (3b — power tree: 5V → AP2112K-3.3 → +3V3)
 # from sheets import imu_3c    # 3c — ICM-42688-P
 # from sheets import baro_3d   # 3d — DPS310
 # from sheets import gps_3e    # 3e — GPS+mag JST-GH 10P
