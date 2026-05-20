@@ -233,10 +233,34 @@ for fp in brd.GetFootprints():
 # Step 5 — override placeholder footprints (PHASE3_AUDIT.md §B)
 # ============================================================
 # 5.1 ESC solder pads — swap J11-J18 from PinHeader to in-repo custom.
+# 5.2 CRSF solder pads — swap J10 from JST-GH 4P to in-repo custom (Phase 4b
+#     option-θ: 4×JST-GH MP-pad over-constrained on 36×36; ELRS RX is the
+#     connector most amenable to solder-pad termination since it's
+#     semi-permanently installed; pad convention matches ESC precedent).
 print(f"[4/6] swap J11-J18 footprint -> novapcb_lib:ESC_solder_pad", flush=True)
+print(f"             + J10 footprint -> novapcb_lib:CRSF_solder_pad (Phase 4b θ)", flush=True)
 swapped = 0
 for fp in brd.GetFootprints():
-    if fp.GetReference() in MOTOR_CONN_REFS:
+    ref = fp.GetReference()
+    if ref == "J10":
+        new_fp = pcbnew.FootprintLoad(NOVAPCB_LIB, "CRSF_solder_pad")
+        if new_fp is None:
+            print(f"      !!! FootprintLoad failed for CRSF_solder_pad", flush=True)
+            sys.exit(2)
+        old_pos = fp.GetPosition()
+        # Map net assignments by pad-number (1=5V, 2=TX, 3=RX, 4=GND per crsf_usb_3g.py)
+        net_map = {pad.GetNumber(): pad.GetNet() for pad in fp.Pads()}
+        new_fp.SetReference("J10")
+        new_fp.SetPosition(old_pos)
+        for pad in new_fp.Pads():
+            n = net_map.get(pad.GetNumber())
+            if n is not None:
+                pad.SetNet(n)
+        brd.Remove(fp)
+        brd.Add(new_fp)
+        swapped += 1
+        continue
+    if ref in MOTOR_CONN_REFS:
         # Load the custom footprint from the in-repo lib
         new_fp = pcbnew.FootprintLoad(NOVAPCB_LIB, "ESC_solder_pad")
         if new_fp is None:
@@ -330,12 +354,12 @@ PLACEMENT = {
     # (29.5, 17.5) — moved east 1.5mm from initial (28,17.5) so crystal
     # west pads clear MCU east pads (MCU east pad outer X=26.48; crystal
     # pads at X=29.5-1.6=27.9 give 1.42mm gap).
-    "Y1":  (29.5, 19.5,    0),   # 4b-rev3-final: was (29.5,17.5) — Y1 pad-3 at Y=18.65 was hitting J4 MP-N at Y=16.475 and J3 MP-S at Y=21.025. Moved N 2mm → pad-3 at Y=20.65 clears both with margin.
+    "Y1":  (28.5, 19.5,    0),   # 4b-θ-final iter3: (28,19.5) put Y1 pad 1 [HSE_IN] at world X=27.7..29.1 overlapping MCU east pads X=24.88..26.48 — no. Moved E 0.5mm. Y1 east pad outer X=30.3 clears J3 MP-S X=30.8 by 0.5mm ✓. Y1 west pad outer X=27.1 clears MCU east X=26.48 by 0.62mm ✓.
 
     # Crystal load caps (18pF) ADJACENT to Y1, between crystal and MCU body.
     # Load caps further north/south of Y1 to clear Y1's pad bounding box.
-    "C24": (29.5, 16.5,    0),   # 18pF load cap 1 — S of Y1 (Y1 moved N to 19.5; body Y=18.25..20.75)
-    "C25": (29.5, 22.5,    0),   # 18pF load cap 2 — N of Y1
+    "C24": (28.5, 16.5,    0),   # 18pF load cap 1 — follows Y1 to (28.5, 19.5)
+    "C25": (28.5, 23.5,    0),   # 18pF load cap 2 — N of Y1, also clears C15 at (27.5, 22) by 1.5mm Y
 
     # MCU power-rail decoupling caps — 100nF per VDD pin, around the LQFP-100
     # 4 sides. MCU body (11..25, 12..26); pads extend ~0.85mm past body.
@@ -367,7 +391,7 @@ PLACEMENT = {
 
     # R1/R2 = 0R series (VBAT/VBKP path); R3 = 10k BOOT0 pull-down.
     # Place south of MCU body, clear of MCU pad outer edge (Y ≤ 9).
-    "R1":  (22.0,  8.5,    0),   # 0R series VBAT
+    "R1":  (32.0,  8.5,    0),   # 0R series VBAT — 4b-θ: was (22,8.5) — J10 CRSF solder array body X=20..30 at Y=5.5..8.5 swept over R1. Moved E to (32,8.5) — clear of J10 (X<30) + clear of J4 MP-S at Y=5.5..6.5 by 2mm Y.
     "R2":  (14.0,  8.5,    0),   # 0R series VBKP
     "R3":  (18.0,  8.5,    0),   # 10k BOOT0 pull-down
 
@@ -494,20 +518,24 @@ PLACEMENT = {
     "R31": (24.0, 30.0,   90),   # CC1 pulldown — east of J1 body (J1 X≤21.45)
     "R32": (24.0, 32.0,   90),   # CC2 pulldown — east of J1 body
 
-    # J10 CRSF JST-GH 4P — kept on right edge mid (33.5, 18). NOTE: 36×36
-    # board's right-edge strip is structurally TOO SHORT for 3 JST-GHs
-    # (J3 6P + J10 4P + J4 6P need 25mm; available 23.5mm between H2/H4
-    # keep-outs). The top-edge relocation attempt (26.5, 33) created
-    # cascading conflicts with R31/R32 + USB-C body — reverted. The 3
-    # JST-GHs slightly conflict with mounting-hole keep-outs at the
-    # corners (J3 MP↔H4, J4 MP↔H2) — documented residual, irreducible
-    # without re-spec'ing the mounting-hole pattern or moving a connector
-    # to a non-edge position.
-    "J10": (33.5, 18.0,  270),
+    # J10 CRSF — master Phase 4b option-θ: DROPPED JST-GH connector,
+    # REPLACED with 4-pad solder array (CRSF_solder_pad in-repo lib).
+    # Reason: 4× MP-pad JST-GH connectors + USB-C + USBLC6 + 8 ESC pads
+    # + 4 M3 corners @ 30.5 on 36×36 = structurally over-constrained
+    # (verified: no no-MP JST-GH part exists in JST catalog; MatekH743
+    # reference uses different connector architecture). ELRS RX is the
+    # connector most amenable to solder-pad termination (semi-permanent
+    # install). DECISIONS §7 preservation: GPS+mag (J5) / telem (J3) /
+    # Mauch (J4) keep JST-GH for Pixhawk DS-009 cable compatibility.
+    # ⚠️ SUPERMASTER REVIEW — autonomous architectural change.
+    # Placement: south-east interior (28, 7) — south of MCU body S edge,
+    # north of ESC pads, west of H2 keep-out, accessible for wire solder.
+    # Body 10×3mm at 0° → X=23..33, Y=5.5..8.5.
+    "J10": (25.0,  7.0,    0),   # 4b-θ-final: was (26.5,7) — J10 pad 4 at X=30.25 (extent 29.5..31.0) still overlapped J4 MP-S rotated world-X extent X=30.8..33.5 by 0.2mm. Moved W another 1.5mm → pad 4 at X=28.75 (extent 28..29.5) clears J4 MP-S west edge X=30.8 by 1.3mm.
 
     # ============ Telem (3i — right edge top, J3) ============
     # J3 JST-GH 6P telem — right edge top. USART1 on PA9/PA10 (MCU east).
-    "J3":  (33.5, 28.0,  270),   # Reverted to original (33.5,28). MP-N at (32.15,32.975) marginally conflicts with H4 mounting pad; documented as irreducible (same root as J4/H2).
+    "J3":  (33.5, 23.0,  270),   # Master Phase 4b option-θ: J10 dropped → J3 moves S. (Y=25) had MP-S at Y=20.025 conflicting with Y1 pad 2 at (30.6, 20.35). Y=23 puts MP-S at Y=18.025 (clear of Y1 Y=19.75..20.95) + MP-N at Y=27.975 (5.39mm from H4 → clear ✓).
 
     # ============ Power-monitor + microSD + SWD + ADC (3h) ============
     # J4 Mauch JST-GH 6P — right edge bottom-of-mid. Y=10.5 clears H2 keep-out

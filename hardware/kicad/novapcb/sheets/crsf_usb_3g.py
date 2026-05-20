@@ -3,9 +3,25 @@ novapcb Phase 3g — CRSF UART connector + USB-C receptacle sheet.
 
 Two distinct blocks on one sheet:
 
-  1. **CRSF block** — JST-GH 4-pin connector for the ExpressLRS RX module.
-     Carries +5V + USART6_TX + USART6_RX + GND. Wired per Phase 2f lock
-     (defaults.parm SERIAL7_PROTOCOL 23 + SERIAL7_BAUD 420; CRSF at 420 kbaud).
+  1. **CRSF block** — schematic-side: ELRS RX termination. Carries +5V +
+     USART6_TX + USART6_RX + GND. Wired per Phase 2f lock (defaults.parm
+     SERIAL7_PROTOCOL 23 + SERIAL7_BAUD 420; CRSF at 420 kbaud).
+
+     **2026-05-20 Phase 4b option-θ (footprint, NOT schematic, change):**
+     Phase 3g originally captured CRSF as a JST-GH 4-pin connector.
+     Phase 4b layout discovered that 4× MP-pad JST-GH connectors plus the
+     full peripheral set are geometrically over-constrained on the
+     36×36mm board (verified: no no-MP JST-GH part exists in JST catalog;
+     MatekH743 reference uses a different connector architecture). Master
+     adjudicated to swap J10's PHYSICAL FOOTPRINT to a 4-pad solder array
+     (CRSF_solder_pad in `hardware/kicad/novapcb-layout/lib/novapcb.pretty/`),
+     same convention as ESC outputs. The NETLIST is unchanged — 4 pins
+     wired identically: pin 1=5V, 2=TX, 3=RX, 4=GND. The schematic part
+     stays Conn_01x04. This is a Phase 4 footprint swap (like the Phase
+     4a ESC solder-pad swap), not a Phase 3 re-do. Pixhawk DS-009 cable
+     compatibility is preserved for J3 (telem) / J4 (Mauch) / J5 (GPS+mag)
+     which keep JST-GH; only J10 CRSF becomes a solder-pad termination
+     (ELRS RX is semi-permanently installed so wire-solder is acceptable).
 
   2. **USB-C block** — USB 2.0 USB-C receptacle (HRO TYPE-C-31-M-12 from
      Phase 2.5 P0.4 inventory). Carries VBUS + GND + D+/D- diff pair +
