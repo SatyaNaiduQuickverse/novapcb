@@ -67,14 +67,13 @@ PB11 I2C2_SDA I2C2
 # ADC
 PC0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
 PC1 BATT_CURRENT_SENS ADC1 SCALE(1)
-PA4 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
-PA7 BATT2_CURRENT_SENS ADC1 SCALE(1)
+# BATT2 scaffolding (PA4/PA7) removed Phase 2-exit 2026-05-20: novapcb v1 is single-Mauch
+# per DECISIONS §5; #ifdef-guarded BATT2 runtime path was already inert (BATT_MONITOR2 = 0
+# default). Removal frees a few hundred bytes + clarifies hwdef intent.
 
 define HAL_BATT_MONITOR_DEFAULT 4
 define HAL_BATT_VOLT_PIN 10
 define HAL_BATT_CURR_PIN 11
-define HAL_BATT2_VOLT_PIN 18
-define HAL_BATT2_CURR_PIN 7
 # BATT1 SCALE values: researched Mauch HS-200-LV typicals per DECISIONS §5 (Mauch 200A
 # pinned) + CLAUDE.md §3.6 (4-6S LiPo → LV variant, max 28V). NOT inherited Matek values.
 #  HAL_BATT_VOLT_SCALE 9.0  - Mauch HS-200-LV uses a 9:1 resistor divider on the LV
@@ -91,9 +90,6 @@ define HAL_BATT2_CURR_PIN 7
 # HS-200-HV (>6S), update HAL_BATT_VOLT_SCALE 9.0 → 18.0 (18:1 divider on HV variant).
 define HAL_BATT_VOLT_SCALE 9.0
 define HAL_BATT_CURR_SCALE 60.6
-# BATT2 (Matek-onboard) SCALE retained as inherited cruft: BATT_MONITOR2 defaults to 0
-# (#ifdef-guarded, never read) -> harmless. Full BATT2 removal queued for Phase 2-exit.
-define HAL_BATT2_VOLT_SCALE 11.0
 
 PC4 PRESSURE_SENS ADC1 SCALE(2)
 define HAL_DEFAULT_AIRSPEED_PIN 4

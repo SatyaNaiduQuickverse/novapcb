@@ -13,6 +13,7 @@ Recorded ArduCopter build results per sub-phase. Each section is self-contained:
 | Phase 2f (CRSF UART lock + defaults.parm at 420 kbaud) | 1,523,100 | 180,828 | `0ec597c1…d9a58b3c` |
 | Phase 2g (VBAT+CURRENT ADC lock; Mauch HS-200-LV researched SCALEs) | 1,523,104 | 180,828 | `9ddb37d4…c06b1db7` |
 | Phase 2h (USB strings + SDMMC verify, zero hwdef change) | 1,523,104 | 180,828 | `9ddb37d4…c06b1db7` (bit-identical) |
+| Phase 2-exit (BATT2 scaffolding strip + Part A re-audit gate-pass) | 1,522,968 | 180,964 | `12cc9fe3…fc78f1e3` |
 
 Phase 2a delta from Phase 1: text −11,228 B, BSS −1,860 B → total flash used **−11,224 B**, free flash **+11,224 B**. Drop comes from un-linking the three legacy IMU drivers (`mpu6000`, `icm20602`, `icm42605`) we removed.
 
@@ -805,3 +806,95 @@ sha256  9ddb37d420c166ab7b425cf6aa0fd7cdaf234dc250ecd31adf2a9419c06b1db7  arduco
 ### Phase 2 progress + handoff to Phase 2-exit
 
 This Phase 2h PR closes the per-sub-phase Phase 2 work. Sub-phases shipped: 2a (IMU) → 2b (baro) → 2c (mag) → 2d (GPS verify) → 2e (ESC outputs amended for bdshot) → 2f (CRSF defaults.parm) → 2g (Mauch HS-200-LV power) → 2h (USB + SDMMC verify). Per master's standing instructions, the next sub-phase is **Phase 2-exit** — strip Matek-only cruft (HAL_BUZZER_PIN, PC7 RCININT historical comment, BATT2 scaffolding, MAX7456 OSD if still present) + perform the Phase 2-exit retrospective re-audit (re-grep all Phase 2 critical claims, re-verify sha256 reproduce, recheck cumulative flash arithmetic) per the 01:00 retro cross-review action item.
+
+---
+
+## Phase 2-exit — re-audit gate-pass + BATT2 scaffolding strip + 02:00 retro fold-in (2026-05-20)
+
+Phase 2-exit closes Phase 2. Three-part structure: (A) re-audit gate, (B) conservative cruft inventory + strip, (C) 02:00 retro folded into PHASE2_AUDIT.md. Master reframed B from "strip aggressively" to "inventory + classify conservatively, strip only unambiguous removes" per the "don't lose what surely works" calibration. See `firmware/hwdef-novapcb/PHASE2_AUDIT.md` for the structured report.
+
+### Part A — re-audit gate-passed
+
+- A1 ✓ Cold-clean ccache-disabled rebuild (`rm -rf build/novapcb-v1` + `CCACHE_DISABLE=1`) of `main` at `ea4ed98` (Phase 2h) reproduced sha `9ddb37d420c166ab7b425cf6aa0fd7cdaf234dc250ecd31adf2a9419c06b1db7` bit-identically in 5 min 18.228 s wallclock (vs 3m27s warm-ccache — confirms no ccache assist). Single strongest verification possible.
+- A2 ✓ Per-phase flash deltas all arithmetic-consistent across 2a→2h (cumulative −22,768 B used from Phase 1).
+- A3 ✓ `APJ_BOARD_ID 5350` preserved across all Phase 2 commits.
+- A4 ✓ CONFIDENCE_MAP rows 1-10 cited line numbers resolve on `main`; bumps monotonic + evidence-backed.
+- A5 ✓ All 4 master Rule-3 slip corrections present in deliverable docs (one historical residual at `tasks/phase-2b-baro.yaml:20 inputs.refs` — frozen historical contract, do not backfill-edit per master directive 2026-05-20; deliverable docs corrected).
+
+### Part B — conservative cruft inventory
+
+Inventory of 7 Matek-specific items in `hwdef.dat`. Per master adjudication 2026-05-20:
+
+| # | Item | Classification | Notes |
+|---|---|:---:|---|
+| 1 | BATT2 scaffolding (PA4/PA7 ADC pins + 2 PIN defines + 1 SCALE define) | **REMOVE** | This PR. DECISIONS §5 single-Mauch explicit. |
+| 2 | PA15 BUZZER + HAL_BUZZER_PIN | KEEP | Useful arming/failsafe tones; Phase 3 schematic decides population. |
+| 3 | PINIO1/PINIO2 (PD10/PD11) | KEEP | General-purpose GPIO outputs; harmless. |
+| 4 | HAL_DEFAULT_AIRSPEED_PIN 4 + PC4 PRESSURE_SENS | KEEP | Harmless; driver only loads if user enables ARSPD param. |
+| 5 | PC5 RSSI_ADC + BOARD_RSSI_ANA_PIN | KEEP | Analog RSSI fallback; harmless. |
+| 6 | CAN1 (PD0/PD1) | KEEP | DroneCAN/UAVCAN not committed in DECISIONS; Phase 3 decides connector populate. |
+| 7 | MAX7456 OSD chip + SPI2 + driver + ROMFS fonts | **DEFER** | Rule-13 escalated; master adjudicated D1 (DEFER) with sharpened OPEN_QUESTIONS `phase2exit-1` entry: novapcb is Pixhawk-class autopilot (CLAUDE.md §0/§1), MAX7456 is analog-FPV-FC hardware, Nova video is fully digital — RECOMMENDATION: omit at Phase 3 schematic. Hwdef strip belongs WITH Phase 3 schematic work, not ahead. |
+
+### BATT2 strip — what was removed
+
+5 lines removed from `hwdef.dat`:
+
+```
+PA4 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
+PA7 BATT2_CURRENT_SENS ADC1 SCALE(1)
+define HAL_BATT2_VOLT_PIN 18
+define HAL_BATT2_CURR_PIN 7
+define HAL_BATT2_VOLT_SCALE 11.0
+```
+
+Replaced with a 3-line strip-marker comment citing DECISIONS §5 + #ifdef-guarded-inert rationale. Strip is safe: `AP_BattMonitor_Analog.cpp:119-130` all #ifdef-guard the BATT2 path; absence reverts to standard ArduPilot `BATT_MONITOR2 = 0` default behavior (which was already the runtime state).
+
+### Build wall-clock
+
+| Step | Time |
+|---|---|
+| `rm -rf build/novapcb-v1` | instant |
+| `CCACHE_DISABLE=1 ./waf configure --board=novapcb-v1` | sub-second |
+| `CCACHE_DISABLE=1 ./waf copter` | **5 min 20.857 s** (cold-clean, no ccache) |
+| Compiler warnings | **0** (Werror build) |
+
+### Flash budget (`bin/arducopter`)
+
+| Section | Bytes | Δ vs Phase 2h |
+|---|---:|---:|
+| Text | 1,518,440 | **−136** |
+| Data | 4,528 | 0 |
+| BSS | 136,676 | 0 |
+| **Total flash used** | **1,522,968** | **−136** |
+| **Free flash** | **180,964** | **+136** |
+| External flash used | Not Applicable | — |
+
+The −136 B comes from the 1 fewer SCALE constant in the binary's parameter-default table + 2 fewer ADC-pin entries in the HAL ADC channel table. BATT2 monitor backend code itself is still linked (since `BATT_MONITOR` can be set to `2` = BATT2 type at runtime via param). Net: hwdef-level cleanup, not code-level removal — compile-time defaults dropped.
+
+### Checksums
+
+```
+sha256  12cc9fe33b277a0c06b25f60c45d477fafd16e3ee3852875da391338fc78f1e3  arducopter.bin
+        md5  36e2ca1cf674e44f02a408a3f2eddd45  (embedded app_descriptor md5; changed from Phase 2h's ef8c6ef9...)
+```
+
+### Verification (post-build)
+
+- `board_id` in `arducopter.apj` = `5350` ✓ (preserved).
+- `image_size: 1522972`, `image_maxsize: 1703936` ✓.
+- Exit code from `./waf copter` = `0`, `Enabling -Werror : yes`.
+- BATT2 string grep on `hwdef.dat`: only matches are in the strip-marker comment lines 70-71 — no live `HAL_BATT2_*` defines, no live PA4/PA7 ADC pin lines.
+- Hwdef line count: 256 → 252 (−4 lines net: −5 hwdef lines + 3-line comment block, with one blank).
+
+### What this Phase 2-exit build is NOT
+
+- Not bench-validated. BATT2 strip's "runtime behavior unchanged" claim is per-source `#ifdef` analysis; physical FC + plugged Mauch on bench (Phase 9) is the final word.
+- Not a MAX7456 OSD strip — deferred to Phase 3 schematic per OPEN_QUESTIONS `phase2exit-1` (master near-certain "omit" recommendation, but the strip belongs with the schematic decision).
+- Not addressing items 2-6 (buzzer, PINIO, airspeed pin, RSSI, CAN1) — KEEP per master adjudication; Phase 3 schematic decides population of any optional hardware behind those hwdef declarations.
+- Not addressing the historical residual in `tasks/phase-2b-baro.yaml:20` — historical contracts are immutable per master directive (do not backfill-edit; honestly note residual instead).
+
+### Phase 2 lifecycle close
+
+Phase 2 sub-phases shipped: 2a (IMU lock) → 2b (baro lock) → 2c (mag lock) → 2d (GPS port verify) → 2e (8 ESC w/ 4 BIDIR, bdshot inheritance, amended) → 2f (CRSF UART defaults.parm) → 2g (Mauch HS-200-LV power, option C5 after compile-fail escalation) → 2h (USB + SDMMC pure-verify, bit-identical) → 2-exit (BATT2 strip + re-audit gate-pass + 02:00 retro fold-in). 9 sub-phases, 8 PRs (2d was zero-diff verify rolled into the 2c PR analysis).
+
+Phase 3 (schematic init) may begin per master standing instruction. Phase 2.5 (footprint reality check, first KiCad work) comes BEFORE Phase 3 per `DESIGN_PHASES.md`; will dispatch on its own contract per master.
