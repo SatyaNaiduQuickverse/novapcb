@@ -51,10 +51,14 @@ inline comments):
   - microSD (J2 DM3AT): flipped to B.Cu (bottom layer) — DM3AT has
     explicit footprints-not-allowed keep-out zones that conflict with NE
     F.Cu components; B.Cu placement is standard mini-FC practice (card
-    accessible from underside via airframe cutout). Placed at (25,30).
+    accessible from underside via airframe cutout). Placed at (18,6) per
+    4b-rev (was (25,30) in 4b first-pass; re-positioned center-south
+    to clear THT keep-outs of H4 + J1 USB-C shield pins).
   - SDMMC pull-ups (R51-R55): row between J2 and MCU on F.Cu — short
     SDMMC bus paths through-vias to B.Cu J2 mounting pads.
-  - SWD (J9): B.Cu at (18,6) — pogo-pin programming jig on underside.
+  - SWD (J9): B.Cu at (18,21) — pogo-pin programming jig on underside
+    (initial (18,6) placement moved north to clear J2 microSD keep-out at
+    center-south; (18,21) is under the MCU center on the bottom side).
   - 8× ESC solder pads (J11-J18): bottom edge in single row at 3.0mm
     pitch (X=7.5..28.5), Y=2.0. Clears H1/H2 mounting keep-outs by 1.25mm
     on both sides.
