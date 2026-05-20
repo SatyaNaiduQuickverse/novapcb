@@ -10,6 +10,7 @@ Recorded ArduCopter build results per sub-phase. Each section is self-contained:
 | Phase 2c (mag → IST8310+RM3100, drop broad-probe) | 1,519,948 | 183,980 | `86fec69e…f788ac70` |
 | Phase 2d (GPS port verify, zero hwdef change) | 1,519,948 | 183,980 | `86fec69e…f788ac70` (bit-identical) |
 | Phase 2e (8 ESC channels with **4 BIDIR**, MatekH743-bdshot inherit) | 1,521,688 | 182,244 | `8c3adbfa…2df234d93f` |
+| Phase 2f (CRSF UART lock + defaults.parm at 420 kbaud) | 1,523,100 | 180,828 | `0ec597c1…d9a58b3c` |
 
 Phase 2a delta from Phase 1: text −11,228 B, BSS −1,860 B → total flash used **−11,224 B**, free flash **+11,224 B**. Drop comes from un-linking the three legacy IMU drivers (`mpu6000`, `icm20602`, `icm42605`) we removed.
 
@@ -496,3 +497,82 @@ sha256  8c3adbfa5ab30e36e341b61405b5024e4ef6947ef2d73d640a19db2df234d93f  arduco
 - USART6 (PC7/PC6) defined as a UART but novapcb v1 doesn't currently use it. Phase 2f locks the CRSF UART (different UART); USART6 pins stay defined to match bdshot pattern but become "spare UART" for novapcb.
 - PA15 BUZZER pin defined but no buzzer hardware required for v1. Pin can be repurposed in Phase 2-exit if not used.
 - `HAL_BUZZER_PIN 32` is defined; no buzzer driver code change beyond ArduPilot's default GPIO-toggle pattern.
+---
+
+## Phase 2f — CRSF UART lock (novapcb defaults.parm, SERIAL7 + 420 kbaud) (2026-05-20)
+
+Phase 2f locks the CRSF UART configuration for the external ELRS RX per `DECISIONS.md §4`. **No hwdef.dat change** — USART6 RX/TX on PC7/PC6 was already inherited from MatekH743-bdshot via the Phase 2e amendment. The new artefact is `firmware/hwdef-novapcb/defaults.parm` — first parameter-defaults file for novapcb-v1, gets baked into the binary's ROMFS at build time and applied on first boot.
+
+### `defaults.parm` content (2 lines)
+
+```
+SERIAL7_PROTOCOL 23     # RCIN — inherited from MatekH743-bdshot/defaults.parm
+SERIAL7_BAUD 420        # CRSF 420 kbaud — novapcb-specific deviation from bdshot's 115
+```
+
+### Design decision: option (B) per master adjudication 2026-05-20
+
+| Option | Picked? | Reason |
+|---|:---:|---|
+| (A) Strict bdshot inheritance — `SERIAL7_BAUD 115` | — | BAUD 115 = 115 200, fits SBUS/DSM/PPM at TTL levels. Does NOT match CRSF's 420 kbaud. Fails our committed CRSF target per DECISIONS §4. |
+| (B) novapcb-specific defaults.parm — `SERIAL7_BAUD 420` | **✓** | DECISIONS §4 locks novapcb v1 to CRSF/ELRS. 1-number deviation from bdshot, deliberate + cited. "Surely-working AND decision-aligned" beats "surely-working strict inheritance." |
+| (C) No defaults.parm | — | Loses out-of-box capability. User must GCS-configure SERIAL7_PROTOCOL + BAUD before first flight. Brittle UX. |
+
+### Scope-expansion authorization
+
+Master authorized adding `firmware/hwdef-novapcb/defaults.parm` to the contract's `outputs.files_created` 2026-05-20 after worker's Rule-13 stop flagged it. The contract was updated in the same PR (small edit). Per `ENGINEERING_RIGOR.md §8`, scope expansion goes through contract update first.
+
+### Verification (Rule 3, grep-then-state)
+
+| Item | State | Source |
+|---|---|---|
+| MatekH743-bdshot defaults.parm | 2 lines — `SERIAL7_PROTOCOL 23` + `SERIAL7_BAUD 115` | `~/ardupilot/libraries/AP_HAL_ChibiOS/hwdef/MatekH743-bdshot/defaults.parm` |
+| Base MatekH743 defaults.parm | does not exist | `~/ardupilot/libraries/AP_HAL_ChibiOS/hwdef/MatekH743/` directory listing |
+| USART6 → SERIAL slot mapping | USART6 at index 7 in SERIAL_ORDER → SERIAL7 | novapcb-v1 `hwdef.dat` SERIAL_ORDER line |
+| USART6 pins | PC7 (RX) / PC6 (TX) inherited from bdshot | novapcb-v1 `hwdef.dat` lines (post Phase 2e amendment) ← bdshot:19-20 |
+| Inversion / half-duplex flags | none in either MatekH743 variant | grep `RXINV|TXINV|HALF_DUPLEX` over both hwdefs |
+| FT-rated pin verification | deferred — PC7 is bdshot-inherited (production-validated) | trust path: ArduPilot upstream + bdshot-shipping-on-hardware |
+
+### Build wall-clock
+
+| Step | Time |
+|---|---|
+| `./waf configure --board novapcb-v1` | 1.717 s |
+| `./waf copter` | **3 min 6.7 s** (defaults.parm ROMFS embed regen; small hwdef.h delta from configure tool's awareness of the new file) |
+| Real / user / sys | 3m7.425s / 7m18.808s / 1m9.305s |
+| Compiler warnings | **0** (Werror build) |
+
+### Flash budget (`bin/arducopter`)
+
+| Section | Bytes | Δ vs Phase 2e |
+|---|---:|---:|
+| Text | 1,518,572 | +1,412 |
+| Data | 4,528 | 0 |
+| BSS | 136,680 | +12 |
+| **Total flash used** | **1,523,100** | **+1,412** |
+| **Free flash** | **180,828** | **−1,416** |
+| External flash used | Not Applicable | — |
+
+The +1,412 B comes from the defaults.parm content + the ROMFS embed handler. The .parm text itself is ~150 bytes; the rest is the ArduPilot ROMFS handler + apply-on-boot logic. Free flash now ~10.6% of `image_maxsize` — still comfortable for Phase 2g/2h additions.
+
+### Checksums
+
+```
+sha256  0ec597c10f89965a9a2dd8145010dd1536b53f1ff1d534b9a41f3818d9a58b3c  arducopter.bin
+```
+
+### Verification (post-build)
+
+- `board_id` in `arducopter.apj` = `5350` ✓ (preserved).
+- `image_size: 1523108`, `image_maxsize: 1703936` ✓.
+- Exit code from `./waf copter` = `0`.
+- defaults.parm created at `firmware/hwdef-novapcb/defaults.parm` (2 content lines + 4 comment lines).
+- hwdef.dat unchanged in this sub-phase — USART6 pins inherited from Phase 2e amendment.
+
+### What this Phase 2f build is NOT
+
+- Not flight-validated. CRSF UART is correctly declared + baud set to 420; no physical board + ELRS RX to test against.
+- FT-rated pin verification deferred — STM32H743V datasheet Table 9 not directly grep'd (PDF not on this Pi). Trust path is bdshot's production-validated PC7 usage.
+- ArduPilot defaults.parm honoring behavior: assumed-working based on bdshot's defaults.parm being shipped + working in production. Not bench-verified against a built binary's actual first-boot parameter store.
+- CRSF protocol-level handshake (open-drain UART, polarity autodetection) is ArduPilot driver responsibility at protocol layer. Phase 6e sim can verify edge-rate / eye opening.
+- DECISIONS §4 also references "external RX module + on-board CRSF UART" — the "on-board" part means a JST connector for the ELRS RX module's CRSF lines. Specific connector pinout (which of PC7/PC6 + which power rails + which ground) is a Phase 4 layout decision.
