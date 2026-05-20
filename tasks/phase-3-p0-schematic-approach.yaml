@@ -1,0 +1,75 @@
+id: phase-3-p0-schematic-approach
+phase: "3"
+subphase: "3-P0"
+title: "Investigate + recommend the headless schematic-capture approach"
+status: in_progress_p0_gate
+depends_on:
+  - phase-2.5-footprint-check
+
+inputs:
+  files:
+    - CLAUDE.md
+    - docs/DESIGN_PHASES.md
+    - docs/DECISIONS.md
+    - firmware/hwdef-novapcb/hwdef.dat
+    - hardware/kicad/footprint-check/
+  refs:
+    - "CLAUDE.md §6.1 — code-driven PCB workflow: KiCad sources in git, schematic + layout changes through PRs, BOM diffable"
+    - "CLAUDE.md §6.5 — DESIGN_PHASES Phase 3 (schematic) + Phase 3.5 (reference design audit) + Phase 6.5 (forum review)"
+    - "KiCad 9.0.2 capabilities — eeschema CLI (kicad-cli sch), the python schematic situation, any S-expression read/write"
+    - "Candidate tools evaluated: SKiDL 2.2.3 (devbisme/skidl, PyPI), kicad-skip 0.2.5 (psychogenic/kicad-skip, PyPI), atopile (PyPI), hand-written .kicad_sch S-expressions, eeschema scripting"
+    - "hwdef.dat — the authoritative novapcb peripheral set the schematic must realize"
+
+decision_forks_watched:
+  schematic-approach:
+    fork: "How a headless Claude captures the novapcb schematic"
+    expected_classes: [skidl-codedriven, kicad-skip-scripted, handwrite-sexpr, atopile, hybrid, other]
+    pre_recommendation: "SKiDL with kicad-cli render pipeline (per P0.4 smoke test result + P0.3 core tension resolution — SKiDL gives BOTH Python source-of-truth AND .kicad_sch native output)"
+    actual_resolution: "PENDING (P0.7 gate)"
+    resolved_via: "3-P0 gate"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-3-p0-schematic-approach.yaml
+    - hardware/kicad/PHASE3_P0_REPORT.md
+  files_modified: []
+  pr:
+    title: "Phase 3 Part 0: schematic-capture approach investigation (recommend SKiDL)"
+    branch: hw/phase-3-p0-schematic-approach-2026-05-20
+
+pass_criteria:
+  - "P0.1: Enumerate realistic headless schematic-capture options. Each: installed/installable on novarobotics64 (no sudo)? actively maintained? KiCad-9 compatible? STATUS: complete — see PHASE3_P0_REPORT.md §P0.1. 4 viable candidates evaluated (SKiDL, kicad-skip, atopile, hand-write .kicad_sch). 1 dismissed (kicad-cli sch — ERC+export only, no creation)."
+  - "P0.2: For each viable option, assess against 5 axes (headless-feasible, PR-reviewable, produces netlist for Phase 4, produces forum-review artifact, maintainable per §6.1). STATUS: complete — see PHASE3_P0_REPORT.md §P0.2 matrix."
+  - "P0.3: Surface code-driven-vs-drawn-schematic tension explicitly + report whether any approach gives BOTH. STATUS: complete — SKiDL resolves the tension: Python source + generated .kicad_sch output. See PHASE3_P0_REPORT.md §P0.3."
+  - "P0.4: Minimal end-to-end smoke test of top candidates. STATUS: complete — SKiDL trivial R+C smoke test passes; produces .kicad_sch (14 KB) + .net (2.7 KB); kicad-cli ERC accepts it; kicad-cli renders to PDF (21 KB). Commands + artefacts in PHASE3_P0_REPORT.md §P0.4."
+  - "P0.5: Recommend ONE approach. STATUS: complete — recommend SKiDL (devbisme/skidl 2.2.3) with kicad-cli render pipeline. Phase 6.5 forum-review artifact = PDF/SVG via kicad-cli from the generated .kicad_sch. Recommendation reasoning + caveats in PHASE3_P0_REPORT.md §P0.5."
+  - "P0.6: Propose Phase 3 sub-phase breakdown (one PR per schematic sheet). STATUS: complete — see PHASE3_P0_REPORT.md §P0.6. Proposed 8 sheets (3a-3h) mirroring Phase 2 sub-phase rhythm."
+  - "P0.7: STOP. Rule-13 gate. Wait for master adjudication. STATUS: at gate."
+
+estimated_context_kb: 55
+estimated_wallclock: "60-120 min — research + smoke tests, no schematic drawing"
+
+notes: |
+  Phase 3 Part 0 is investigation-only. Zero schematic sheets created.
+
+  The hard part — KiCad schematic capture being GUI-native — turned
+  out to have a real Python solution: SKiDL 2.2.3 added KiCad 9
+  schematic generation support (per its PyPI + GitHub readme). End-
+  to-end smoke test confirmed: trivial R+C circuit produces both
+  netlist AND .kicad_sch, both consumable by kicad-cli for ERC +
+  rendering.
+
+  This neatly resolves the P0.3 tension (code-driven vs human-drawn):
+  SKiDL Python is the source of truth + diff-reviewable, the
+  generated .kicad_sch is the EE-universal artifact for Phase 6.5
+  forum review (rendered to PDF via kicad-cli).
+
+  Recommendation calibration matches master's note: "surely-working
+  > elegant" — SKiDL is surely-working (smoke test passes); it's
+  also elegant (Python source-of-truth). Win-win on this fork.
+
+  Phase 3 sub-phase rhythm follows Phase 2: per-sheet sub-phases
+  (3a MCU/clock/power, 3b IMU, 3c baro, etc.), one PR each, mirror
+  the Phase 2 sub-phase cadence master + worker established.
