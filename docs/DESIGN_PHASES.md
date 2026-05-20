@@ -115,16 +115,28 @@ Before laying out copper, lift verbatim what's been proven. For each subsystem i
 
 Reference availability honest report (per the actual 3.5 audit): MatekH743 full schematic NOT obtainable (Matek doesn't publish; ArduPilot tree has only hwdef). Pixhawk6X / FMUv6X published as DS-012 but H753-based + 2-board pattern (partial applicability). ArduPilot hwdefs across the H743 family provide pin maps but not full schematics. Component datasheet typical-app-circuits used as proxy where appropriate. Where references genuinely weren't obtainable, subsystems routed to Phase 6.5 as the honest answer — no faked cross-checks.
 
-## Phase 4 — PCB layout (NOT STARTED)
+## Phase 4 — PCB layout (P0 + 4a DONE; 4b-4f IN PROGRESS)
 
-- 30.5 × 30.5 mm outline, M3 mounting holes (DECISIONS.md §2 v1).
-- 4-layer stackup (DECISIONS.md §8).
+Phase 4 P0 (routing-approach investigation) merged 2026-05-20 — see `hardware/kicad/PHASE4_P0_REPORT.md`. Recommendation: **(c) hybrid** (placement + Freerouting bulk + scripted critical-net hand-route) with documented **(d) supermaster GUI** fallback. Toolchain (kinet2pcb + pcbnew + Java 25 + Freerouting v2.2.4) validated headless on the real novapcb netlist via 3-iteration scale-test.
+
+Sub-phases per the P0.6-approved breakdown:
+
+| Sub | Title | Status |
+|---|---|---|
+| 4a | Footprints + 4-layer stackup + DRC ruleset + closed outline | **DONE 2026-05-20** — `hardware/kicad/novapcb-layout/` (board scaffolding ready for placement; 70/70 footprints final; 36×36mm closed outline; 4× M3 at 30.5 c-to-c; 8 net classes incl. Power/USB_diffpair/IMU_SPI/SDMMC/DShot; DRC rules within JLCPCB 4-layer capability) |
+| 4b | Component placement (per Phase 2.5 sketch + Phase 3 hierarchy) | NOT STARTED — first-class design task per master 09:00 retro cross-review |
+| 4c | Plane definition (GND on In1; +3V3/+5V/VBAT split on In2) | NOT STARTED — lifts iter-#3 power-plane finding from P0 |
+| 4d | Auto-routing pass (Freerouting via DSN/SES) | NOT STARTED |
+| 4e | Critical-net hand-routing (USB diff pair, IMU SPI, SDMMC, Mauch ADC filter) | NOT STARTED |
+| 4f | DRC clean + schematic parity + gerber/drill export | NOT STARTED |
+| 4-exit | Re-audit + Phase 5 carry-forward (Phase 2/3-exit pattern) | NOT STARTED |
+
+- 36 × 36 mm board outline, 30.5 × 30.5 mm c-to-c M3 mounting (DECISIONS §2 v1).
+- 4-layer stackup (DECISIONS §8); F.Cu (signal) / In1.Cu (GND plane) / In2.Cu (power split) / B.Cu (signal).
 - IMU placement sits over the clean ground plane.
-- USB-C connector edge-mount; microSD edge or under-mount as layout
-  permits.
-- JST-GH connectors per DECISIONS.md §7.
-- Acceptance: DRC clean; 3D view inspected; mechanical envelope
-  matches the planned mounting tray.
+- USB-C connector edge-mount; microSD edge or under-mount as layout permits.
+- JST-GH connectors per DECISIONS §7.
+- Acceptance: DRC clean; 3D view inspected; mechanical envelope matches the planned mounting tray.
 
 ## Phase 5 — BOM finalization (NOT STARTED)
 
