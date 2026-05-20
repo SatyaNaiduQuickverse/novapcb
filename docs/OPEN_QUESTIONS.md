@@ -70,3 +70,19 @@ Raised 2026-05-20 (Phase 3a Rule-13 stop — escalation #1 on `tasks/phase-3a-mc
 **Not blocking.** Phase 3.5 (reference-design audit) and Phase 4 (PCB layout) both consume the SKiDL-generated netlist, which works. Phase 5 (BOM) consumes the netlist + parts metadata. Phase 6 (sims) takes the netlist + footprint placements. The drawn-schematic gap blocks Phase 6.5 specifically.
 
 **Owner / when:** dedicated task scheduled within the Phase 3.5–6 window. Not blocking Phase 3 sub-phase advance (netlist-only mode is the agreed Phase 3 deliverable; see `tasks/phase-3a-mcu.yaml` escalation_log entry #1).
+
+---
+
+# Closed decisions (recorded here for traceability)
+
+## CLOSED phase3exit-can. CAN: novapcb v1 deliberately ships no CAN connector / transceiver
+
+**Decided 2026-05-20** (Phase 3-exit A2 escalation; master adjudication).
+
+novapcb v1 deliberately ships **no CAN connector / transceiver**. The Nova drone uses zero CAN peripherals (GPS via UART, power via analog Mauch, ESCs via DShot, mag via I²C). Adding CAN would require an external CAN transceiver IC + 120 Ω termination + connector + board area — an unvalidated sub-circuit for a feature the target drone doesn't use. Per Rule 4 (match scope) + don't-design-for-hypothetical-futures discipline.
+
+The `hwdef.dat` CAN1 definition (`hwdef.dat:147-149`: PD0/PD1 CAN1 + PD3 GPIO_CAN1_SILENT) is **RETAINED as harmless firmware capability** — if a future v1.x or v2 adopts a CAN peripheral (DroneCAN gimbal, smart battery, ESC telemetry-via-CAN), the firmware side is already in place and adding the transceiver + connector then is a contained change.
+
+This decision resolves the Phase 2-exit Part B Item 6 pointer ("Phase 3 decides whether CAN connector is populated") cleanly. Phase 3 (now, at 3-exit) decides: **don't populate**.
+
+**Why this is a CLOSED entry not an OPEN one:** it's a deliberate v1 feature-scope decision, not an unresolved question. It belongs here for traceability + so a future Claude sees the reasoning, but it's not awaiting any action.

@@ -73,7 +73,9 @@ Result: **fit confirmed plausible.** Area density ~56% (660 mm² components / 11
 
 Two doc clarifications landed in the Phase 2.5 PR (master adjudicated, supermaster-visibility flagged): KiCad 8→9 in `CLAUDE.md §6.1` + `§10.2` (escalation #1); 30.5×30.5 board-vs-hole-spacing disambiguation in `CLAUDE.md §1` + `DECISIONS.md §2` (escalation #2).
 
-## Phase 3 — Schematic in KiCad (3a-3h DONE — 2026-05-20; SCHEMATIC CAPTURE COMPLETE)
+## Phase 3 — Schematic in KiCad (3a-3i DONE — 2026-05-20; SCHEMATIC CAPTURE COMPLETE)
+
+Phase 3i (telem JST-GH 6P connector — USART1) added as 8-sheet-breakdown omission fix caught by Phase 3-exit A2 hwdef-completeness check (master adjudication: NEEDS-FIX). Plus Phase 3-exit CLOSED-decision: CAN1 deliberately omitted from v1 — Nova drone uses zero CAN peripherals; hwdef CAN1 retained as harmless firmware capability for future v1.x/v2 expansion. See `docs/OPEN_QUESTIONS.md` "CLOSED phase3exit-can" entry.
 
 ## Phase 3.5 — Reference design audit (DONE 2026-05-20)
 
