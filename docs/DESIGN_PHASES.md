@@ -73,16 +73,15 @@ Result: **fit confirmed plausible.** Area density ~56% (660 mm² components / 11
 
 Two doc clarifications landed in the Phase 2.5 PR (master adjudicated, supermaster-visibility flagged): KiCad 8→9 in `CLAUDE.md §6.1` + `§10.2` (escalation #1); 30.5×30.5 board-vs-hole-spacing disambiguation in `CLAUDE.md §1` + `DECISIONS.md §2` (escalation #2).
 
-## Phase 3 — Schematic in KiCad (NOT STARTED)
+## Phase 3 — Schematic in KiCad (3a IN PROGRESS — 2026-05-20)
 
-- `hardware/kicad/novapcb.kicad_pro` initialized.
-- Hierarchical sheets per subsystem: MCU, IMU, baro+mag, GPS+CAN,
-  USB+SD, ESC, power, debug header.
-- Symbol library committed at `hardware/kicad/lib/` (in-repo, not
-  global KiCad libs — reproducible on any clone).
-- Net names mirror Phase 2's hwdef.dat pin assignments — the hwdef is
-  the contract; the schematic just lays it out.
-- Acceptance: ERC clean; schematic netlist consistent with hwdef.dat.
+- **Mode: netlist-only** per Phase 3a Rule-13 escalation #1 + `OPEN_QUESTIONS.phase3-render-1`. SKiDL `generate_schematic()` doesn't scale past trivial circuits (hangs on the MCU sheet); per-sub-phase delivery is Python source + netlist + SKiDL ERC. Drawn schematic deferred to a dedicated investigation scheduled before Phase 6.5 forum review (NOT blocking Phase 3.5/4/5/6, which consume the netlist).
+- Project at `hardware/kicad/novapcb/` (master-confirmed in P0 adjudication item 4). `novapcb.kicad_pro` held until Phase 4 / drawn-schematic landing.
+- Per-sheet sub-phases via modular SKiDL Python (`sheets/mcu_3a.py`, `sheets/power_3b.py`, ...). Each 3x sub-phase = one sheet = one PR, mirroring Phase 2 cadence.
+- Sub-phase breakdown (per `hardware/kicad/PHASE3_P0_REPORT.md §P0.6` approved by master): 3a MCU+clock+reset+decoupling+scaffold, 3b power tree, 3c IMU SPI, 3d baro I²C, 3e GPS+mag JST-GH 10P, 3f ESC outputs, 3g CRSF UART + USB-C, 3h power monitor + microSD + SWD + mounting.
+- hwdef.dat is the AUTHORITATIVE pin map. Each 3x sub-phase grep'd hwdef.dat for that sheet's pin assignments; schematic ↔ hwdef mismatch = Rule-13 stop (per `feedback_hwdef_authoritative_for_schematic` discipline).
+- Library strategy: standard KiCad 9 libs at `/usr/share/kicad/symbols/` + `/usr/share/kicad/footprints/`, referenced via committed `sym-lib-table` + `fp-lib-table`. No in-repo `lib/` needed unless a sub-phase surfaces a missing symbol.
+- Acceptance per sub-phase: SKiDL ERC clean (peripheral-pin warnings expected until all sheets ship); netlist parses; hwdef pin assignments match.
 
 ## Phase 3.5 — Reference design audit (NEW, before Phase 4)
 
