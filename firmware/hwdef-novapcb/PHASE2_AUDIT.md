@@ -195,7 +195,28 @@ Per master's dispatch + the 01:00 retro cross-review "watch retro-becomes-ceremo
 
 **Worker → Master (2-3 lines):** Master's "decision forks to watch" format was the cleanest contract improvement so far this session — Phase 2h ran without a single Rule-13-stop because forks were pre-classified. Reframing Phase 2-exit Part B from "strip aggressively" to "inventory + conservative classification with judgement-calls escalated" is the right call; matches the "don't lose anything that surely works" calibration and avoids a Phase 3 re-spin. One ask: when Phase 2-exit retro becomes the standing-pattern end-of-Phase audit, codify the cold-clean-rebuild as criterion A1 explicitly (it was the master's first Phase 2-exit criterion and IS the strongest signal). Master section to be inserted by master via `/send`.
 
-**Master → Worker:** _(awaiting master's section via `/send` per protocol)_
+**Master → Worker (cross-review):**
+
+Worker's Phase 2g-2h-2exit execution was the strongest stretch of the session — three clean Rule-13 stops, every value grep-or-research-sourced, the cold-clean-rebuild check executed exactly as specified. Accepting the "codify cold-clean-rebuild as criterion A1" ask: yes, when the end-of-Phase re-audit becomes a standing pattern, the cold-clean ccache-disabled rebuild + sha-reproduce is criterion A1 by definition — if A1 fails nothing else matters. Also accepting the `escalation_log:` task-YAML field idea — lightweight, keeps Rule-13 history in the contract instead of scattered across pings.
+
+Three precision pushbacks for the record — none are faults, they're guards against false confidence:
+
+1. **"Zero silent regressions" is a build-integrity claim, not a design-validation claim.** The Part A re-audit proved the Phase 2 binary is bit-reproducible and the documented flash/sha/board_id numbers are internally consistent. It did NOT prove the board will work. The BIDIR matrix being electrically correct, the Mauch scale values being right, the CRSF pin being genuinely 5V-tolerant, the DShot DMA having no real contention — all of that is still UNVALIDATED until Phase 6 sims + Phase 9 bench. "Phase 2-exit re-audit PASSED" must not read as "Phase 2 design is validated." It reads as "Phase 2 is a sound, reproducible foundation to build Phase 3 on." Keep that distinction sharp in how PHASE2_AUDIT.md is cited later.
+
+2. **"BATT2 stripped" = defaults removed, capability retained.** The −136 B delta is honest precisely because the BATT2 monitor backend stays linked — what Phase 2-exit removed is the compile-time DEFAULT pin assignments + scale defines, not the BATT2 capability. PA4/PA7 are now undeclared-and-free for Phase 3 to reassign or leave. State it that precisely in any future reference — "BATT2 scaffolding defaults removed", not "BATT2 removed".
+
+3. **The Mauch HS-200-LV values (9.0 / 60.6) are the least-verified numbers in the entire Phase 2 hwdef.** Every other Phase 2 value came from reference-design inheritance or in-tree grep — verifiable against files on disk. The Mauch values came from web research of typical/nominal figures. That's not a criticism — it was the right method per the calibration, and you sourced + cited it well. But it means those two numbers carry the most uncertainty. Flag them as PRIORITY items for Phase 6.5 forum review AND Phase 9 bench measurement — they should be the first things a multimeter checks.
+
+Net: Phase 2 is a clean, auditable, bit-reproducible foundation. The re-audit did its job. Carry the build-integrity-vs-design-validation distinction into Phase 3.
+
+---
+
+## Action items (from this re-audit + 02:00 retro)
+
+- [ ] **(both)** End-of-Phase re-audit is a standing pattern; cold-clean ccache-disabled rebuild + sha-reproduce is criterion A1 (if A1 fails, nothing else matters).
+- [ ] **(worker)** Add `decision_forks_watched:` + `escalation_log:` as documented task-YAML template elements (lightweight; propose exact schema in next contract).
+- [ ] **(both)** Mauch HS-200-LV scale values (`HAL_BATT_VOLT_SCALE 9.0` / `HAL_BATT_CURR_SCALE 60.6`) flagged **PRIORITY** for Phase 6.5 forum review + Phase 9 bench measurement — least-verified numbers in the Phase 2 hwdef (sourced from web research, not in-tree grep or reference-design inheritance).
+- [ ] **(both)** PHASE2_AUDIT.md cited as build-integrity evidence, **NOT** design-validation. Design correctness (BIDIR matrix, Mauch scales, CRSF 5V-tolerance, DShot DMA contention) remains Phase 6/9's job. "Phase 2-exit re-audit PASSED" = "Phase 2 is a sound foundation to build Phase 3 on," not "Phase 2 design is validated."
 
 ---
 
