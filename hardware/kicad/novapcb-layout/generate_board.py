@@ -212,12 +212,21 @@ HOLE_POSITIONS = [
     (BOARD_W_MM - HOLE_INSET,          BOARD_H_MM - HOLE_INSET),          # H4: top-right
 ]
 mounting_refs = ["H1", "H2", "H3", "H4"]
+# 4b-rev3 path-C-modified: shrink M3_Pad copper from 6.4mm to 5.6mm (1.2mm
+# annulus around 3.2mm drill). Preserves Phase 3h GND-tied mounting decision
+# (still copper around screw) while clearing J3-MP at NE corner (was inside
+# 6.4mm pad radius by 0.26mm) and J4-MP at SE corner. Uniform across all 4
+# mounting holes per master's "uniform mounting-hole geometry" directive.
+H_PAD_SIZE_MM = 3.6   # 4b-rev3 path-C-modified iter2: 5.6mm wasn't enough — J4 MP corner at 2.02mm from H2 needed pad rad < 1.87mm. Shrank to 3.6mm (radius 1.8); annulus 0.2mm around 3.2mm drill — minimum-viable GND ring around mounting screw.
 for fp in brd.GetFootprints():
     ref = fp.GetReference()
     if ref in mounting_refs:
         x_mm, y_mm = HOLE_POSITIONS[mounting_refs.index(ref)]
         fp.SetPosition(pcbnew.VECTOR2I(_mm(x_mm), _mm(y_mm)))
-        print(f"      {ref:3s} placed at ({x_mm:6.2f}, {y_mm:6.2f}) mm", flush=True)
+        # Shrink mounting-hole copper pad to 5.6mm (was 6.4mm in M3_Pad footprint)
+        for pad in fp.Pads():
+            pad.SetSize(pcbnew.VECTOR2I(_mm(H_PAD_SIZE_MM), _mm(H_PAD_SIZE_MM)))
+        print(f"      {ref:3s} placed at ({x_mm:6.2f}, {y_mm:6.2f}) mm; pad shrunk → {H_PAD_SIZE_MM}mm", flush=True)
 
 
 # ============================================================
@@ -533,14 +542,28 @@ PLACEMENT = {
     # accessible from underside via airframe cutout (standard mini-FC).
     "J2":  (18.0,  6.0,    0),
 
-    # SDMMC pullups — 47kΩ × 5 (CMD + D0-D3). MCU east pads outer X=26.48.
-    # R51 at X=27.0 → pad outer X=26.73; gap = 26.73-26.48 = 0.25mm too tight;
-    # bumped to X=27.5 → pad outer X=27.23; gap = 0.75mm.
-    "R51": (27.5, 24.0,   90),   # CMD pull-up
-    "R52": (29.0, 24.0,   90),   # D0 pull-up
-    "R53": (30.5, 24.0,   90),   # D1 pull-up
-    "R54": (32.0, 24.0,   90),   # D2 pull-up
-    "R55": (33.5, 24.0,   90),   # D3 pull-up — flush with J4/J10 right-edge column
+    # SDMMC pullups — 47kΩ × 5. Master 4b-rev3 path-B: move from F.Cu east
+    # of MCU (was Y=24 col X=27.5..33.5, conflicting with J3 MP-S pad at
+    # (32.15, 23.025)) to B.Cu south of MCU under SDMMC pin region. MCU SDMMC
+    # pins PC8-PC12 at MCU south side (pins 76-100 at Y=11.32 per API
+    # measurement); J2 microSD on B.Cu at (18,6). R51-R55 on B.Cu at Y=14
+    # sits BETWEEN J2 north edge (Y=11.5) + J9 SWD body (Y=19..23), all on
+    # B.Cu. F.Cu under R51-R55 (Y=14, X=15..23) is clear (MCU body S edge
+    # at Y=12; south-side components R1/R2/R3/C17/C18/C21/C26 at Y=8.5-9.5).
+    # B.Cu R51-R55 placement — Y=24 (was tried Y=14 but landed inside J2
+    # microSD's card-slot keep-out zone, which extends N from J2 body to
+    # Y≈19.5). Y=24 clears J2 keep-out (Y>19.5) + clears J9 SWD body
+    # at (18,21) B.Cu (J9 body Y=19..23) by 1mm. MCU body Y=12..26 on F.Cu
+    # only (no B.Cu conflict; LQFP is SMD).
+    # B.Cu R51-R55 placement iter3 — Y=24 also conflicted with J9 SWD
+    # B.Cu pads at Y=23.54 (J9 SMD pads extend 2.54mm from center at Y=21).
+    # Moved to Y=26 — north of J9 pads + still on B.Cu under MCU body
+    # (MCU SMD F.Cu only; no B.Cu conflict).
+    "R51": (15.0, 26.0,   90),   # CMD pull-up — B.Cu
+    "R52": (17.0, 26.0,   90),   # D0 pull-up
+    "R53": (19.0, 26.0,   90),   # D1 pull-up
+    "R54": (21.0, 26.0,   90),   # D2 pull-up
+    "R55": (23.0, 26.0,   90),   # D3 pull-up
 
     # ============ SWD (3h — bottom layer, B.Cu) ============
     # J9 PinHeader 2x5 1.27mm SMD — flipped to bottom layer per Phase 2.5
@@ -578,8 +601,10 @@ for fp in brd.GetFootprints():
 #               F.Cu placement collides MCU+J1 inevitably. B.Cu solves it.
 #   C51/C52 — DPS310 decoupling follows U4 to B.Cu (decoupling adjacent
 #             to its IC on same layer)
+_B_CU_REFS = ("J9", "J2", "U4", "C51", "C52",
+              "R51", "R52", "R53", "R54", "R55")  # 4b-rev3 path-B: SDMMC pulls to B.Cu
 for fp in brd.GetFootprints():
-    if fp.GetReference() in ("J9", "J2", "U4", "C51", "C52"):
+    if fp.GetReference() in _B_CU_REFS:
         if fp.GetLayer() == pcbnew.F_Cu:
             fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
         print(f"      {fp.GetReference()} flipped to B.Cu", flush=True)
