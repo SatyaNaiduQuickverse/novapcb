@@ -55,7 +55,7 @@ The RC link arrives via an ELRS RP4TD receiver. Today this is bridged through an
 | IMU (secondary) | Parked. CLAUDE.md §3.5 allows "ICM-42688-P or BMI088"; sub-phase TBD. Don't add a second IMU until that decision lands. |
 | Barometer | **DPS310 on I²C2 at 0x76** (SDO tied to GND). Bus index 0 in I2C_ORDER. Driver: ArduPilot built-in `DPS310` baro driver. Locked Phase 2b 2026-05-20 — `CLAUDE.md §3.5` (DPS310 preferred over BMP388 per noise floor). Divergence from Pixhawk6X intentional (6X uses BMP388/BMP581/ICP201XX). |
 | Magnetometer | **External via I²C, IST8310 (primary) + RM3100 (alternative), both on `ALL_EXTERNAL` buses**. IST8310 at 0x0E, RM3100 at 0x20, both `ROTATION_NONE` defaulted with `HAL_COMPASS_AUTO_ROT_DEFAULT 2` for runtime auto-detect. No internal compass per `CLAUDE.md §3.5`. Specific I²C bus → GPS-connector mapping is a Phase 4 layout decision. Locked Phase 2c 2026-05-20. SOTA: CUAV-Nora/X7/CarbonixF405 same pattern. |
-| GPS | UART, plus I²C for compass (Phase 2d) |
+| GPS | **GPS1 on USART2 (PD5 TX / PD6 RX) = SERIAL3 in SERIAL_ORDER; GPS2 on USART3 (PD8 TX / PD9 RX) = SERIAL4.** Compass shares the GPS connector via I²C: both `I2C1` (PB6/PB7) and `I2C2` (PB10/PB11) are exposed; `HAL_I2C_INTERNAL_MASK 0` makes both buses external, so `ALL_EXTERNAL` (used by Phase 2c COMPASS lines) covers whichever bus is physically wired to the GPS connector. Specific GPS-connector → I²C-bus pinout is a Phase 4 layout decision. Verified Phase 2d 2026-05-20 — inherited from MatekH743 unchanged. |
 
 ## Power
 

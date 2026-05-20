@@ -8,6 +8,7 @@ Recorded ArduCopter build results per sub-phase. Each section is self-contained:
 | Phase 2a (IMU → ICM-42688-P only) | 1,534,644 | 169,284 | `b34eb835…b685c6fa` |
 | Phase 2b (baro → DPS310 only) | 1,534,572 | 169,356 | `12a4d50d…d7444aa8` |
 | Phase 2c (mag → IST8310+RM3100, drop broad-probe) | 1,519,948 | 183,980 | `86fec69e…f788ac70` |
+| Phase 2d (GPS port verify, zero hwdef change) | 1,519,948 | 183,980 | `86fec69e…f788ac70` (bit-identical) |
 
 Phase 2a delta from Phase 1: text −11,228 B, BSS −1,860 B → total flash used **−11,224 B**, free flash **+11,224 B**. Drop comes from un-linking the three legacy IMU drivers (`mpu6000`, `icm20602`, `icm42605`) we removed.
 
@@ -310,3 +311,81 @@ sha256  86fec69e894e08fe4555477c2752b566bc2f0dde00c83de39f5f77fff788ac70  arduco
 - DPS310 + IST8310 + RM3100 sharing I²C2 (where DPS310 lives) would be allowed by ALL_EXTERNAL — fine in practice (different addresses, no collision) but worth noting if Phase 4 puts the GPS connector on I²C1 and we want to narrow.
 - Rotation: `ROTATION_NONE` is the default-if-auto-fails. `HAL_COMPASS_AUTO_ROT_DEFAULT 2` lets ArduPilot auto-detect rotation during compass calibration — actual rotation depends on the user's GPS module orientation.
 - I²C pull-up sizing not analyzed (deferred to Phase 6d).
+
+---
+
+## Phase 2d — GPS port verify + lock (no hwdef.dat change) (2026-05-20)
+
+Verification-only sub-phase per master's contract. MatekH743's inherited GPS-port config is "surely-working" by definition (MatekH743 ships and flies as-is); Phase 2d verifies it's correct as-is for novapcb v1 and locks the documentation. **Zero hwdef.dat change.**
+
+### What was verified (Rule 3 / Rigor §10 grep-then-state)
+
+| Item | Verified state | Source |
+|---|---|---|
+| GPS1 UART | USART2 on PD5 (TX) / PD6 (RX), index 3 in SERIAL_ORDER → SERIAL3 | MatekH743 hwdef.dat:108-110 |
+| GPS2 UART | USART3 on PD8 (TX) / PD9 (RX), index 4 in SERIAL_ORDER → SERIAL4 | MatekH743 hwdef.dat:112-114 |
+| SERIAL_ORDER | `OTG1 UART7 USART1 USART2 USART3 UART8 UART4 USART6 OTG2` | MatekH743 hwdef.dat:102 |
+| I²C buses exposed | I2C1 (PB6 SCL / PB7 SDA) + I2C2 (PB10 SCL / PB11 SDA) | MatekH743 hwdef.dat:60-69 |
+| I²C_ORDER | `I2C2 I2C1` → I2C2 = bus index 0, I2C1 = bus index 1 | MatekH743 hwdef.dat:61 |
+| `HAL_I2C_INTERNAL_MASK 0` | 0 = no internal buses; both are external | MatekH743 hwdef.dat:199 |
+| ALL_EXTERNAL consistency with Phase 2c COMPASS | ✓ both I²C buses are in ALL_EXTERNAL; COMPASS IST8310/RM3100 ALL_EXTERNAL lines from 2c will probe whichever bus is wired to the GPS connector | derived |
+| Phase 4 layout decision deferred | which I²C bus is physically wired to the GPS connector (vs to the on-board DPS310's I²C2) | layout-time |
+
+### Why no hwdef.dat edit
+
+- GPS1/GPS2 UART pin assignments are H743 alt-func choices that MatekH743 vendor has already validated. No reason to change without a specific bug.
+- SERIAL_ORDER places GPS1 at SERIAL3, which is ArduPilot's default GPS slot (`SERIAL3_PROTOCOL=5` by default at runtime). No edit needed.
+- I²C bus pinout doesn't need novapcb-specific changes — both buses are exposed, `HAL_I2C_INTERNAL_MASK 0` makes both external, ALL_EXTERNAL probes both.
+- Per master's "surely-working > SOTA when tied" calibration: default is to keep MatekH743's config. No reason found to deviate.
+
+### Build identity (unchanged from Phase 2c)
+
+| Field | Value |
+|---|---|
+| `APJ_BOARD_ID` | `5350` |
+| `USB_STRING_MANUFACTURER` | `"ArduPilot"` |
+| `USB_STRING_PRODUCT` | `"novapcb-v1"` |
+
+### Build wall-clock
+
+| Step | Time |
+|---|---|
+| `./waf configure --board novapcb-v1` | 1.984 s |
+| `./waf copter` | **7.868 s** (full ccache; no source change → identical compile inputs → bit-identical output) |
+| Real / user / sys | 8.692s / 7.354s / 0.808s |
+| Compiler warnings | **0** (Werror build) |
+
+### Flash budget (`bin/arducopter`)
+
+| Section | Bytes | Δ vs Phase 2c |
+|---|---:|---:|
+| Text | 1,515,340 | 0 |
+| Data | 4,608 | 0 |
+| BSS | 136,200 | 0 |
+| **Total flash used** | **1,519,948** | **0** |
+| **Free flash** | **183,980** | **0** |
+| External flash used | Not Applicable | — |
+
+**Bit-identical to Phase 2c**, as expected for a zero-source-change verification. The build proves the hwdef + ardupilot HEAD combination still produces the recorded sha256.
+
+### Checksums
+
+```
+sha256  86fec69e894e08fe4555477c2752b566bc2f0dde00c83de39f5f77fff788ac70  arducopter.bin
+        (bit-identical to Phase 2c snapshot)
+```
+
+### Verification
+
+- `board_id` in `arducopter.apj` = `5350` ✓.
+- `image_size: 1519956`, `image_maxsize: 1703936` ✓.
+- `sha256` matches Phase 2c exactly — no firmware change in this sub-phase.
+- All three Rule-3 grep checks completed against MatekH743 hwdef.dat with cited line numbers.
+
+### What this Phase 2d build is NOT
+
+- Not flight-validated. GPS UART pins are declared correctly; novapcb has no physical board yet.
+- Specific I²C bus → GPS connector pin mapping is Phase 4 layout (which I²C bus is on the GPS connector vs which is dedicated to on-board DPS310).
+- `SERIAL3_PROTOCOL` / `SERIAL4_PROTOCOL` runtime defaults assumed to be ArduPilot's defaults (`5` = GPS for SERIAL3, `5` for SERIAL4 = GPS2). Not verified against an `apj_tool.py --show-params` dump.
+- u-blox baud + protocol negotiation works at runtime via ArduPilot driver; not a hwdef concern.
+- I²C pull-up sizing not yet analyzed (Phase 6d).
