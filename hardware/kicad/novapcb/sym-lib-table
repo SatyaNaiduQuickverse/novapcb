@@ -8,4 +8,5 @@
 	(lib (name "Sensor_Motion")(type "KiCad")(uri "/usr/share/kicad/symbols/Sensor_Motion.kicad_sym")(options "")(descr ""))
 	(lib (name "Sensor_Pressure")(type "KiCad")(uri "/usr/share/kicad/symbols/Sensor_Pressure.kicad_sym")(options "")(descr ""))
 	(lib (name "Switch")(type "KiCad")(uri "/usr/share/kicad/symbols/Switch.kicad_sym")(options "")(descr ""))
+	(lib (name "Mechanical")(type "KiCad")(uri "/usr/share/kicad/symbols/Mechanical.kicad_sym")(options "")(descr ""))
 )
