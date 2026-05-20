@@ -354,7 +354,7 @@ PLACEMENT = {
     "C18": (14.0,  9.5,    0),   # 2.2µF VCAP2 — S edge west
     "C20": ( 8.5, 22.0,    0),   # 1µF VDD bulk — W edge
     "C22": ( 8.5, 16.0,    0),   # 1µF VDD bulk — W edge mid
-    "C26": (12.0,  9.5,    0),   # 100nF VBAT — S edge SW
+    "C26": (12.0,  9.5,    0),   # 100nF VBAT — 4b-rev3: kept at (12,9.5); C32 moves W instead (avoid C18 at (14,9.5) collision; resolves 4c.6 short #5)
 
     # R1/R2 = 0R series (VBAT/VBKP path); R3 = 10k BOOT0 pull-down.
     # Place south of MCU body, clear of MCU pad outer edge (Y ≤ 9).
@@ -379,9 +379,9 @@ PLACEMENT = {
     # C32 = 4.7µF +3V3 bulk (0805 — slightly larger footprint)
     # C34 = 4.7µF +5V bulk (0805)
     "C31": ( 8.0,  9.0,    0),   # 1µF output — east of U2
-    "C32": (10.0, 10.0,    0),   # 4.7µF +3V3 bulk
+    "C32": ( 8.5, 10.0,    0),   # 4.7µF +3V3 bulk — 4b-rev3: was (10,10); moved 1.5mm W to spread LDO south cluster (4c.6 short #5)
     "C33": ( 6.0,  7.0,    0),   # 1µF input — south of U2
-    "C34": ( 4.0,  8.0,   90),   # 4.7µF +5V bulk — west of U2
+    "C34": ( 2.0,  9.0,    0),   # 4.7µF +5V bulk — 4b-rev3: was (4,8,90); moved 2mm W (0805 body 1.25×1.0; pad-2 at (2.95,9) clears U2 pin 1 +5V at (4.86,8.05) by 0.91mm)
 
     # ============ IMU group (3c — west of MCU, off-axis from heat) ============
     # U3 ICM-42688-P at (6, 22) — moved west from initial (8,22) by 2mm to
@@ -468,7 +468,7 @@ PLACEMENT = {
     # to avoid courtyard overlap with J1 itself while still being host-side
     # for diff pair. D+/D- routes via short trace under J1's western pad
     # cluster to USBLC6.
-    "U5":  (12.0, 31.0,    0),
+    "U5":  (10.5, 31.0,    0),  # 4b-rev3: was (12,31); moved 1.5mm W to clear J1 USB-C SW shield at (13.68,29.87) (4c.6 shorts #2 + #3)
 
     # R31/R32 = 5.1kΩ CC pulldowns (USB-C UFP spec) — near J1 CC1/CC2 pins.
     # Place east of J1 body (where CC1/CC2 are typically on the connector).
@@ -496,7 +496,7 @@ PLACEMENT = {
     "R41": (27.5, 11.0,    0),   # 1kΩ VBAT filter
     "R42": (27.5, 13.0,    0),   # 1kΩ CURRENT filter
     "C61": (27.5,  9.5,    0),   # 100nF VBAT filter cap
-    "C62": (27.5, 14.5,    0),   # 100nF CURRENT filter cap
+    "C62": (24.0, 13.0,    0),   # 100nF CURRENT filter — 4b-rev3 iter2: was (27.5,14.5) → (25.5,14.5) hit MCU pin 72 SWDIO at (25.68,14.5); moved to (24.0,13.0) — body X=23.5..24.5 clears MCU east outer X=26.48; clear of C19 at (27.5,14.0)
     "C63": (29.5,  9.5,    0),   # additional decoupling — clear of Y1 (Y=16.25..18.75)
 
     # J2 microSD DM3AT — flipped to B.Cu (bottom layer); positioned at
