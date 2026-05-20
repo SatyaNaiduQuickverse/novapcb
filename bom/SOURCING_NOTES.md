@@ -145,7 +145,9 @@ These BOM rows have `Assembled=no` and exist on the board as copper-only PCB fea
 
 ## 8. Cross-check against netlist
 
-70 non-virtual components in `hardware/kicad/novapcb/novapcb.net` (Phase 3 netlist) → 34 BOM rows in `novapcb-bom.csv`. Every refdes is accounted for. Confirmed via:
+**Updated 2026-05-21 (pivot Step 2)**: **73 components / 36 BOM rows** after the inrush mitigation (+Q1 AO3401A + R6 100kΩ + C5 added to existing 1µF row). See `DECISIONS.md §11` for the topology + rationale. Pre-Step-2 the BOM had 70 components / 34 rows.
+
+73 non-virtual components in `hardware/kicad/novapcb/novapcb.net` → 36 BOM rows in `novapcb-bom.csv`. Every refdes is accounted for. Confirmed via:
 
 ```bash
 cd hardware/kicad/novapcb && python3 -c "
@@ -155,7 +157,7 @@ refs = re.findall(r'\(comp\s*\(ref\s*\"([^\"]+)\"\)', c)
 non_virtual = [r for r in refs if not r.startswith('#FLG')]
 print(f'netlist non-virtual: {len(non_virtual)}')
 "
-# Expected: 70
+# Expected: 73 (post-Step-2; 70 pre-Step-2)
 ```
 
 For the 9 solder-pad refs (J10-J18), the netlist still carries their **old** values (CRSF_4P, ESC*_PAD with old pin-header footprints) because option-θ (PR #44) edited the board directly, not the netlist. The BOM CSV reflects the **board** (source of truth — see `hardware/kicad/novapcb-layout/novapcb-layout.kicad_pcb`), not the stale netlist values. If the netlist is regenerated in a future Phase 3 refresh, it should be updated to match.

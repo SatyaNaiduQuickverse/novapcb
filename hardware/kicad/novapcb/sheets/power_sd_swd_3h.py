@@ -154,7 +154,8 @@ setup()
 # ---- shared nets ----
 GND  = n("GND")
 P3V3 = n("+3V3")
-P5V  = n("+5V")
+P5V  = n("+5V")          # post-MOSFET filtered 5V (feeds LDO + decoupling) — Step 2 pivot 2026-05-21
+P5V_BEC = n("+5V_BEC")   # raw 5V from Mauch BEC connector (input to inrush-limiter MOSFET in 3b)
 NRST = n("NRST")   # shared with mcu_3a.py (Net.fetch returns existing)
 
 
@@ -181,8 +182,10 @@ mauch_conn = Part(
 mauch_conn.ref = "J4"   # J4 reserved per Phase 2.5 sketch (power 6P)
 
 # Pin map per Pixhawk DS-009 6-pin power-module standard.
-P5V             += mauch_conn[1]   # VCC (+5V from Mauch BEC)
-P5V             += mauch_conn[2]   # VCC (paralleled)
+# Step 2 pivot 2026-05-21: BEC connector feeds +5V_BEC (raw). The MOSFET soft-start
+# in sheets/power_3b.py limits inrush + produces +5V (filtered) downstream.
+P5V_BEC         += mauch_conn[1]   # VCC (+5V_BEC raw from Mauch BEC)
+P5V_BEC         += mauch_conn[2]   # VCC (paralleled)
 MAUCH_VBAT_PRE  += mauch_conn[3]   # VBAT analog (post 9:1 divider)
 MAUCH_CURR_PRE  += mauch_conn[4]   # Current analog (Hall sensor)
 GND             += mauch_conn[5]   # GND

@@ -124,15 +124,132 @@ This principle resolves design forks where reliability and another axis (cost, b
 
 ---
 
-## 11. Inrush limiting on the +5V BEC input (Step 2 of pivot)
+## 11. +5V BEC input-protection front-end (pivot Step 2 — complete-front-end design)
 
-**To be resolved by Phase 0.6 pivot Step 2 (inrush mitigation PR)**, in progress.
+**Resolved 2026-05-21** (iter 4, after Sai's adjudication of options + augmentation):
+Active eFuse (TI TPS25940A) with programmable inrush-rate dV/dt + adjustable current
+limit + UVLO + OVP + thermal shutdown + fault flag, preceded by a P-MOSFET
+reverse-polarity guard and shunted by a unidirectional TVS for fast transients.
+This replaces the four-iteration discrete-MOSFET soft-start exploration documented
+in the archived iteration record below.
 
-Background: Phase 6a found inrush peak ~3.39 A at power-on (over the <2A SIMULATION_PLAN §6a criterion + likely over a 3A BEC's transient tolerance). Per §10 reliability mandate, this is FIXED in the design.
+### Background
 
-**Options under evaluation** (Step 2 PR will resolve):
-- **MOSFET-based active soft-start** — P-MOSFET in the 5V path with an RC on the gate that slowly turns the FET on over ~10 ms. Deterministic; resets cleanly on any power-cycle; no steady-state voltage drop. Master's steer: this is the most-resilient option, favor it.
-- **NTC inrush limiter** — series NTC thermistor (e.g. 5Ω cold → ~50mΩ hot). Simple, one part. **Caveats**: real steady-state voltage drop (~150mV at 350mA load) wasted as heat; FAILS to reset on a fast warm power-cycle (NTC stays low-resistance after a quick brownout, then the next inrush event isn't limited). Per §10 these are real reliability caveats.
-- **EN-pin RC soft-start on AP2112K** — 10 nF + 100 kΩ to GND on the LDO's EN pin slows turn-on by ~10 ms; gradual LDO output ramp absorbs input transient. Lighter-weight than MOSFET soft-start but only addresses LDO inrush, not the input cap charging spike.
+Phase 6a found inrush peak ~3.39 A at power-on (over the <2A SIMULATION_PLAN §6a criterion; likely over a typical 3A BEC's transient tolerance). Per §10 reliability mandate ("won't fail"), this is fixed in the design — not justified away. Sai's verbatim direction on the front-end: *"I want the best possible solution there."* That converted Step 2 from "discrete MOSFET soft-start" to "complete, best-in-class +5V input-protection front-end as one coherent resilient stage."
 
-**Recommendation pending Step 2 PR**: MOSFET soft-start per master + §10. The §6.5 forum-review can sanity-check the topology.
+### Topology (iter 4 — three-stage front-end)
+
+```
+  +5V_BEC (Mauch J4 pins 1+2 — raw BEC output)
+       |
+       +─── Q2 (AO3401A P-FET, body-diode reversed) — reverse-polarity guard
+       |    Q2.S = +5V_BEC, Q2.G to GND, Q2.D = +5V_BEC_PROT
+       |    Normal polarity → body diode forward → Vgs=-5V → FET conducts (low loss)
+       |    Reversed polarity → body diode reverse → Vgs≥0 → FET off (blocks reverse)
+       v
+  +5V_BEC_PROT
+       |
+       +─── D1 (SMAJ6.0A TVS, K=+5V_BEC_PROT, A=GND) — fast clamp on transients
+       |    V_WM = 6.0V (no leakage in normal 5V±5% operation)
+       |    V_BR_min = 6.67V (> eFuse OVP trip — TVS only fires for ns transients)
+       v
+  U6 (TI TPS25940A eFuse — IN side, pins 9-13)
+       │   • Inrush dV/dt programmed via C_dVdT on dVdT pin (C7 = 100nF)
+       │   • Current limit programmed via R_ILIM on ILIM pin (R4 = 42.2kΩ → 2.08A)
+       │   • UVLO via R7/R8 divider on EN/UVLO pin (turn-on at V_IN ≈ 4.0V)
+       │   • OVP via R9/R10 divider on OVP pin (cut at V_IN = 6.04V, lowered from 6.5V)
+       │   • Thermal shutdown built-in (junction T > 150°C)
+       │   • FLT/PGOOD open-drain outputs with R5/R13 pull-ups (MCU GPIO observable)
+       v
+  +5V (filtered, post-eFuse) → AP2112K-3.3 LDO U2 → +3V3
+```
+
+### Stage-by-stage rationale
+
+**Q2 — reverse-polarity guard (P-MOSFET, body-diode reversed)**
+- AO3401A P-FET, Source on +5V_BEC, Drain on +5V_BEC_PROT, Gate to GND.
+- Normal polarity: body diode forward-biases first, then Vgs=-5V drives FET fully on → Rds(on)=50mΩ → 18 mV drop at 360 mA (negligible).
+- Reversed polarity: body diode reverse-biases (blocks), Vgs is ≥0 (no enhancement) → FET stays off → reverse current cannot flow. Protects all downstream silicon from polarity-reversed Mauch insertion.
+- Closes the deferred "+5V reverse-polarity / input protection" item flagged for Phase 6.5.
+
+**D1 — fast-transient TVS clamp (SMAJ6.0A)**
+- V_WM = 6.0V > 5.25V rail max → no leakage in normal operation (SMAJ5.0A's 5.0V V_WM was right at the rail nominal; lifted to SMAJ6.0A per master config-coordination review 2026-05-21).
+- V_BR_min = 6.67V is ABOVE the eFuse OVP trip (6.04V) → OVP handles sustained over-voltage as the primary mechanism; TVS only conducts for ns-scale events too fast for the OVP comparator (datasheet 2µs response).
+- V_C_max = 10.3V at 114A peak surge (worst-case lightning-class). For realistic drone-board transients (motor inductive kicks, hot-plug spikes, ESD, ~5-10A), V_C tracks much closer to V_BR (~7V). Phase 6.5 forum review can evaluate whether a tighter-clamp TVS is warranted given AP2112K's 6.5V V_IN abs-max; current design accepts that the LDO's brief overshoot tolerance plus the eFuse OVP cut-off cover the gap.
+
+**U6 — TPS25940A eFuse (5 V, programmable inrush + current limit + UVLO + OVP + thermal + FLT/PGOOD)**
+- The eFuse provides genuine **current-limit-by-construction**: the internal control loop holds I_OUT ≤ I_LIM by modulating the internal pass FET into current-source mode, regardless of upstream BEC ramp profile. This was option (b) in the iter-3 adjudication — Sai chose (b), and Sai's "best possible solution" augmentation expanded it into the full front-end above.
+- Configuration values (R_ILIM, R_dVdT, R_UVLO, R_OVP) are set per the datasheet's design equations; the resulting operating points are tabulated in "Configuration values" below.
+
+### Configuration values (datasheet-formula derived)
+
+| Parameter | Pin | Component | Value | Result |
+|---|---|---|---|---|
+| Current limit (OC ceiling — see "OC vs inrush" note below) | ILIM (17) | R4 | 42.2 kΩ | I_LIM = K_ILIM / R_ILIM = 88000 / 42200 = **2.08 A** |
+| Output ramp time (controlled by dVdT pin) | dVdT (18) | C7 = 100 nF | — | TPS25940A datasheet Eq: T_RISE = (V_OUT × C_dVdT) / I_dVdT = (5 V × 100 nF) / 10 µA = **50 ms ramp**. dV/dt = V_OUT / T_RISE = 5 V / 50 ms = **100 V/s** (= 0.1 V/ms). I_dVdT taken at datasheet typical (10 µA) — production range is ~9–11 µA, putting T_RISE between 45 and 56 ms. |
+| UVLO turn-on | EN/UVLO (14) | R7 = 30.1 kΩ (top), R8 = 10 kΩ (bot) | — | V_UVLO_on ≈ 1.0 V × (R7+R8)/R8 = **4.00 V** (turns on after BEC has settled past brownout) |
+| OVP threshold | OVP (15) | R9 = 51 kΩ (top), R10 = 10 kΩ (bot) | — | V_OVP_trip = 0.99 V × (R9+R10)/R10 = **6.04 V** (8% margin under AP2112K V_IN abs-max 6.5V; below TVS V_BR_min 6.67V so OVP fires first) |
+| FLT pull-up | FLT (20) | R5 = 10 kΩ | — | Open-drain → MCU GPIO can observe fault assertions |
+| PGOOD pull-up | PGOOD (2) | R13 = 10 kΩ | — | Open-drain → MCU GPIO can observe "good" status |
+| PGOOD threshold ref | PGTH (3) | tied to OUT via R-divider (TBD Phase 6.5 if firmware needs it) | — | Optional; current schematic ties PGTH to OUT directly (PGOOD = OUT > 90% nominal) |
+| IN bypass | IN (9-13) | C8 = 100 nF | — | Decoupling close to IN pins |
+| OUT bypass | OUT (4-8) | C9 = 1 µF | — | Decoupling on the protected rail (in addition to existing post-stage caps) |
+
+### OC ceiling vs power-on inrush — clarification
+
+These are **two different quantities**; conflating them was the framing error master flagged in the iter-3 adjudication:
+
+| Quantity | Magnitude | Derivation |
+|---|---|---|
+| **Cap-charge component of inrush** | **0.67 mA** | `I_charge = C_+5V × dV/dt`. C_+5V on the post-eFuse rail = C9 (1µF) + C31 (1µF) + C32 (4.7µF) = **6.7 µF**. dV/dt = 100 V/s (from C7 = 100 nF, per Configuration table above). 6.7 µF × 100 V/s = 0.67 mA. |
+| **LDO + board operating-draw component (during ramp)** | **ramps 0 → ~360 mA** over the last ~14.5 ms of the 50 ms ramp | AP2112K LDO's V_UVLO ≈ 3.55 V (datasheet). The eFuse output crosses 3.55 V at t ≈ 35.5 ms into the 50 ms ramp; from there to t = 50 ms the LDO regulates 3.3 V and the board's full quiescent + load draw (≈ 360 mA worst case) flows through the eFuse. |
+| **Total power-on inrush peak through the eFuse** | **≈ 360 mA at end-of-ramp** (load-dominated, not cap-charge-dominated) | Sum: 0.67 mA (cap) + 360 mA (LDO + board) ≈ 360 mA. The cap-charge is two orders of magnitude smaller than the operating-draw component and does not set the peak. |
+| **OC ceiling** (eFuse hard current-limit; fires only on faults — short circuit, downstream silicon failure, etc., NOT on power-on) | **2.08 A** (R4 = 42.2 kΩ) | eFuse internal control loop |
+
+**The §6a <2 A criterion is met by the inrush peak (~360 mA at end-of-ramp), with 5.5× margin.** The 2.08 A OC ceiling is the *protection ceiling for fault conditions*, deliberately set well above normal operating + inrush so the eFuse does not false-trip on legitimate cold-start. The two values serve different roles and must not be conflated.
+
+This corrects the iter-3 framing where "0.81 A from C×dV/dt" was offered as the inrush peak — that was off by 1000× (dimensional error: 16.3µF × 50 V/s = 0.815 **mA**, not 0.81 A). The current iter-4 design produces ~0.7 mA cap-charge + load-dominated peak of ~360 mA, plus a 2.08 A fault ceiling — all three numbers serve distinct purposes and are mutually arithmetic-consistent (verifiable from C × dV/dt with the values stated in the Configuration table above).
+
+### Protection-stage coordination (non-conflict check)
+
+The three protection mechanisms must coordinate so they don't fight each other or leave a gap. Verified numerically:
+
+| Event class | Time scale | Active stage | Why other stages don't interfere |
+|---|---|---|---|
+| Normal operation (4.75–5.25 V, ≤360 mA) | steady | none — straight pass-through | TVS V_WM=6.0V (above rail max → no leakage). eFuse I_OUT=360 mA (well below 2.08 A I_LIM → no current-limit regulation). eFuse V_IN=5V (below OVP 6.04V → no OVP trip). Q2 body diode forward → low-Rds path. |
+| Cold-start inrush (5V applied to discharged caps) | full output ramp ≈ 50 ms | eFuse dV/dt-controlled ramp on OUT (100 V/s) | Q2 conducts immediately. TVS doesn't conduct (V < V_WM). eFuse OUT ramps slowly per C7=100nF → ~50 ms; OC ceiling never approached (peak ≈ 360 mA at end-of-ramp). UVLO holds OUT off until V_IN > 4 V. |
+| Sustained over-voltage (e.g. 6S battery accidentally on 5V port, BEC fault) | ms+ | **OVP cut-off at 6.04 V** | OVP trips at V_IN=6.04 V — *below* TVS V_BR_min=6.67V (TVS doesn't conduct) and *below* AP2112K V_IN abs-max 6.5V (downstream protected). eFuse disconnects OUT, asserts FLT. |
+| Fast transient / surge (lightning, ESD, hot-plug spike, ns–µs scale) | ns–µs | **TVS clamp at ~7–10 V** | Faster than eFuse OVP comparator's 2 µs response. TVS absorbs the transient energy; eFuse OVP then catches any residual sustained component. AP2112K's abs-max is for *DC* — short ns/µs overshoots above 6.5V are within the LDO's transient survival envelope (per Diodes Inc. app-note guidance). |
+| Reversed polarity (Mauch installed backwards) | DC | **Q2 body diode blocks** | Q2 Vgs=0 → FET off, body diode reverse-biased. eFuse IN sees ~0 V — never enters reverse-current regulation. TVS sees 0 V. Downstream silicon protected. |
+| Downstream short / over-current (DSP load fault) | µs+ | **eFuse current limit at 2.08 A** | eFuse modulates pass FET to hold I_OUT ≤ 2.08 A; if condition persists, thermal shutdown trips at T_J > 150°C; FLT asserted. Q2 and TVS don't see the fault (it's downstream of U6). |
+
+The coordination is non-conflicting: each stage's activation threshold is *outside* the next stage's normal operating envelope, so they don't false-trigger each other.
+
+### Verification basis (honest accounting)
+
+- **TPS25940A SPICE model**: TI does **not** publish a usable PSpice/SPICE model for the TPS25940A. The closest TI eFuse families (TPS25946x, TPS25985x) have models, but the TPS25940A specifically is not in TI's standard model library distribution (verified via the SLVMxxx-zip search pattern; the matched zips contain unrelated parts like TPS62080A). Therefore the verification basis for U6's design is **the datasheet's design equations + parametric guarantees** (I_LIM accuracy, V_OVP_REF, V_UVLO_REF, dV/dt formula). These are hardware guarantees the silicon meets at the IC level — not a behavioral SPICE approximation that could mis-model.
+- **Per master directive 2026-05-21**: a hand-built behavioral SPICE model of an eFuse is circular (it would just confirm the equations we used to build it). If no usable official model exists, datasheet-formula configuration verification IS the honest verification. We do not pretend otherwise.
+- **Phase 6.5 forum review** (deferred but required before fab): post the configuration values to the ArduPilot / PX4 hardware Discord/forum for sanity-check by EEs who have shipped TPS25940-based boards. Specifically ask: (1) is R4=42.2kΩ → I_LIM=2.08A appropriate given downstream load profile; (2) is C7=100nF dV/dt rate appropriate; (3) is TVS V_BR coordination with OVP acceptable given AP2112K abs-max headroom.
+- **Phase 6a re-sim**: the original simulation that found the 3.39 A inrush peak is now invalidated for this design — that sim modeled a discrete MOSFET soft-start that no longer exists. A new Phase 6a-rev sim can model the front-end's overall behavior (Q2 + TVS modeled as passive, U6 as a current-limit + dV/dt-controlled output) but is not load-bearing for merge approval given the verification basis above.
+- **Phase 9 bench**: real-board oscilloscope measurement at power-on (V_IN, V_OUT, FLT, PGOOD) is the definitive verification. The eFuse's parametric guarantees + datasheet formulas are the *design-time* basis; bench is the *delivery-time* basis.
+
+### Implementation (iter 4)
+
+- `hardware/kicad/novapcb/sheets/power_3b.py`: Q2 + D1 + U6 inserted between +5V_BEC and +5V. Old iter-3 Q1/R6/C5 (Miller MOSFET) removed.
+- `hardware/kicad/novapcb/sheets/power_sd_swd_3h.py`: Mauch connector pins 1+2 are `+5V_BEC` (unchanged from iter 3).
+- Net hierarchy: `+5V_BEC` → Q2 → `+5V_BEC_PROT` → (D1 to GND) + U6.IN → U6.OUT → `+5V` → AP2112K U2.
+- Netlist regenerated: 83 components total.
+- BOM updated: +U6 (TPS25940ARVCR), +Q2 (AO3401A), +D1 (SMAJ6.0A), +R4 (42.2kΩ), +R7 (30.1kΩ), +R9 (51kΩ), grouped 10kΩ row for R5/R8/R10/R13 + I2C-pullup R11/R12, +C7/C8 (100nF), +C9 (1µF reuses existing).
+
+### Topology evolution record (archived — four iterations 2026-05-21)
+
+The discrete-MOSFET path explored in iters 1-3 was abandoned at iter 4 because Sai's "best possible solution" augmentation made the eFuse the cleaner choice. The discrete iterations are preserved here only for archaeology — they are NOT the current design.
+
+| Iter | Topology | Issue caught by master | Outcome |
+|---|---|---|---|
+| 1 | R6 G→S, C5 G→GND | Gate held LOW at power-up → Vgs=-5V instant → FET ON → no soft-start | INSTANT-ON, 8A peak |
+| 2 | C5 G→S, R6 G→GND | Delayed turn-on, not controlled ramp; output dumped fast at FET wake | DELAYED-DUMP, 0.305A at 20ms delay but 0.1ms ramp |
+| 3 | C5 G→D (Miller), R6 S→G | Miller plateau engages, output tracks BEC ramp; but does NOT bound absolute inrush — only bounds drain dV/dt relative to source dV/dt. Fails at artificially fast BEC ramps (10µs → 8.68 A peak); passes at realistic Mauch profile (370µs → 0.51 A peak). Sai adjudicated: option (b) "active current-limit IC", augmented with "best possible solution" → iter 4. | SUPERSEDED |
+| **4 (current)** | **eFuse (U6) + reverse-polarity P-FET (Q2) + TVS (D1)** | — | **Current design.** Output ramp 50 ms @ dV/dt = 100 V/s (C7=100nF). Cap-charge inrush 0.67 mA + LDO/board load-dominated peak ≈ 360 mA at end-of-ramp. OC ceiling 2.08 A (eFuse I_LIM, fault-only). OVP 6.04 V. UVLO 4.00 V. TVS V_BR_min 6.67V. Reverse-polarity blocked by Q2. |
+
+Lesson: the "deterministic over heuristic" §10 principle required current-limit-by-construction (eFuse), not RC-shape heuristics that depend on upstream ramp profile. The iter-3 Miller design was a working *dV/dt-shaping* device but not a current limiter; iter 4 is both.
