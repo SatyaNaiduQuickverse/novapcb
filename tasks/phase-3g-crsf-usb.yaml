@@ -1,0 +1,97 @@
+id: phase-3g-crsf-usb
+phase: "3"
+subphase: "3g"
+title: "CRSF UART connector + USB-C receptacle sheet (USBLC6 ESD on D+/D-)"
+status: done
+depends_on:
+  - phase-3a-mcu
+  - phase-3b-power
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - firmware/hwdef-novapcb/defaults.parm
+    - hardware/kicad/novapcb/sheets/mcu_3a.py
+    - hardware/kicad/novapcb/sheets/power_3b.py
+    - hardware/kicad/novapcb/sheets/common.py
+    - docs/CONFIDENCE_MAP.md
+    - docs/DECISIONS.md
+  refs:
+    - "hwdef.dat:29-30 — USB OTG_FS PA11=DM, PA12=DP. AUTHORITATIVE per hwdef-cited discipline."
+    - "hwdef.dat:133-134 — USART6 PC7=RX, PC6=TX (Phase 2e bdshot amendment)."
+    - "hwdef.dat:12-13 — USB strings (Phase 1 + Phase 2h)."
+    - "defaults.parm — SERIAL7_PROTOCOL 23 + SERIAL7_BAUD 420 (Phase 2f CRSF lock)."
+    - "DECISIONS §4 — external ELRS RX module on CRSF UART; §7 — JST-GH connector standard; §9 — USB VID/PID resolved 0x1209:0x5740."
+    - "Pixhawk Connector Standard — JST-GH 4-pin CRSF wiring (ELRS RP4TD convention)."
+    - "USBLC6-2P6 datasheet (ST) — USB common-mode TVS + 24V clamp; SOT-23-6."
+    - "USB-C device-side spec — CC1+CC2 5.1 kΩ Rd pulldown MANDATORY for UFP/sink detection."
+    - "Phase 2.5 P0.4 inventory — USB-C HRO TYPE-C-31-M-12 16-pin mid-mount receptacle."
+    - "CONFIDENCE_MAP rows 2 (USB-CDC HIGH ~98%) + 9 (CRSF UART MEDIUM-HIGH ~85%) + 12 (EMC/ESD LOW)."
+
+decision_forks_watched:
+  crsf-connector:
+    fork: "CRSF RX connector type + pin count + TX/RX-vs-half-duplex"
+    expected_classes: [jst-gh-full, jst-gh-halfduplex]
+    pre_recommendation: "JST-GH per DECISIONS §7 + ELRS-standard +5V/TX/RX/GND"
+    actual_resolution: "JST-GH 4-pin (SM04B-GHS-TB horizontal). Pin map: +5V/USART6_TX/USART6_RX/GND. Full-duplex TX+RX both routed per ELRS RP4TD standard (CRSF is full-duplex at TTL; half-duplex inverted-S.Port is a different protocol, not novapcb's config — DECISIONS §4 + Phase 2f locked CRSF/ELRS). Inversion/half-duplex flags absent from hwdef per Phase 2f grep — ArduPilot CRSF driver handles polarity at protocol layer."
+    resolved_via: "inline (DECISIONS §4 + ELRS standard wiring + Phase 2f lock)"
+  usbc-cc-esd:
+    fork: "USB-C CC-resistor + ESD-protection configuration"
+    expected_classes: [cc-5k1-plus-esd, cc-5k1-only-esd-deferred]
+    pre_recommendation: "CC1+CC2 5.1k MANDATORY (USB-C UFP spec); ESD CAPTURED (standard practice, ~$0.10 BOM)"
+    actual_resolution: "BOTH CAPTURED. CC1+CC2 5.1 kΩ Rd pulldowns to GND (USB-C device-side enumeration requirement — without Rd the port won't be detected by host at all). USBLC6-2P6 ESD-protection array on D+/D- (ST USB common-mode TVS + 24V clamp, SOT-23-6 ~$0.10 BOM). CONFIDENCE_MAP row 12 small bump (+2%) for this external connector now having proper ESD; rest still LOW (GPS connector + CRSF connector + 5V BEC still ESD-deferred)."
+    resolved_via: "inline (USB-C spec hard-requirement + standard ESD practice)"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-3g-crsf-usb.yaml
+    - hardware/kicad/novapcb/sheets/crsf_usb_3g.py
+  files_modified:
+    - hardware/kicad/novapcb/generate.py
+    - hardware/kicad/novapcb/novapcb.net
+    - hardware/kicad/novapcb/generate.erc
+    - docs/CONFIDENCE_MAP.md
+    - docs/DESIGN_PHASES.md
+
+  pr:
+    title: "Phase 3g: CRSF UART (JST-GH 4P) + USB-C (USBLC6 ESD + 5.1k CC pulldowns)"
+    branch: hw/phase-3g-crsf-usb-2026-05-20
+
+pass_criteria:
+  - "3g.1: hwdef.dat:29-30 (OTG_FS PA11/PA12) + 133-134 (USART6 PC6/PC7) grep'd + cited. defaults.parm SERIAL7_PROTOCOL 23 + SERIAL7_BAUD 420 cited. Schematic UART + USB wiring matches hwdef.dat exactly — verified by guard PASS."
+  - "3g.2: CRSF block — JST-GH 4-pin SM04B-GHS-TB horizontal, pin map per ELRS RP4TD: +5V/USART6_TX/USART6_RX/GND. J10 (new ref to avoid Phase 2.5 sketch's J3=telem placeholder conflict)."
+  - "3g.3: USB-C block — USB_C_Receptacle_USB2.0_16P symbol + HRO TYPE-C-31-M-12 footprint (Phase 2.5 inventory). VBUS (A4/A9/B4/B9) → +5V; GND (A1/A12/B1/B12) + shield S1 → GND; D+/D- (A6+B6/A7+B7 paralleled for orientation flip) → USBLC6 host side; CC1 (A5) + CC2 (B5) → 5.1k Rd pulldowns to GND; SBU1/SBU2 NC for USB 2.0."
+  - "3g.4: USBLC6-2P6 ESD protection captured per usbc-cc-esd fork. Pin map per KiCad symbol (verified via SKiDL pin query): 1=I/O1 (D+ host)/2=GND/3=I/O2 (D- host)/4=I/O2 (D- MCU)/5=VBUS clamp ref/6=I/O1 (D+ MCU). D+/D- pre-ESD nets (USBC_D_P_PRE, USBC_D_M_PRE) connect USB-C to USBLC6; post-ESD nets (USB_DP, USB_DM) connect USBLC6 to MCU PA12/PA11."
+  - "3g.5: USB diff-pair noted in docstring as Phase 4 layout constraint (90 Ω differential, length-matched, USBLC6 placement near connector on host side) + Phase 6b SI sim."
+  - "3g.6: Pipeline — SKiDL ERC 0 errors / 73 warnings (DOWN 2 from 3f's 75 — 4 MCU pins newly connected (PC6/PC7/PA11/PA12) + 2 USB-C SBU pins NC = net -2). generate_netlist 0 errors / 114 warnings. Rail-uniqueness guard PASSED. 8 new unique cross-sheet nets: USART6_RX/TX + USBC_CC1/CC2 + USBC_D_M_PRE/D_P_PRE + USB_DM/DP. Total 31."
+  - "3g.7: CONFIDENCE_MAP rows 2 (HIGH ~98% unchanged) + 9 (MEDIUM-HIGH ~85% → ~87%) + 12 (LOW ~60% → ~62%) evidence notes."
+  - "3g.8: SOTA self-audit in PR body. Authoritative sources: hwdef.dat (UART + USB pin map), defaults.parm (CRSF baud + protocol), USB-C UFP spec (5.1k CC Rd MANDATORY), ST USBLC6 datasheet (ESD pin map)."
+
+estimated_context_kb: 50
+estimated_wallclock: "1.5-2 hours (hwdef-cite-then-wire + USB-C UFP spec research + USBLC6 inline-ESD wiring)"
+
+notes: |
+  3g shipped both blocks. The USB-C 5.1k CC Rd pulldowns are not
+  optional — they're spec-mandatory for any USB-C device to be
+  detected by the host. The USBLC6-2P6 ESD-array adds ~$0.10 BOM
+  for material reduction of USB-D+/D- ESD failure mode (standard
+  practice).
+
+  CRSF is straightforward — JST-GH 4P, ELRS-standard +5V/TX/RX/GND.
+  Full-duplex per ELRS RP4TD; half-duplex inverted-S.Port is a
+  different protocol (Crossfire2 / FrSky), not novapcb's CRSF/ELRS
+  target.
+
+  USB diff-pair 90 Ω + length matching is Phase 4 layout work; this
+  sheet captures the topology only. USBLC6 placement on the HOST
+  side of the cable ESD path is a Phase 4 placement constraint.
+
+  External-connector ESD coverage so far:
+    - USB-C: USBLC6-2P6 on D+/D- (3g, this sheet) ✓
+    - GPS+mag: NOT captured (Phase 3e deferral to 3.5/6.5/6k)
+    - CRSF: NOT captured (Phase 3g — only TX/RX/+5V/GND wires)
+    - 5V BEC (Phase 3h): NOT captured (Phase 3b/3h deferral)
+  Three external connectors still ESD-uncovered. Phase 3.5 reference
+  audit + Phase 6.5 forum review + Phase 6k EMC sim resolve.
