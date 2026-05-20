@@ -1,0 +1,90 @@
+id: phase-4e-freerouting
+phase: "4"
+subphase: "4e"
+title: "Freerouting autoroute pass — whole board, net-class-guided"
+status: in_progress
+depends_on:
+  - phase-4d-critical-routing
+
+inputs:
+  files:
+    - hardware/kicad/novapcb-layout/novapcb-layout.kicad_pcb
+    - hardware/kicad/novapcb-layout/generate_board.py
+    - hardware/kicad/PHASE4_P0_REPORT.md
+    - hardware/kicad/KICAD9_NOTES.md
+  refs:
+    - "PHASE4_P0_REPORT §P0.2 + §P0.5 — Freerouting toolchain (ExportSpecctraDSN → java -jar freerouting.jar → ImportSpecctraSES), -mp/-mt budget, (d)-fallback verification gate (>5% incomplete or DRC errors)"
+    - "4d Phase output — USB_diffpair net class set to W=0.25/S=0.10 (90Ω diff geometry per Hammerstad-Jensen on 4a stackup); IMU_SPI/SDMMC/DShot/Power_* classes per 4a"
+    - "KICAD9_NOTES.md — Freerouting install (~/local/jre + ~/local/freerouting/freerouting.jar) + invocation notes"
+
+# Falsifiable prediction (per master 11:00 Rule-13-with-options + 10:00 commit-prediction-before-verification discipline):
+prediction:
+  worker_pre_run_prediction: |
+    With real placement (Phase 4b) + planes (Phase 4c) — power nets are
+    plane-served + excluded from auto-route. ~50 total nets minus 5
+    plane-served = ~40-45 signal nets to route.
+
+    Predict 75-85% completion (~5-10 nets incomplete).
+    Likely incomplete: USB diff pair (90Ω constraint + long path through
+    dense area between U5 NW and MCU east-side), possibly SDMMC (6 nets
+    crossing F.Cu→B.Cu through narrow Y=6-10 corridor).
+    Likely fine: IMU SPI (short distances), Mauch ADC (short south route),
+    DShot motor outputs (separate from signal-density zones).
+
+    Outcome class prediction: **bulk-ok-critical-poor** (per 4e fork) —
+    Freerouting completes most nets but USB diff pair likely needs GUI
+    rework due to impedance + length-match + dense-channel constraints.
+    Scoped GUI residual = USB D+/D- + USBC_D_P_PRE/USBC_D_M_PRE.
+
+    DRC: 0 errors on routed traces likely (Freerouting respects netclass).
+
+    This prediction is FALSIFIABLE — actual numbers will be reported
+    against it in escalation_log or pass_criteria.
+
+decision_forks_watched:
+  freerouting-result:
+    fork: "Freerouting whole-board result vs the P0 verification gate"
+    expected_classes: [clears-gate, bulk-ok-critical-poor, broad-failure]
+    pre_recommendation: "run it, measure against gate (>5% incomplete after -mp 50, OR DRC errors). Result determines next step."
+    actual_resolution: ""
+    resolved_via: "4e gate (pending)"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-4e-freerouting.yaml
+    - hardware/kicad/novapcb-layout/run_freeroute.py
+  files_modified:
+    - hardware/kicad/novapcb-layout/novapcb-layout.kicad_pcb   # post-routed
+    - hardware/kicad/novapcb-layout/novapcb-layout.dsn         # Specctra export (committed for reproducibility)
+    - hardware/kicad/novapcb-layout/novapcb-layout.ses         # Freerouting result
+    - docs/CONFIDENCE_MAP.md
+    - docs/DESIGN_PHASES.md
+  pr:
+    title: "Phase 4e: Freerouting autoroute pass (on real placed-and-planed board)"
+    branch: hw/phase-4e-freerouting-2026-05-20
+
+pass_criteria:
+  - "4e.1: confirm net classes (USB_diffpair W=0.25/S=0.10, IMU_SPI, SDMMC, DShot, Power_*) set on board pre-export. Power nets plane-served (4c zones) and excluded from auto-route list (Freerouting routes signals only)."
+  - "4e.2: ExportSpecctraDSN + run Freerouting headless (-mp 50 -mt 4) + ImportSpecctraSES — toolchain verified via P0; this is real-board run."
+  - "4e.3: measure result vs P0 gate: (a) % nets incomplete after run; (b) DRC. Report actual vs prediction."
+  - "4e.4: classify per freerouting-result fork: clears-gate (proceed 4f), bulk-ok-critical-poor (scoped GUI residual on specific named nets), broad-failure (escalate). Residual is NAMED + SPECIFIC, not 'critical routing' blob."
+  - "4e.5: if GUI pass needed at any scope: Rule 13 stop with exact incomplete/off-spec net list + Freerouting completion % + DRC state. SUPERMASTER REVIEW flag. Headless-routed clean nets kept + locked."
+  - "4e.6: SOTA self-audit. SI validation is Phase 6 sim — 4e is geometric routing."
+
+estimated_context_kb: 55
+estimated_wallclock: "1-3 hours (Freerouting run itself 30-60 min wall per P0 estimate)"
+
+notes: |
+  Master 4d-decision rationale (paraphrased): scripted-Manhattan routing
+  has been proven infeasible on this dense board (Phase 4d 3-iter tripwire);
+  but Freerouting on the REAL placed-and-planed board hasn't been tried.
+  The P0 scale-test used scatter placement + power-as-traces, which is why
+  it stalled. 4c planes + 4b real placement change the routing problem
+  fundamentally — power on planes, signals to route.
+
+  Run the actual Freerouting test. Don't pre-commit to GUI pass without
+  the data. Outcome is honest regardless: clean route, scoped GUI residual,
+  or broad GUI need — each is a defensible Phase 4 state with measured
+  evidence backing it.

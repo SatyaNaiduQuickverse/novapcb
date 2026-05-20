@@ -1,0 +1,45 @@
+2026-05-20 14:28:40.523 INFO   Freerouting v2.2.4 (build-date: 2026-05-13)
+2026-05-20 14:28:40.603 WARN   Couldn't get screen resolution. If you are running in a headless environment, disable the GUI by setting gui.enabled to false.
+2026-05-20 14:28:42.019 WARN   Analytics tracking: first delivery failure in this window - /v1/analytics/identify - IOException: Server returned HTTP response code: 501 for URL: https://api.freerouting.app/v1/analytics/identify | Server response: {"error":"The operation is not implemented."}. Further failures will be aggregated and reported every 60 minutes.
+2026-05-20 14:28:42.334 INFO   [BE179C\7E3566] Job 'BE179C\7E3566' started at 2026-05-20T08:58:42.333845096Z.
+2026-05-20 14:28:42.349 INFO   New version available: v2.2.4
+2026-05-20 14:29:40.971 INFO   [BE179C\7E3566] Auto-router pass #1 on board '98a394264bbd62165b9af8f803a95814' was completed in 58.32 seconds with the score of 864.30 (60 unrouted and 22 violations), using 50.69 CPU seconds and the job allocated 11.47 GB of memory so far.
+2026-05-20 14:30:11.312 INFO   [BE179C\7E3566] Auto-router pass #2 on board '87e8a210d41e56558911e818dc0a553f' was completed in 30.21 seconds with the score of 890.08 (49 unrouted and 22 violations), using 79.90 CPU seconds and the job allocated 19.77 GB of memory so far.
+2026-05-20 14:30:38.852 INFO   [BE179C\7E3566] Auto-router pass #3 on board '592a3e0f49a7cb9bd8190f22393feb95' was completed in 27.43 seconds with the score of 938.97 (28 unrouted and 22 violations), using 107.36 CPU seconds and the job allocated 28.91 GB of memory so far.
+2026-05-20 14:30:59.183 INFO   [BE179C\7E3566] Auto-router pass #4 on board '7dd4f5156528e05d659160af3d52822d' was completed in 20.24 seconds with the score of 948.43 (23 unrouted and 22 violations), using 126.96 CPU seconds and the job allocated 35.48 GB of memory so far.
+2026-05-20 14:31:14.640 INFO   [BE179C\7E3566] Auto-router pass #5 on board '98acd8f16650fccc9e18b376735af261' was completed in 15.37 seconds with the score of 952.72 (21 unrouted and 22 violations), using 142.58 CPU seconds and the job allocated 40.89 GB of memory so far.
+2026-05-20 14:31:31.784 INFO   [BE179C\7E3566] Auto-router pass #6 on board '011aae904917e196da0894a291d51555' was completed in 17.03 seconds with the score of 961.85 (16 unrouted and 22 violations), using 159.23 CPU seconds and the job allocated 46.78 GB of memory so far.
+2026-05-20 14:31:46.841 INFO   [BE179C\7E3566] Auto-router pass #7 on board '7935288c391f56f46bcf5c76ccfce929' was completed in 14.96 seconds with the score of 968.28 (12 unrouted and 22 violations), using 173.90 CPU seconds and the job allocated 51.60 GB of memory so far.
+2026-05-20 14:31:59.871 INFO   [BE179C\7E3566] Auto-router pass #8 on board '1b0b915a4023cbab4680289d3be8aa22' was completed in 12.89 seconds with the score of 968.28 (12 unrouted and 22 violations), using 186.64 CPU seconds and the job allocated 55.74 GB of memory so far.
+2026-05-20 14:32:09.409 INFO   [BE179C\7E3566] Auto-router pass #9 on board '1b0b915a4023cbab4680289d3be8aa22' was completed in 9.46 seconds with the score of 968.37 (12 unrouted and 22 violations), using 195.38 CPU seconds and the job allocated 59.10 GB of memory so far.
+2026-05-20 14:32:15.887 INFO   [BE179C\7E3566] Auto-router pass #10 on board '14e73c049e4b29f1a1d4cfa353890bc4' was completed in 6.39 seconds with the score of 969.72 (11 unrouted and 22 violations), using 202.24 CPU seconds and the job allocated 61.62 GB of memory so far.
+2026-05-20 14:32:27.296 INFO   [BE179C\7E3566] Auto-router pass #11 on board '87a3d26efade7facfb98d45ce21b0570' was completed in 11.32 seconds with the score of 971.43 (10 unrouted and 22 violations), using 213.02 CPU seconds and the job allocated 65.87 GB of memory so far.
+2026-05-20 14:32:35.164 INFO   [BE179C\7E3566] Auto-router pass #12 on board '388c71a32eaba3a80f066ee40b8c50c3' was completed in 7.79 seconds with the score of 971.43 (10 unrouted and 22 violations), using 220.86 CPU seconds and the job allocated 68.73 GB of memory so far.
+2026-05-20 14:32:42.196 INFO   [BE179C\7E3566] Auto-router pass #13 on board '388c71a32eaba3a80f066ee40b8c50c3' was completed in 6.97 seconds with the score of 970.13 (11 unrouted and 22 violations), using 227.65 CPU seconds and the job allocated 71.24 GB of memory so far.
+2026-05-20 14:32:47.625 INFO   [BE179C\7E3566] Auto-router pass #14 on board 'c04042ea079ff0beca32ff764f2d2c5e' was completed in 5.35 seconds with the score of 974.76 (8 unrouted and 22 violations), using 233.49 CPU seconds and the job allocated 73.56 GB of memory so far.
+2026-05-20 14:32:53.118 INFO   [BE179C\7E3566] Auto-router pass #15 on board '4b7463bd881b51a4f6ca188494032e07' was completed in 5.41 seconds with the score of 974.71 (8 unrouted and 22 violations), using 238.38 CPU seconds and the job allocated 75.43 GB of memory so far.
+2026-05-20 14:32:57.913 INFO   [BE179C\7E3566] Auto-router pass #16 on board '6c4c88617249049122abb1e5831c625f' was completed in 4.71 seconds with the score of 976.34 (7 unrouted and 22 violations), using 243.28 CPU seconds and the job allocated 77.33 GB of memory so far.
+2026-05-20 14:33:02.102 INFO   [BE179C\7E3566] Auto-router pass #17 on board '2d6fdc9dd61ba41173bc940f573b8eb5' was completed in 4.11 seconds with the score of 976.34 (7 unrouted and 22 violations), using 247.19 CPU seconds and the job allocated 78.83 GB of memory so far.
+2026-05-20 14:33:06.340 INFO   [BE179C\7E3566] Auto-router pass #18 on board '0803f59aae704f3bad52955f5255e6cc' was completed in 4.13 seconds with the score of 976.34 (7 unrouted and 22 violations), using 251.10 CPU seconds and the job allocated 80.33 GB of memory so far.
+2026-05-20 14:33:10.691 INFO   [BE179C\7E3566] Auto-router pass #19 on board 'b15c542d453cdcb857c8265950327c9c' was completed in 4.27 seconds with the score of 976.34 (7 unrouted and 22 violations), using 256.00 CPU seconds and the job allocated 82.17 GB of memory so far.
+2026-05-20 14:33:14.851 INFO   [BE179C\7E3566] Auto-router pass #20 on board 'f424fa4cc78f89f304259a0ac4436404' was completed in 4.08 seconds with the score of 976.34 (7 unrouted and 22 violations), using 259.90 CPU seconds and the job allocated 83.68 GB of memory so far.
+2026-05-20 14:33:19.087 INFO   [BE179C\7E3566] Auto-router pass #21 on board '495f4500b0b9463f71bb346bcae0cfe9' was completed in 4.14 seconds with the score of 976.34 (7 unrouted and 22 violations), using 263.82 CPU seconds and the job allocated 85.18 GB of memory so far.
+2026-05-20 14:33:23.417 INFO   [BE179C\7E3566] Auto-router pass #22 on board 'bace24f7484e16ad804bdc571b5299b4' was completed in 4.24 seconds with the score of 976.34 (7 unrouted and 22 violations), using 267.74 CPU seconds and the job allocated 86.65 GB of memory so far.
+2026-05-20 14:33:27.670 INFO   [BE179C\7E3566] Auto-router pass #23 on board 'e62e0ded740481f3421efa1ac708ecba' was completed in 4.17 seconds with the score of 976.34 (7 unrouted and 22 violations), using 272.65 CPU seconds and the job allocated 88.51 GB of memory so far.
+2026-05-20 14:33:31.961 INFO   [BE179C\7E3566] Auto-router pass #24 on board '386a6d8bf394e5c1c3c808a926ed6046' was completed in 4.21 seconds with the score of 976.34 (7 unrouted and 22 violations), using 276.56 CPU seconds and the job allocated 89.97 GB of memory so far.
+2026-05-20 14:33:36.176 INFO   [BE179C\7E3566] Auto-router pass #25 on board '17e550a22e6ff07b10c606a16308bb93' was completed in 4.12 seconds with the score of 976.34 (7 unrouted and 22 violations), using 280.47 CPU seconds and the job allocated 91.46 GB of memory so far.
+2026-05-20 14:33:40.597 INFO   [BE179C\7E3566] Auto-router pass #26 on board 'e918590110b4691122c866b121c040c4' was completed in 4.33 seconds with the score of 976.34 (7 unrouted and 22 violations), using 284.39 CPU seconds and the job allocated 92.98 GB of memory so far.
+2026-05-20 14:33:40.646 INFO   [BE179C\7E3566] The router's score (976.34) has not improved by more than 0.5 points in the last 10 passes (7 items still unconnected). Stopping the auto-router.
+The following connections could not be routed -- please review your design (e.g. check pad clearances, trace width rules, and available routing space):
+  Net '+5V' (3 unrouted connections):
+    - conductionarea  ->  conductionarea
+    - via  ->  J1-B9
+    - J1-B9  ->  J1-A9
+  Net '+3V3' (1 unrouted connection):
+    - C12-1  ->  C52-1
+  Net 'VBAT' (2 unrouted connections):
+    - C23-1  ->  conductionarea
+    - R2-2  ->  U1-6
+  Net 'MOT1' (1 unrouted connection):
+    - J11-1  ->  U1-34
+2026-05-20 14:33:40.716 INFO   [BE179C\7E3566] Auto-router session completed: started with 181 unrouted nets, completed in 4 minutes 58.23 seconds, final score: 976.34 (7 unrouted and 22 violations), using 285.38 total CPU seconds, 93.29 GB total allocated, and 721.23 MB peak heap usage.

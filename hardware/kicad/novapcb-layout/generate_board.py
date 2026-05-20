@@ -838,7 +838,7 @@ project = {
                 "min_silk_clearance": 0.0,
                 "min_text_height": 0.8,
                 "min_text_thickness": 0.08,
-                "min_through_hole_diameter": 0.3,
+                "min_through_hole_diameter": 0.25,  # 4e: match netclass via_drill 0.25mm (JLCPCB 4-layer free spec drill min 0.20mm; 0.25mm comfortable margin); resolves Freerouting-via drill_out_of_range
                 "min_track_width": 0.13,
                 "min_via_annular_width": 0.05,
                 "min_via_diameter": 0.45,
