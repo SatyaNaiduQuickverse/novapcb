@@ -1,0 +1,104 @@
+{
+  "tool_versions": {
+    "arducopter_sitl": "/home/novatics64/ardupilot/build/sitl/bin/arducopter",
+    "pymavlink": "2.4.49"
+  },
+  "checks": [
+    {
+      "check": "6l.5_heartbeat",
+      "status": "PASS",
+      "notes": "type=2, autopilot=3, base_mode=0x59"
+    },
+    {
+      "check": "6l.5_heartbeat_semantics",
+      "status": "PASS",
+      "notes": "MAV_TYPE_QUADROTOR=True, MAV_AUTOPILOT_ARDUPILOTMEGA=True"
+    },
+    {
+      "check": "6l.5_param_round_trip",
+      "status": "PASS",
+      "notes": "FLTMODE_CH=7 (expected 7 per DECISIONS \u00a72)"
+    },
+    {
+      "check": "6l.1_defaults_parm_applied",
+      "status": "PASS",
+      "notes": "SERIAL7_PROTOCOL=23 (expected 23 per novapcb defaults.parm \u2014 RCIN/CRSF)"
+    },
+    {
+      "check": "6l.2_ekf_prereq",
+      "status": "PASS",
+      "notes": "EKF reports attitude+vel+pos_horiz_abs flags set"
+    },
+    {
+      "check": "6l.2_mode_STABILIZE",
+      "status": "PASS",
+      "notes": "requested mode_id=0, observed custom_mode=0"
+    },
+    {
+      "check": "6l.2_mode_ALT_HOLD",
+      "status": "PASS",
+      "notes": "requested mode_id=2, observed custom_mode=2"
+    },
+    {
+      "check": "6l.2_mode_LOITER",
+      "status": "PASS",
+      "notes": "requested mode_id=5, observed custom_mode=5"
+    },
+    {
+      "check": "6l.2_mode_POSHOLD",
+      "status": "PASS",
+      "notes": "requested mode_id=16, observed custom_mode=16"
+    },
+    {
+      "check": "6l.2_mode_RTL",
+      "status": "PASS",
+      "notes": "requested mode_id=6, observed custom_mode=6"
+    },
+    {
+      "check": "6l.2_mode_LAND",
+      "status": "PASS",
+      "notes": "requested mode_id=9, observed custom_mode=9"
+    },
+    {
+      "check": "6l.4_RCMAP_PITCH",
+      "status": "PASS",
+      "notes": "RCMAP_PITCH=2 (expected 2 \u2014 stock ArduPilot)"
+    },
+    {
+      "check": "6l.4_rc_override_low",
+      "status": "PASS",
+      "notes": "RC2 with override pwm=1200 \u2192 SITL observed chan2_raw=1200"
+    },
+    {
+      "check": "6l.4_rc_override_high",
+      "status": "PASS",
+      "notes": "RC2 with override pwm=1800 \u2192 SITL observed chan2_raw=1800"
+    },
+    {
+      "check": "6l.4_PITCH_SIGN_NO_DOUBLE_FLIP",
+      "status": "PASS",
+      "notes": "chan2_raw monotonic with override: low_pwm=1200 \u2192 1200, high_pwm=1800 \u2192 1800. sign_ok=True. NO double-flip detected at the RC-input boundary (CLAUDE.md \u00a74.1 trap absent on novapcb defaults.parm). Higher-level NED-frame attitude convention (RC2 high \u2192 +pitch demand) is governed by RCMAP_PITCH=2 (stock = no override)."
+    },
+    {
+      "check": "6l.3_FS_THR_ENABLE_applied",
+      "status": "PASS",
+      "notes": "FS_THR_ENABLE read-back = 1 (expected 1)"
+    },
+    {
+      "check": "6l.3_rc_failsafe",
+      "status": "PASS",
+      "notes": "failsafe fired: STATUSTEXT='Radio Failsafe - Disarming'"
+    },
+    {
+      "check": "6l.5_heartbeat_rate",
+      "status": "PASS",
+      "notes": "81 heartbeats in 8s wall (--speedup 10 \u2192 expect \u226540 sim-Hz)"
+    }
+  ],
+  "summary": {
+    "total": 18,
+    "pass": 18,
+    "fail": 0,
+    "warn": 0
+  }
+}

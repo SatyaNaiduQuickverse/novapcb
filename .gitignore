@@ -40,8 +40,8 @@ venv/
 # Hailo runtime log that was here at init
 hailort.log
 
-# Local Claude Code settings (per-machine permission grants)
-.claude/settings.local.json
+# Local Claude Code settings (per-machine permission grants + scheduled-task state)
+.claude/
 
 # SKiDL REPL artefacts (created in cwd when running `python3 -c "import skidl..."`)
 skidl_REPL.*
