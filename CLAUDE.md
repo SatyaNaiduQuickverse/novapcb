@@ -47,7 +47,7 @@
 - Target: drop-in replacement for the off-the-shelf autopilot (currently a Holybro Pixhawk 6X) used in the Nova drone.
 - Software contract: must speak ArduPilot MAVLink v2 over USB-CDC at 115200 baud and enumerate as `usb-ArduPilot_*` for udev pinning.
 - Tooling intent: code-driven PCB workflow — KiCad sources in git, exports automated, BOM diffable in PRs.
-- Form factor target (v1): Pixhawk-standard 30.5 × 30.5 mm with M3 mounting holes — **functional** drop-in (electrical + software identical to the 6X), single-PCB, requires a new mounting tray on the airframe. **FMUv6X mechanical drop-in is v2** (separate FMU + isolated-IMU boards, exact 6X mechanical match); deferred until v1 flies.
+- Form factor target (v1): Pixhawk-standard mini-FC pattern — **board outline ~36 × 36 mm**, **mounting holes 30.5 × 30.5 mm center-to-center, M3** (4 holes, the "30.5×30.5 M3" Pixhawk-standard pattern; matches MatekH743 and other mini-FC reference boards). **Functional** drop-in (electrical + software identical to the 6X), single-PCB, requires a new mounting tray on the airframe. **FMUv6X mechanical drop-in is v2** (separate FMU + isolated-IMU boards, exact 6X mechanical match); deferred until v1 flies.
 
 ### What this repo IS NOT
 
@@ -286,7 +286,7 @@ novapcb/
 │   ├── DECISIONS.md               locked v1 scoping decisions (2026-05-18)
 │   └── OPEN_QUESTIONS.md           stub for future open questions
 ├── hardware/
-│   ├── kicad/                      KiCad 8 schematic + PCB sources
+│   ├── kicad/                      KiCad 9 schematic + PCB sources
 │   └── exports/                    gerbers, drill, pick-and-place — generated, gitignored
 ├── firmware/                       ArduPilot hwdef.dat + board bring-up code
 ├── bom/                            parts list, sourcing notes, alt-parts table
@@ -309,7 +309,7 @@ novapcb/
 
 PCB work on this project is reviewable the same way firmware is. That means:
 
-- KiCad sources committed in plain-text S-expression form (KiCad 8 default).
+- KiCad sources committed in plain-text S-expression form (KiCad 9 default; the version installed on `novarobotics64` per `/etc/os-release` Debian 13 trixie).
 - Schematic and layout changes go through PRs.
 - BOM is CSV and diffable.
 - Export pipeline is scripted (a `make exports` or `scripts/export.sh` target) — never click-export from KiCad.
@@ -572,7 +572,7 @@ Documented so a new Claude on a fresh clone knows what tools to expect (or insta
 | `gh` | 2.46.0 | GitHub CLI; HTTPS auth, token in keychain |
 | Docker | running (drone-side stack) | not used directly for PCB work, but containers are running |
 | HailoRT | 4.23.0 firmware | for the NPU; not relevant to PCB |
-| KiCad | not installed yet (TBD) | will be installed when schematic work starts |
+| KiCad | 9.0.2+dfsg-1 (apt from Debian trixie main) | installed pre-Phase-2.5 on `novarobotics64`; `pcbnew` Python API + `kicad-cli` both available for headless work |
 
 ### 10.3 Where related projects live on the build host
 

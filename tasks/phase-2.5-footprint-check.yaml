@@ -1,7 +1,7 @@
 id: phase-2.5-footprint-check
 phase: "2.5"
-title: "Footprint reality check — verify major components fit 30.5x30.5mm before Phase 3"
-status: in_progress_p0_gate
+title: "Footprint reality check — verify major components fit Pixhawk-standard mini-FC before Phase 3"
+status: done
 depends_on:
   - phase-2-exit
 
@@ -21,6 +21,12 @@ inputs:
     - "OPEN_QUESTIONS phase2exit-1 — MAX7456: recommendation omit; do NOT place it"
 
 decision_forks_watched:
+  board-size-vs-hole-spacing:
+    fork: "Pixhawk '30.5×30.5 mm M3' phrasing — board outline or hole spacing?"
+    expected_classes: [board-outline, hole-spacing-only]
+    pre_recommendation: "hole-spacing-only per industry convention (board ~36×36 with 30.5 c-to-c holes)"
+    actual_resolution: "RESOLVED via escalation #2: master decision A — board 36×36mm, hole spacing 30.5×30.5mm c-to-c M3. CLAUDE.md §1 + DECISIONS §2 disambiguated in this PR."
+    resolved_via: "escalation_log entry 2 (board-outline-vs-hole-spacing)"
   kicad-install:
     fork: "KiCad install method + version on novarobotics64"
     expected_classes: [apt, flatpak]
@@ -55,8 +61,18 @@ escalation_log:
       - "(B) Force-install KiCad 8 via flatpak/older repo for CLAUDE-8-default compliance. Adds install complexity + diverges from trixie ecosystem."
       - "(C) Use KiCad 9 but only commit files KiCad 9 can save in 8-compatible format. Brittle."
     pre_recommendation: "A — use trixie-default KiCad 9; CLAUDE.md was bootstrapped 2026-05-18 when trixie status was unclear; reality moved."
-    master_decision: "PENDING (P0.5 gate)"
-    reasoning: "tbd post-master-adjudication"
+    master_decision: "A (KiCad 9, update CLAUDE.md §6.1 + §10.2). SUPERMASTER-VISIBILITY FLAG: factual tooling correction, within bounded authority; flagged in PR body for Sai's review on return."
+    reasoning: "Already installed + trixie-native + no sudo needed (KiCad 8 install would gate on supermaster password). novarobotics64 is the only Pi doing KiCad work; forward-incompat (KiCad 8 can't read 9 files) has near-zero blast radius. KiCad 9 is current stable in trixie main; right call regardless. Decision is effectively forced by reality."
+  - timestamp: 2026-05-20T02:28:52Z
+    subphase: "2.5-P1"
+    trigger: "P1.1 discovery — 'Pixhawk 30.5×30.5 mm M3' in master contract reads as board outline, but industry convention says it's mounting hole spacing on a typically 36×36mm board. Literal interpretation (board=30.5×30.5) is mechanically impossible (M3 holes at corners with 0 edge clearance)."
+    options_presented:
+      - "(A) Industry convention: board ~36×36, hole spacing 30.5×30.5 c-to-c, M3. Matches MatekH743 reference + Oscar Liang industry-standard reference. Also clarify CLAUDE.md §1 + DECISIONS §2 wording."
+      - "(B) Literal contract: board IS 30.5×30.5, hole-spacing ~24mm c-to-c. Doesn't fit Pixhawk-standard brackets. Wrong by convention."
+      - "(C) Compromise: board 30.5×30.5 with hole-spacing also 30.5×30.5 (holes AT corners, 0 inset). Mechanically broken; would crack at any stress."
+    pre_recommendation: "A — industry convention + reference board match + bracket compatibility. Plus CLAUDE.md/DECISIONS clarification in same PR (same supermaster-visibility-flag pattern as KiCad 8→9 update)."
+    master_decision: "A (board outline 36×36mm, mounting hole spacing 30.5×30.5mm c-to-c M3). CLARIFICATION not decision-change — literal 30.5×30.5 board is mechanically impossible (zero edge clearance) so docs MUST have always meant hole-spacing. CLAUDE.md §1 + DECISIONS §2 updates AUTHORIZED. SUPERMASTER-VISIBILITY FLAG: factual disambiguation, within bounded authority. Master-side miss in contract phrasing acknowledged for next retro."
+    reasoning: "Mechanically impossible literal reading + industry convention citations (Oscar Liang FC mounting article, MatekH743 reference 36×36 board / 30.5 hole spacing) + Pixhawk-bracket compatibility requirement. 'Surely-working' calibration = match the proven reference; MatekH743 ships 36×36 so we ship 36×36. ~32×32 mm usable area inside M3 keep-outs is a plausible fit envelope. Caught at P1.1 with zero board file created — 'fail cheap' worked as designed."
 
 outputs:
   files_created:

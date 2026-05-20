@@ -17,9 +17,9 @@ All 9 scoping decisions for the v1 FC, signed off 2026-05-18. Each section shows
 
 ## 2. Form factor
 
-**Resolved 2026-05-18:** **v1 = Pixhawk-standard 30.5 × 30.5 mm M3 single-PCB** (functional drop-in against the Holybro Pixhawk 6X — same electrical + software interface, airframe gets a new mounting tray; **not** a mechanical drop-in). **v2 = FMUv6X mechanical drop-in** (FMU + isolated IMU on vibration mounts, exact 6X footprint and connectors), deferred until v1 flies — see `OPEN_QUESTIONS.md` for the v2 mechanical questions still to settle.
+**Resolved 2026-05-18; mechanical specs disambiguated 2026-05-20 (Phase 2.5 P1.1):** **v1 = Pixhawk-standard mini-FC single-PCB — board outline 36 × 36 mm, mounting holes 30.5 × 30.5 mm center-to-center M3** (4 holes; the "30.5×30.5 M3" Pixhawk-standard pattern, matching MatekH743 reference). Functional drop-in against the Holybro Pixhawk 6X — same electrical + software interface, airframe gets a new mounting tray; **not** a mechanical drop-in. **v2 = FMUv6X mechanical drop-in** (FMU + isolated IMU on vibration mounts, exact 6X footprint and connectors), deferred until v1 flies — see `OPEN_QUESTIONS.md` for the v2 mechanical questions still to settle.
 
-- **Pixhawk standard 30.5×30.5 mm M3, single-PCB** (chosen for v1) — well-trodden form factor; closest reference design is MatekH743. Functional swap only; the airframe needs a new tray since the Pixhawk 6X uses the FMUv6X pattern, not 30.5×30.5.
+- **Pixhawk standard 30.5×30.5 mm M3, single-PCB** (chosen for v1) — well-trodden form factor; closest reference design is MatekH743 (36×36 board, 30.5×30.5 c-to-c M3 holes). Functional swap only; the airframe needs a new tray since the Pixhawk 6X uses the FMUv6X pattern, not the 30.5×30.5 mini-FC pattern.
 - **FMUv6X form factor, two-board (FMU + isolated IMU)** (chosen for v2) — true mechanical drop-in against the 6X. Significantly more complex (vibration isolation, exact connector pin-out, dual-board assembly); not worth blocking v1 on.
 - **Custom outline** — only if there's a frame-fit problem with both of the above.
 
