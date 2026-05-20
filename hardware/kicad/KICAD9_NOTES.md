@@ -271,6 +271,45 @@ for k, v in nets.items():
 LAYER_NAME = {0: "F.Cu", 2: "B.Cu", 4: "In1.Cu", 6: "In2.Cu"}
 ```
 
+## Layout discipline (Phase 4b/4c/4d hard lessons)
+
+### Always API-measure pad extents — don't estimate
+
+The Phase 4b-rev3 zigzag had ONE root cause: estimating pad geometry instead of measuring it. Estimates miss:
+
+- **Pad rotation**: a 1.0×2.7mm MP pad on a connector rotated 270° has world-X extent 2.7mm not 1.0mm; `pad.GetSize()` returns size that's ALREADY rotated with the footprint.
+- **0805 vs 0402 pad-extent**: 0805 cap pads are 1.25×1.0mm — wider than 0402 (0.5×0.6mm).
+- **Mounting-hole / locating-pad sizes**: JST-GH MP pads = 1.0×2.7mm; M3_Pad mounting holes default to 6.4mm copper.
+
+```python
+# CORRECT: measure via API, work in world coordinates
+for fp in brd.GetFootprints():
+    if fp.GetReference() == "U2":
+        for pad in fp.Pads():
+            pos = pad.GetPosition()   # world position
+            sz  = pad.GetSize()       # rotated with footprint
+            # extent: pos ± sz/2 in world coords
+```
+
+If you're computing a clearance, you measured via API. If you're estimating, you're about to introduce a DRC violation.
+
+### Headless scripted routing has limits on dense boards
+
+Phase 4d (16 critical nets on 36×36 placement) confirmed: Python `pcbnew.PCB_TRACK + PCB_VIA` scripted Manhattan/Z-routes through a dense placement (~70 components) cannot reliably produce DRC-clean critical-net routing. Three progressive iterations: 53 / 81 / 6 DRC violations.
+
+Scripted routing handles INDIVIDUAL nets but doesn't compose. Multiple nets in the same channel collide; via columns clash; tracks cross. Autorouters have pathfinding intelligence; an L-shape Python helper doesn't.
+
+Scripted routing IS good for:
+- Locking pre-determined critical nets (hand-compute geometry, SetLocked(True))
+- Test fixtures, single-net routing
+- Validation of route quality post-routing
+
+Scripted routing IS NOT good for:
+- Composing 10+ routes on a dense placement (the 4d tripwire)
+- Replacing Freerouting or a GUI session
+
+Rule 13 stop the scripted-route approach if 2-3 iterations zigzag at scale.
+
 ## When you encounter a new gotcha
 
 Add a section here. Keep it terse — "what broke, the WRONG pattern, the CORRECT pattern, why." Future-Claude on Phase 4+ will read this; reverse-engineering the same problem twice is wasted effort.

@@ -1,0 +1,137 @@
+id: phase-4d-critical-routing
+phase: "4"
+subphase: "4d"
+title: "Critical-net hand-routing — USB diff pair, IMU SPI, SDMMC, Mauch ADC"
+status: rule13_stop  # Headless scripted routing on dense 36×36 hit tripwire; escalating per master discipline
+depends_on:
+  - phase-4c-planes
+
+inputs:
+  files:
+    - hardware/kicad/novapcb-layout/novapcb-layout.kicad_pcb
+    - hardware/kicad/novapcb-layout/generate_board.py
+    - hardware/kicad/PHASE4_P0_REPORT.md
+    - tasks/phase-4a-footprints-rules.yaml
+    - hardware/kicad/KICAD9_NOTES.md
+    - docs/CONFIDENCE_MAP.md
+  refs:
+    - "PHASE4_P0_REPORT §P0.4 — 4-layer stackup + impedance-controlled-net spec"
+    - "4a net classes — USB_diffpair (updated to W=0.25/S=0.10 per 90Ω compute), IMU_SPI, SDMMC, Default"
+    - "pcbnew Python API — PCB_TRACK, PCB_VIA, SetLocked() — all confirmed working"
+    - "Hammerstad-Jensen microstrip-impedance approximation — computed 90Ω geometry for the 4a stackup (F.Cu over In1.Cu GND, h=0.21mm, εr=4.3, t=0.035mm)"
+
+decision_forks_watched:
+  usb-diffpair-geometry:
+    fork: "USB D+/D- trace width + spacing for 90-ohm differential on the 4a stackup"
+    expected_classes: [computed-from-stackup, kicad-impedance-calc]
+    pre_recommendation: "compute from stackup — Hammerstad-Jensen formula on (h=0.21mm, εr=4.3, t=35µm)"
+    actual_resolution: "Computed W=0.25mm + S=0.10mm → Z_diff = 91.6Ω (closest to 90Ω target; alternates W=0.22/S=0.10 → 97.5Ω, W=0.25/S=0.13 → 96.8Ω). Net class USB_diffpair updated to (track_width=0.25, diff_pair_gap=0.10). Per master 4d.7: 4d geometric routing correctness only — SI validation deferred to Phase 6b sim."
+    resolved_via: "inline (computed; updated kicad_pro netclass)"
+
+  headless-routing-approach:
+    fork: "Python pcbnew API scripted routing vs alternative approach"
+    expected_classes: [scripted-manhattan, scripted-with-pathfind, gui-pass, defer-to-freerouting]
+    pre_recommendation: "scripted Manhattan with route_multi helper"
+    actual_resolution: "**FAILED at scale — Rule 13 stop.** See escalation_log #1."
+    resolved_via: "Rule 13 escalation"
+
+escalation_log:
+  - id: 1
+    when: "4d routing first pass + second pass + USB-only third pass"
+    issue: |
+      Headless scripted Manhattan/Z-routes through the dense 36×36 placement
+      repeatedly fail to produce DRC-clean critical-net routing. Three
+      progressive attempts (Phase 3a P0 lesson applied to routing this time):
+
+      **Iter #1 — naive Manhattan L-routes (16 nets):**
+      53 DRC violations: 25 shorting_items + 9 tracks_crossing + 6
+      hole_clearance + 6 drill_out_of_range + 5 clearance + 2
+      items_not_allowed. Root cause: 2-segment L-routes go STRAIGHT THROUGH
+      MCU body + IMU body + connector keep-outs.
+
+      **Iter #2 — body-aware Z-routes (3-4 segments per net, routed around
+      MCU/IMU bodies):**
+      81 DRC violations (got WORSE): 30 shorting + 20 tracks_crossing + 9
+      items_not_allowed + 8 hole_clearance + 8 clearance + 6 drill_out_of_range.
+      Root cause: Z-routes pile up via-corridors that cross each other; SDMMC
+      vias collide with ESC pad bodies at Y=2-5; multiple analog/digital
+      tracks crossing each other in the same channel.
+
+      **Iter #3 — USB diff pair ONLY (4 nets, with parallel-section
+      routing):**
+      6 DRC violations (best so far, but still not clean). Root cause: USB
+      diff pair from U5 (NW, Y=30) to MCU east (Y=15) must cross over Y1
+      crystal (at X=28-29, Y=18-21) + H4 keep-out area + MCU pad rows.
+      Even the impedance-critical "easy" diff pair couldn't route clean
+      headless on this density.
+
+      Pattern: each Python-scripted routing attempt produces 6-81 DRC
+      violations. The APPROACH (Python Manhattan + auto-via on dense
+      placement) is the tripwire master anticipated at 10:00 retro: "If a
+      sub-phase hits a THIRD rev, that's a signal the sub-phase's approach
+      (not just its execution) needs rethinking."
+
+      Three revs of progressively-more-careful-but-still-failing scripted
+      routing = approach signal. Honest call: scripted-Manhattan-+-auto-via
+      isn't sufficient routing intelligence for this density.
+
+    options:
+      - id: A
+        title: "Supermaster GUI pass for ALL critical routing"
+        consequence: "4d effectively transfers to supermaster (return-only). Phase 4e (Freerouting bulk) gates on a fully-hand-routed-critical-core. Most reliable route quality; bounded time by supermaster availability."
+        worker_preference: true
+      - id: B
+        title: "Skip 4d entirely; go straight to 4e Freerouting"
+        consequence: "Freerouting sees ALL nets as unrouted. The P0 verification gate (>5% incomplete or DRC errors) catches any unroutable critical nets. If Freerouting succeeds → great; if not → (d)-fallback fires anyway. Risk: Freerouting may route impedance-critical USB poorly without manual override + lock."
+      - id: C
+        title: "Worker continues with smarter routing strategy (e.g., kinet2pcb's hierplace + community routers)"
+        consequence: "Open-ended; no guarantee headless succeeds. Master's tripwire warning applies."
+      - id: D
+        title: "Defer 4d's critical-net routing to a supermaster-paired session OR hybrid: route the simplest 1-2 nets (e.g., IMU CS, which is a 3-segment direct route) headlessly, GUI for USB+SDMMC+ADC"
+        consequence: "Reduces GUI burden but still requires supermaster availability."
+
+    worker_recommendation: "**A (full GUI pass)** — most reliable + aligns with master's repeated 'supermaster GUI pass is the legitimate (d)-fallback' framing in P0 + 10:00 retro. Routing 16 nets including impedance-controlled USB on a 36×36 mini-FC is precisely the kind of work a human-in-loop GUI session is for. Alternative B is the most autonomous path but defers the critical-net-quality question to 4e's outcome."
+
+outputs:
+  files_created:
+    - tasks/phase-4d-critical-routing.yaml
+  files_modified:
+    - hardware/kicad/novapcb-layout/generate_board.py   # 4d routing step disabled per Rule 13; J2 northward move kept; USB_diffpair netclass updated (W=0.25/S=0.10)
+    - hardware/kicad/novapcb-layout/novapcb-layout.kicad_pcb  # J2 fix kept; 0 DRC errors
+    - hardware/kicad/KICAD9_NOTES.md   # API-measure-don't-estimate discipline note
+    - docs/CONFIDENCE_MAP.md
+    - docs/DESIGN_PHASES.md
+  pr:
+    title: "Phase 4d: critical-net routing (Rule 13 — headless tripwire; +J2 microSD fix; +USB 90Ω geometry)"
+    branch: hw/phase-4d-critical-routing-2026-05-20
+
+pass_criteria:
+  - "4d.1 USB diff pair: 90Ω geometry COMPUTED (W=0.25/S=0.10, Hammerstad-Jensen on 4a stackup). Routing DEFERRED per Rule 13."
+  - "4d.2 IMU SPI: routing DEFERRED per Rule 13."
+  - "4d.3 SDMMC: routing DEFERRED per Rule 13. Plus J2 fixed (was at Y=6 with pads at Y=-1.73 off-board; moved to Y=9 → all pads on-board)."
+  - "4d.4 Mauch ADC: routing DEFERRED per Rule 13."
+  - "4d.5 LOCK: N/A (nothing routed; nothing to lock)."
+  - "4d.6 DRC: 0 errors / 0 unconnected at error severity (no new violations vs 4c state)."
+  - "4d.7 SOTA self-audit: 90Ω compute is the verified deliverable; routing is escalated; J2 fix is a side-fix master called out."
+
+estimated_context_kb: 60
+estimated_wallclock: "Used ~2 hours including 3 iter attempts. Rule 13 fired at the tripwire per master discipline."
+
+notes: |
+  Phase 4d hit a real architectural tripwire — Python-scripted routing
+  through dense 36×36 placement isn't sufficient routing intelligence
+  for impedance-critical + body-avoiding paths. Three progressive revs
+  (naive → body-aware → USB-only) all produced DRC errors. The APPROACH
+  needed reconsideration, not just execution.
+
+  What 4d DID deliver:
+    - J2 microSD off-board-pad fix (master's pre-routing demand)
+    - 90Ω diff pair geometry computed + cited (Hammerstad-Jensen)
+    - USB_diffpair net class updated (W=0.25/S=0.10)
+    - Routing helpers (route_multi, add_track, add_via, SetLocked
+      mechanics) — usable by Phase 4e or a follow-on smarter-routing PR
+    - API-measure-don't-estimate discipline note in KICAD9_NOTES.md
+      (the 4b/4c lesson, now permanent cross-machine)
+    - Honest Rule-13-with-options escalation per master 11:00 codification
+
+  Master adjudicates option A/B/C/D for the next step.

@@ -150,13 +150,13 @@
       },
       {
         "clearance": 0.15,
-        "diff_pair_gap": 0.15,
-        "diff_pair_via_gap": 0.15,
-        "diff_pair_width": 0.2,
+        "diff_pair_gap": 0.1,
+        "diff_pair_via_gap": 0.1,
+        "diff_pair_width": 0.25,
         "name": "USB_diffpair",
         "pcb_color": "rgba(0,200,200,1.000)",
         "priority": 50,
-        "track_width": 0.2,
+        "track_width": 0.25,
         "via_diameter": 0.55,
         "via_drill": 0.25,
         "wire_width": 6
