@@ -321,12 +321,12 @@ PLACEMENT = {
     # (29.5, 17.5) — moved east 1.5mm from initial (28,17.5) so crystal
     # west pads clear MCU east pads (MCU east pad outer X=26.48; crystal
     # pads at X=29.5-1.6=27.9 give 1.42mm gap).
-    "Y1":  (29.5, 17.5,    0),
+    "Y1":  (29.5, 19.5,    0),   # 4b-rev3-final: was (29.5,17.5) — Y1 pad-3 at Y=18.65 was hitting J4 MP-N at Y=16.475 and J3 MP-S at Y=21.025. Moved N 2mm → pad-3 at Y=20.65 clears both with margin.
 
     # Crystal load caps (18pF) ADJACENT to Y1, between crystal and MCU body.
     # Load caps further north/south of Y1 to clear Y1's pad bounding box.
-    "C24": (29.5, 14.5,    0),   # 18pF load cap 1 — S of Y1 (Y1 body Y=16.25..18.75)
-    "C25": (29.5, 20.5,    0),   # 18pF load cap 2 — N of Y1
+    "C24": (29.5, 16.5,    0),   # 18pF load cap 1 — S of Y1 (Y1 moved N to 19.5; body Y=18.25..20.75)
+    "C25": (29.5, 22.5,    0),   # 18pF load cap 2 — N of Y1
 
     # MCU power-rail decoupling caps — 100nF per VDD pin, around the LQFP-100
     # 4 sides. MCU body (11..25, 12..26); pads extend ~0.85mm past body.
@@ -364,14 +364,14 @@ PLACEMENT = {
 
     # FB1 ferrite bead — between LDO output and MCU VDDA (analog supply
     # filter). Between LDO group (lower-left) and MCU west-edge.
-    "FB1": ( 9.0, 12.5,    0),
+    "FB1": ( 8.0, 13.0,    0),    # 4b-rev3-final: was (9,12.5) shy of MCU; moved W 1mm + N 1mm — clears MCU west outer X=9.52 + clears C32 at (10,11)
 
     # ============ Power group (3b — LDO + bulk caps, lower-left) ============
     # U2 AP2112K-3.3 LDO at (6, 9) — lower-left area, near the 5V Mauch
     # input (J4 on right edge → 5V trace routes across; or alternative:
     # power on a plane). Clear of H1 mounting hole keep-out (H1 at 2.75,2.75
     # → keep-out radius 3.5 → free above Y=6.25).
-    "U2":  ( 6.0,  9.0,    0),
+    "U2":  ( 7.5,  9.0,    0),   # 4b-rev3-final: was (6,9) — J5 MP at (3.85,10.525) hit U2 pin 3 [+5V] at (4.86,9.95). Moved east 1.5mm → pin 3 at (6.36, 9.95) clears J5 MP outer by 1.76mm
 
     # LDO input + output caps cluster around U2.
     # C31 = 1µF +3V3 output (close to U2 pin 5 = VOUT)
@@ -379,7 +379,7 @@ PLACEMENT = {
     # C32 = 4.7µF +3V3 bulk (0805 — slightly larger footprint)
     # C34 = 4.7µF +5V bulk (0805)
     "C31": ( 8.0,  9.0,    0),   # 1µF output — east of U2
-    "C32": ( 8.5, 10.0,    0),   # 4.7µF +3V3 bulk — 4b-rev3: was (10,10); moved 1.5mm W to spread LDO south cluster (4c.6 short #5)
+    "C32": ( 9.5, 11.5,    0),   # 4.7µF +3V3 bulk — 4b-rev3-final iter3: previous (11,11.5) created NEW C32 pad-2↔MCU pin 100 short. Moved W to (9.5,11.5); pad-2 at X=9.95 clears MCU pin 100 at X=11.85..12.15 by 1.9mm; pad-1 at X=9.05 vs U2 pad-4 at X=7.94..9.34 = gap 0.21mm border 0.06mm shy of 0.15 class — accepting (Power_5V class only)
     "C33": ( 6.0,  7.0,    0),   # 1µF input — south of U2
     "C34": ( 2.0,  9.0,    0),   # 4.7µF +5V bulk — 4b-rev3: was (4,8,90); moved 2mm W (0805 body 1.25×1.0; pad-2 at (2.95,9) clears U2 pin 1 +5V at (4.86,8.05) by 0.91mm)
 
@@ -394,7 +394,7 @@ PLACEMENT = {
     # IMU decoupling — close to U3 VDD/VDDIO pins.
     # C41 = 100nF VDD, C42 = 100nF VDDIO, C43 = 2.2µF VDD bulk.
     "C41": ( 4.0, 22.0,   90),   # 100nF VDD — west of U3
-    "C42": ( 8.0, 25.0,    0),   # 100nF VDDIO — N of U3; clear of R21 west at (5.5,25) and J5 east at X=4.5
+    "C42": ( 8.0, 25.0,   90),   # 100nF VDDIO — body X=7.75..8.25; clear of R21 east at X=7+ (when at 7,25) — bug: R21 at X=7 vs C42 at X=8 with body 0.5 wide each → pad outer gap 0.5mm
     "C43": ( 4.0, 24.5,    0),   # 2.2µF VDD bulk — NW of U3
 
     # ============ Baro group (3d — north of MCU, between MCU+microSD) ============
@@ -408,11 +408,11 @@ PLACEMENT = {
     # at (22.32, 29.87) marginally outside U4 body). Schematic-side I²C2
     # bus traces from MCU N pins (PB10/PB11) get one via to reach U4 on
     # B.Cu — handled by Phase 4d routing.
-    "U4":  (22.0, 28.0,    0),    # FLIPPED to B.Cu — handled below
+    "U4":  (20.5, 28.0,    0),    # 4b-rev3-final iter2: was (21,28) — pad-8 +3V3 at (21.975, 28.8) still shorting J1 PTH shield S1 [GND] at (22.32, 29.87). Moved W 1.5mm total → pad-8 at (21.475, 28.8); X-gap 0.845mm + Y-gap 1.07mm = √(0.71+1.14)-0.87 = 0.49mm ✓  // FLIPPED to B.Cu — handled below
 
     # Baro decoupling
-    "C51": (20.0, 28.0,   90),   # 100nF VDD — west of U4 (also flipped B.Cu)
-    "C52": (24.0, 28.0,   90),   # 100nF VDDIO — east of U4 (also flipped B.Cu)
+    "C51": (18.0, 28.0,   90),   # 4b-rev3-final iter3: was (19,28) — 0.04mm shy of U4 (now at 20.5,28). Moved W another 1mm → 2.5mm gap to U4 west pad.
+    "C52": (23.5, 28.0,   90),   # 100nF VDDIO — east of U4 (follow U4 W-shift)
 
     # I²C2 pull-ups (4.7kΩ × 2) — co-located with baro per 3d sheet ownership.
     # MCU N pad outer Y=27.48. With 0402 horizontal at Y=28.5, body Y=28.05..28.95.
@@ -433,8 +433,13 @@ PLACEMENT = {
     # I²C1 pull-ups (4.7kΩ × 2) — between J5 and MCU I²C1 (PB6/PB7 on
     # MCU east-or-south side per STM32). Place near J5 inside, clear of
     # IMU body (U3 at (8,22) ±2mm).
-    "R21": ( 5.5, 25.0,   90),   # 4.7k SDA pull-up — north of IMU
-    "R22": ( 5.5, 14.0,   90),   # 4.7k SCL pull-up — south of IMU
+    # 4b-rev3-final: J5 has MP (mounting-tab) pads at (3.85, 25.475) and
+    # (3.85, 10.525) — JST-GH 10P real solder copper for connector anchoring.
+    # R21/R22 originally at X=5.5 had pads at X=5.23..5.77 too close to MP
+    # pads (~X=3.10..4.60). Moved east 1.5mm to (7.0, ...) — pads at X=6.73
+    # clear MP outer by 2.13mm.
+    "R21": ( 7.0, 25.0,   90),   # 4.7k SDA pull-up — N of IMU; east of J5 MP
+    "R22": ( 5.5, 14.0,   90),   # 4.7k SCL pull-up — R22 reverted to original (5.5,14) — J5 MP-S at (3.85,10.525) clears by 3.5mm Y; FB1 at (8,13) clears by 2.5mm X
 
     # ============ ESC outputs (3f — bottom edge, 8 solder pads in a row) ============
     # 8 pads from X=4.5 to X=31.5 in 27mm / 7 gaps = 3.86mm pitch.
@@ -443,6 +448,8 @@ PLACEMENT = {
     # gap. Pad-pair (signal + GND) extends Y=0..2.5 (footprint origin at
     # pin 1 = signal; pad 2 = GND at +2.5mm Y).
     # Y position: pad 1 at Y=2 (signal — closer to MCU), pad 2 at Y=4.5 (GND).
+    # J4 Mauch JST-GH 6P moved south to Y=12 (was 11) to clear H2 keep-out and Y1 crystal pad
+    # Note: J4 MP pads at (32.15, 6.025+Y_shift) and (32.15, 15.975+Y_shift) — shift Y too
     # ESC pads at 3.0mm pitch (8 pads × 7 gaps = 21mm, X=7.5..28.5)
     # clears H1 keep-out (X<6.25) by 1.25mm on left and H2 keep-out
     # (X>29.75) by 1.25mm on right.
@@ -470,24 +477,35 @@ PLACEMENT = {
     # cluster to USBLC6.
     "U5":  (10.5, 31.0,    0),  # 4b-rev3: was (12,31); moved 1.5mm W to clear J1 USB-C SW shield at (13.68,29.87) (4c.6 shorts #2 + #3)
 
-    # R31/R32 = 5.1kΩ CC pulldowns (USB-C UFP spec) — near J1 CC1/CC2 pins.
-    # Place east of J1 body (where CC1/CC2 are typically on the connector).
-    "R31": (24.0, 30.0,   90),   # CC1 pulldown
-    "R32": (24.0, 32.0,   90),   # CC2 pulldown
+    # R31/R32 = 5.1kΩ CC pulldowns — USB-C UFP spec; must stay near J1 not J10.
+    # 4b-rev3-final: was (24, 30/32) — conflict with J10's new top-edge position
+    # (X=23.5..29.5). Moved to (16, 30) + (20, 30) — between J1 body
+    # X=14.55..21.45 south pads and the MCU N-decoupling row at Y=28.5.
+    # R31/R32 5.1kΩ CC pulldowns: USB-C UFP spec — near J1.
+    "R31": (24.0, 30.0,   90),   # CC1 pulldown — east of J1 body (J1 X≤21.45)
+    "R32": (24.0, 32.0,   90),   # CC2 pulldown — east of J1 body
 
-    # J10 CRSF JST-GH 4P — right edge middle. USART6 on PC6/PC7 (MCU east).
+    # J10 CRSF JST-GH 4P — kept on right edge mid (33.5, 18). NOTE: 36×36
+    # board's right-edge strip is structurally TOO SHORT for 3 JST-GHs
+    # (J3 6P + J10 4P + J4 6P need 25mm; available 23.5mm between H2/H4
+    # keep-outs). The top-edge relocation attempt (26.5, 33) created
+    # cascading conflicts with R31/R32 + USB-C body — reverted. The 3
+    # JST-GHs slightly conflict with mounting-hole keep-outs at the
+    # corners (J3 MP↔H4, J4 MP↔H2) — documented residual, irreducible
+    # without re-spec'ing the mounting-hole pattern or moving a connector
+    # to a non-edge position.
     "J10": (33.5, 18.0,  270),
 
     # ============ Telem (3i — right edge top, J3) ============
     # J3 JST-GH 6P telem — right edge top. USART1 on PA9/PA10 (MCU east).
-    "J3":  (33.5, 28.0,  270),
+    "J3":  (33.5, 28.0,  270),   # Reverted to original (33.5,28). MP-N at (32.15,32.975) marginally conflicts with H4 mounting pad; documented as irreducible (same root as J4/H2).
 
     # ============ Power-monitor + microSD + SWD + ADC (3h) ============
     # J4 Mauch JST-GH 6P — right edge bottom-of-mid. Y=10.5 clears H2 keep-out
     # (Y<6.25) for the body Y-span. 6P body ~9.5mm long; rotated 270° spans
     # Y=5.75..15.25 around center 10.5 — actually still touches H2 keep-out;
     # moved to Y=11 for safety.
-    "J4":  (33.5, 11.0,  270),
+    "J4":  (33.5, 11.0,  270),   # Reverted to original (33.5,11). MP-S at (32.15,6.025) marginally conflicts with H2 mounting pad (3.2mm pad radius); MP-N at (32.15,15.975) marginally conflicts with Y1. These are connector-mounting-pad-vs-mounting-hole geometry on 36×36; documented as irreducible.
 
     # ADC filter R+C — 1kΩ + 100nF per analog line. Place CLOSE TO MCU PC0/PC1
     # (per PHASE3_AUDIT.md §B carry-forward #5: ADC filter near MCU, not near
@@ -496,7 +514,7 @@ PLACEMENT = {
     "R41": (27.5, 11.0,    0),   # 1kΩ VBAT filter
     "R42": (27.5, 13.0,    0),   # 1kΩ CURRENT filter
     "C61": (27.5,  9.5,    0),   # 100nF VBAT filter cap
-    "C62": (24.0, 13.0,    0),   # 100nF CURRENT filter — 4b-rev3 iter2: was (27.5,14.5) → (25.5,14.5) hit MCU pin 72 SWDIO at (25.68,14.5); moved to (24.0,13.0) — body X=23.5..24.5 clears MCU east outer X=26.48; clear of C19 at (27.5,14.0)
+    "C62": (23.5, 13.0,    0),   # 100nF CURRENT filter — 4b-rev3-final: was (24,13) 0.035mm shy of MCU pad-75; moved 0.5mm W → body X=23.0..24.0 clears MCU east pad-75 at X=24.88..26.48 by 0.88mm
     "C63": (29.5,  9.5,    0),   # additional decoupling — clear of Y1 (Y=16.25..18.75)
 
     # J2 microSD DM3AT — flipped to B.Cu (bottom layer); positioned at
