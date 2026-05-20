@@ -1,0 +1,88 @@
+id: phase-3c-imu
+phase: "3"
+subphase: "3c"
+title: "IMU sheet — ICM-42688-P on SPI1 + decoupling + DRDY testpoint deferral"
+status: done
+depends_on:
+  - phase-3a-mcu
+  - phase-3b-power
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - hardware/kicad/novapcb/sheets/mcu_3a.py
+    - hardware/kicad/novapcb/sheets/power_3b.py
+    - hardware/kicad/novapcb/sheets/common.py
+    - docs/CONFIDENCE_MAP.md
+    - docs/OPEN_QUESTIONS.md
+  refs:
+    - "hwdef.dat:36-39 — SPI1 SCK/MISO/MOSI/CS pin assignments for ICM-42688 (PA5/PA6/PD7/PC15). AUTHORITATIVE per Phase 3 hwdef-cited discipline."
+    - "hwdef.dat:203 — SPIDEV icm42688 SPI1 DEVID1 IMU1_CS MODE3 2*MHZ 16*MHZ"
+    - "hwdef.dat:207 — DMA_NOSHARE SPI1* (dedicated DMA streams)"
+    - "hwdef.dat:234 — IMU Invensensev3 SPI:icm42688 ROTATION_YAW_180 (polled mode)"
+    - "TDK InvenSense ICM-42688-P datasheet (ds-000347 v1.6) — pinout LGA-14 §10 + Figure 6; typical operating circuit §11.1; reserved/NC pin handling §10"
+    - "OPEN_QUESTIONS phase2a-1 — DRDY deferred (Pixhawk6X PA10 conflicts with USART1_RX); IMU INT1 captured as testpoint"
+    - "CONFIDENCE_MAP row 4 (IMU SPI bus, currently HIGH ~92%)"
+    - "Phase 2.5 P0.4 sub-fork resolution — generic LGA-14 footprint for fit check; TDK-exact land pattern is Phase 4 carry-forward"
+
+decision_forks_watched:
+  imu-symbol:
+    fork: "KiCad symbol for ICM-42688-P"
+    expected_classes: [exact, generic-lga14, draw-custom]
+    pre_recommendation: "exact if in Sensor_Motion lib; else generic LGA-14 with correct pin mapping per TDK datasheet"
+    actual_resolution: "GENERIC via Connector_Generic:Conn_01x14 with pin renames. KiCad 9 Sensor_Motion lib has ICM-20602/ICM-20948/MPU-9250 but NOT ICM-42688-P. ICM-20602 is wrong fit (16-pin LGA-16 package vs ICM-42688-P's 14-pin LGA-14). Conn_01x14 gives the right pin count + numbering (1-14 matching LGA-14 datasheet pin numbering exactly); pins renamed in-script per TDK ds-000347 §10. Phase 4 carry-forward: draw TDK-datasheet-exact symbol + land pattern."
+    resolved_via: "inline (KiCad lib search + datasheet pin map)"
+  drdy-int-pin:
+    fork: "IMU INT/DRDY pin handling in the schematic"
+    expected_classes: [connected-per-hwdef, deferred-testpoint, escalate]
+    pre_recommendation: "follow hwdef.dat; if deferred per OPEN_QUESTIONS phase2a-1, capture as testpoint"
+    actual_resolution: "DEFERRED-TESTPOINT. hwdef.dat:229-234 runs the IMU polled (no DRDY pin assigned). OPEN_QUESTIONS phase2a-1 explicit. ICM-42688-P pin 1 INT1 wired to `IMU_INT1_TP` testpoint net so a future v1.x can route to whatever pin Phase 2a-rev2 picks. Phase 4 layout places a top-side via/pad on this net."
+    resolved_via: "inline (grep hwdef.dat + OPEN_QUESTIONS)"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-3c-imu.yaml
+    - hardware/kicad/novapcb/sheets/imu_3c.py
+  files_modified:
+    - hardware/kicad/novapcb/generate.py        # import sheets.imu_3c; add hard-fail rail-uniqueness guard (04:00 retro action item)
+    - hardware/kicad/novapcb/novapcb.net        # regenerated
+    - hardware/kicad/novapcb/generate.erc       # regenerated
+    - docs/CONFIDENCE_MAP.md                    # row 4 evidence note
+    - docs/DESIGN_PHASES.md                     # Phase 3: 3a + 3b + 3c done
+
+  pr:
+    title: "Phase 3c: IMU SPI sheet (ICM-42688-P)"
+    branch: hw/phase-3c-imu-2026-05-20
+
+pass_criteria:
+  - "3c.1: hwdef.dat grep'd for ICM-42688 SPI assignment. Cited lines 36-39 (pin map) + 203 (SPIDEV) + 207 (DMA_NOSHARE) + 234 (IMU declaration). Schematic SPI nets (SPI1_SCK/MISO/MOSI, IMU1_CS) match hwdef.dat exactly — verified via netlist grep showing unique SPI net names."
+  - "3c.2: imu_3c.py built — ICM-42688-P via Conn_01x14 generic with datasheet-cited pin renames; SPI bus nets via n() singleton (cross-module merging confirmed by hard-fail guard); VDD + VDDIO to +3V3 per datasheet §11.1 SPI-only typical circuit; decoupling per datasheet §11 (100nF VDD + 100nF VDDIO + 2.2µF X5R bulk)."
+  - "3c.3: INT1 = IMU_INT1_TP testpoint net per OPEN_QUESTIONS phase2a-1 DRDY deferral. Comment cites the deferral in imu_3c.py docstring + section. No invented pin assignment."
+  - "3c.4: Every pin connection cited from TDK datasheet ds-000347 §10/§11. RESV pins 2/3/5/6/7/13 explicitly left unconnected per datasheet §10 (SKiDL 2.2.3 has no module-level NC sentinel; explicit-NC == 'don't connect'). ERC unconnected-pin warnings for these are EXPECTED + correct per datasheet."
+  - "3c.5: Pipeline result — SKiDL ERC: 86 warnings (UP 3 from 3b's 83 — 4 MCU SPI pins newly connected (-4) minus 6 IMU RESV NC pins + 1 IMU INT1 testpoint (+7) = +3, expected accounting), 0 errors. generate_netlist: 0 errors, 72 warnings. The hard-fail rail-uniqueness guard PASSED (no _N-suffixed shared nets)."
+  - "3c.6: CONFIDENCE_MAP row 4 evidence note: HIGH ~92% → ~93% (small bump for schematic-capture lock; signal integrity remains Phase 6c sim)."
+  - "3c.7: SOTA self-audit in PR body. Authoritative sources: hwdef.dat for SPI pin map; TDK ds-000347 §10/§11 for chip pinout/supply/decoupling/NC handling."
+  - "BONUS — 04:00 retro action item: generate.py HARD-FAILS on _N-suffixed shared nets (exit non-zero, not warning). Implemented via regex scan of novapcb.net + sys.exit(1) if any +RAIL_N or BUS_N appears. Verified ran clean on the 3c pipeline."
+
+estimated_context_kb: 50
+estimated_wallclock: "1-2 hours (datasheet-mechanical capture + custom symbol approach + 04:00 retro hard-fail guard implementation)"
+
+notes: |
+  3c was datasheet-mechanical (as master flagged) once the no-exact-symbol
+  fork resolved — Conn_01x14 with datasheet-named pins is sufficient for
+  netlist correctness (pin NUMBERS match LGA-14 datasheet exactly; pin
+  NAMES are cosmetic in netlist + load-bearing for the future drawn
+  schematic, which is the phase3-render-1 deferred problem).
+
+  The 04:00 retro action item "generate.py HARD-FAILS on _N-suffixed
+  shared nets" landed in this PR alongside 3c. Tested by running pipeline
+  on the 3-sheet design: guard PASSED ("no _N-suffixed shared rails").
+  Cross-module shared-net discipline (use n()) now has automated
+  enforcement.
+
+  Phase 4 carry-forward unchanged from Phase 2.5 P1.5: TDK-datasheet-exact
+  ICM-42688-P symbol + footprint. Generic Conn_01x14 symbol + generic
+  LGA-14 footprint is correct for Phase 3 schematic capture but NOT for
+  Phase 4 production layout.
