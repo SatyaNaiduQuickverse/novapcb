@@ -1,4 +1,6 @@
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 19/VSSA of STM32H743VITx/U1.
+ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 1/GND of BMP280/U4.
+ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 7/GND of BMP280/U4.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 10/VSS of STM32H743VITx/U1.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 2/GND of AP2112K-3.3/U2.
 ERC WARNING: Only one pin (PASSIVE pin 1/INT1 of Conn_01x14/U3) attached to net IMU_INT1_TP.
@@ -57,8 +59,6 @@ ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 92/PB6 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 93/PB7 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 95/PB8 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 96/PB9 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 46/PB10 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 47/PB11 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 51/PB12 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 52/PB13 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 53/PB14 of STM32H743VITx/U1.

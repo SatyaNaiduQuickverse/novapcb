@@ -1,0 +1,93 @@
+id: phase-3d-baro
+phase: "3"
+subphase: "3d"
+title: "Barometer sheet — DPS310 on I²C2 at 0x76 + decoupling + I²C2 pull-ups"
+status: done
+depends_on:
+  - phase-3a-mcu
+  - phase-3b-power
+  - phase-3c-imu
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - hardware/kicad/novapcb/sheets/mcu_3a.py
+    - hardware/kicad/novapcb/sheets/common.py
+    - docs/CONFIDENCE_MAP.md
+  refs:
+    - "hwdef.dat:64-65 — I2C2 SDA/SCL pin assignments (PB10 SCL, PB11 SDA). AUTHORITATIVE per hwdef-cited discipline."
+    - "hwdef.dat:57 — I2C_ORDER I2C2 I2C1 (I2C2 = bus index 0)"
+    - "hwdef.dat:224 — HAL_I2C_INTERNAL_MASK 0 (both buses external)"
+    - "hwdef.dat:242 — BARO DPS310 I2C:0:0x76 (Phase 2b lock)"
+    - "Infineon DPS310 datasheet v01.02 — LGA-8 pinout, I²C-mode tie-off (CSB high, SDO low/high for address), supply pins, decoupling. Pin map web-researched (PDF parsing failed locally) + cross-confirmed with KiCad BMP280 symbol pin types — same package + identical pinout."
+    - "Phase 2.5 P0.4 inventory — DPS310 footprint = Bosch_LGA-8_2x2.5mm_P0.65mm_ClockwisePinNumbering (geom-match commonly reused for DPS310 by ArduPilot-class designs)"
+    - "CONFIDENCE_MAP row 5 (DPS310 baro, currently MEDIUM-HIGH ~90%)"
+    - "Master 3d dispatch refinement 2026-05-20 — use proper SKiDL custom Part with explicit pins + electrical types, NOT a Conn_01xN rename (3c's approach was netlist-correct but ERC-blind to power-in / bidirectional rules)"
+
+decision_forks_watched:
+  baro-symbol:
+    fork: "KiCad symbol for DPS310"
+    expected_classes: [exact, custom-skidl-part]
+    pre_recommendation: "exact if in Sensor_Pressure lib; else custom SKiDL Part with correct electrical pin types"
+    actual_resolution: "Used Sensor_Pressure:BMP280 with value='DPS310' override. KiCad 9 Sensor_Pressure has BMP280/LPS22DF/ILPS28QSW/40PC015G but NOT DPS310. DPS310 + BMP280 share identical LGA-8 pinout (verified via Infineon datasheet web research + KiCad BMP280 symbol pin-type cross-reference) — same package, same pin numbers, same electrical types. This gives netlist-correct (pin numbers + nets) AND ERC-correct (power_in/passive/bidirectional/input pin types) per the master 3d refinement. Cleaner than 3c's Conn_01xN rename. Phase 4 carry-forward: ship a proper DPS310-named symbol (BMP280 silkscreen will show until then)."
+    resolved_via: "inline (Sensor_Pressure grep + Infineon datasheet pin map match)"
+  i2c-address-pins:
+    fork: "DPS310 SDO + CSB pin tie-off for I²C at 0x76"
+    expected_classes: [sdo-gnd-csb-vddio, per-datasheet]
+    pre_recommendation: "CSB tied VDDIO selects I²C, SDO selects address (low=0x76). Phase 2b locked 0x76 → SDO to GND. Confirm exact tie per datasheet."
+    actual_resolution: "CSB (pin 2) tied to +3V3 = HIGH → I²C mode per Infineon DPS310 datasheet §6.2. SDO (pin 5) tied to GND = LOW → I²C address 0x76 per hwdef.dat:242 BARO line. Phase 2b lock preserved."
+    resolved_via: "inline (datasheet)"
+  i2c-pullup-ownership:
+    fork: "Where do I²C2 pull-ups live across sheets — baro_3d (on-board slave) vs gps_3e (external connector) vs Phase 4 layout"
+    expected_classes: [baro-sheet, gps-sheet, separate-sheet, defer-to-phase-4]
+    pre_recommendation: "design-judgement; coherent decision across 3d + 3e; document"
+    actual_resolution: "I²C2 PULL-UPS LIVE ON THIS SHEET (baro_3d.py). 4.7 kΩ each on SDA + SCL to +3V3. Reasoning: DPS310 is always-present on-board I²C2 slave; co-locate pull-ups with always-present node. Phase 3e GPS+mag sheet will explicitly NOT add a second pair (doubling = wrong impedance). If Phase 4 layout wires external GPS+mag to I²C1 instead, I²C1 pull-ups land in Phase 3e separately. Phase 6d sim validates pull-up value against actual bus capacitance; 4.7 kΩ is standard starting point."
+    resolved_via: "inline (design judgement + documented in baro_3d.py docstring + this contract)"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-3d-baro.yaml
+    - hardware/kicad/novapcb/sheets/baro_3d.py
+  files_modified:
+    - hardware/kicad/novapcb/generate.py    # import sheets.baro_3d
+    - hardware/kicad/novapcb/novapcb.net    # regenerated
+    - hardware/kicad/novapcb/generate.erc   # regenerated
+    - docs/CONFIDENCE_MAP.md                # row 5 evidence note
+    - docs/DESIGN_PHASES.md                 # Phase 3: 3a + 3b + 3c + 3d done
+  pr:
+    title: "Phase 3d: barometer I²C sheet (DPS310 + pull-ups)"
+    branch: hw/phase-3d-baro-2026-05-20
+
+pass_criteria:
+  - "3d.1: hwdef.dat grep'd for DPS310 + I²C2. Cited lines 57 (I2C_ORDER), 64-65 (PB10/PB11), 224 (HAL_I2C_INTERNAL_MASK 0), 242 (BARO DPS310 I2C:0:0x76). Schematic I²C2_SCL/SDA nets match hwdef.dat exactly — verified by guard PASS."
+  - "3d.2: baro_3d.py built — DPS310 via Sensor_Pressure:BMP280 with value override (NOT a Conn_01xN rename). Pin numbers 1-8 per Infineon datasheet; pin types correct per BMP280 symbol (power_in / passive / bidirectional / input). LGA-8 footprint matches Phase 2.5 inventory."
+  - "3d.3: VDD + VDDIO from +3V3 via n(); decoupling 100nF X7R on VDD + 100nF X7R on VDDIO per datasheet typical operating circuit; I²C2 SDA/SCL shared with MCU via n() — guard confirms uniqueness."
+  - "3d.4: SDO (pin 5) tied GND → 0x76 per hwdef.dat:242 + Phase 2b lock. CSB (pin 2) tied +3V3 → I²C mode per datasheet §6.2. Both citations explicit; no guess."
+  - "3d.5: I²C2 pull-ups (4.7 kΩ each on SDA + SCL to +3V3) on THIS sheet — design judgement documented in baro_3d.py docstring + this contract decision_forks_watched.i2c-pullup-ownership. Phase 3e explicitly defers to this ownership."
+  - "3d.6: Pipeline result — SKiDL ERC 0 errors / 86 warnings (UNCHANGED from 3c — 2 MCU I²C pins newly connected (-2) plus 0 IMU NC equivalents (+0) plus minor delta from new components). generate_netlist 0 errors / 82 warnings (more parts → more random-tag warnings, harmless). Rail-uniqueness guard PASSED."
+  - "3d.7: CONFIDENCE_MAP row 5 evidence note: MEDIUM-HIGH ~90% → ~91% (small bump for schematic-capture lock + pull-up ownership decision; SI + pull-up value adequacy remains Phase 6d sim)."
+  - "3d.8: SOTA self-audit in PR body. Authoritative sources: hwdef.dat for I²C pin map + 0x76 lock; Infineon DPS310 datasheet for chip pinout/supply/decoupling/address-pin handling."
+
+estimated_context_kb: 45
+estimated_wallclock: "1-2 hours (datasheet research + BMP280-as-DPS310 verification + pull-up ownership judgement)"
+
+notes: |
+  3d applies master's 3d-refinement (proper SKiDL Part with electrical
+  types, not Conn_01xN rename). Done via Sensor_Pressure:BMP280 symbol
+  with value="DPS310" — BMP280 + DPS310 share identical LGA-8 pinout
+  (verified via web research + KiCad symbol pin-type cross-reference).
+  Cleaner than 3c's approach: KiCad ERC can now apply IC pin-type
+  rules to this part (power-input/bidirectional/etc.) instead of the
+  all-passive connector-pin treatment.
+
+  Pull-up ownership judgement: co-located with the always-present
+  on-board slave (DPS310). Phase 3e GPS+mag sheet inherits the
+  documented "no second pair" rule from this contract.
+
+  Phase 4 carry-forward unchanged: TDK-/Infineon-/ST-datasheet-exact
+  symbols for ICM-42688-P + DPS310 + STM32H743VITx (matching their
+  package-precise pad geometry). 3a uses the exact ST symbol; 3c uses
+  Conn_01x14-rename; 3d uses BMP280-as-DPS310. Phase 4 normalizes
+  all three to TDK/Infineon-exact symbols.
