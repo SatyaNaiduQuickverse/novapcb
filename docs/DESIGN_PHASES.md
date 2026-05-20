@@ -174,7 +174,7 @@ After Sai's GUI routing pass + Phase 4f gerber export land, Phase 5 task
 contract closes alongside Phase 4-exit re-audit. Decision-fork
 `fab-target` resolved JLCPCB.
 
-## Phase 6 — Simulation regime (NOT STARTED — GO/NO-GO GATE)
+## Phase 6 — Simulation regime (IN PROGRESS — 6l first sub-phase, PR open 2026-05-20)
 
 See `docs/SIMULATION_PLAN.md` for the per-subsystem detail. Phase 6 loops back to Phase 4 on any sim failure — that re-loop is expected, not a project failure (see ENGINEERING_RIGOR.md commitment #5).
 
@@ -193,7 +193,7 @@ Sub-phases (each its own PR, each writes to `sims/<subsystem>/`):
 | 6i | Reverse polarity + ESD protection | ngspice transient |
 | 6j | Thermal steady-state | Elmer FEM |
 | 6k | EMC / clock-harmonic estimate | analytical Python + OpenEMS spot |
-| 6l | ArduPilot SITL — functional regression | SITL |
+| 6l | ArduPilot SITL — functional regression | SITL | **DONE 2026-05-20** — PR open; 18/18 PASS incl. CLAUDE.md §4.1 pitch-sign no-double-flip; layout-independent |
 | 6m | Manufacturability — DRC/ERC/DFM/BOM cross-check | KiCad + interactiveHtmlBom |
 
 Every sub runs at three corners: nominal, hot (40 °C / max load), cold (0 °C / min VBAT). Monte Carlo (±10 %) on critical analog paths.

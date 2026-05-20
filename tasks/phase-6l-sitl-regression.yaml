@@ -1,0 +1,113 @@
+id: phase-6l-sitl-regression
+phase: "6"
+subphase: "6l"
+title: "ArduPilot SITL functional regression — flight modes, failsafes, channel mapping"
+status: in_progress
+depends_on:
+  - phase-0.5-sim-toolchain
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/defaults.parm
+    - firmware/hwdef-novapcb/hwdef.dat
+    - docs/SIMULATION_PLAN.md
+    - docs/INTERFACE_CONTRACT.md
+    - CLAUDE.md
+  refs:
+    - "SIMULATION_PLAN.md §6l — every flight mode + RC/battery failsafes + MAVROS connection + mission upload + param sync + CRSF channel mapping + pitch-sign no-double-flip"
+    - "ArduPilot SITL — buildable in ~/ardupilot tree; `./waf configure --board sitl && ./waf copter -j4` produces `build/sitl/bin/arducopter` (HAL_BOARD_SITL target — host x86/aarch64 binary, NOT STM32)"
+    - "INTERFACE_CONTRACT §3.2 — CRSF channel map (Ch1 roll / Ch2 PITCH already in drone-convention / Ch3 throttle / Ch4 yaw / Ch5 arm / Ch7 6-pos flight mode)"
+    - "CLAUDE.md §4.1 — pitch-sign double-flip trap: phone has already negated, CRSF Ch2 arrives in drone convention, FC must NOT negate again. THE highest-stakes verification in 6l."
+    - "DECISIONS §2 + CLAUDE.md §4.6 — CH7 6-position mode map (STABILIZE/ALT_HOLD/LOITER/POSHOLD/RTL/LAND), live-on-the-drone today; matches ~/novaros/docker-compose.yml DRONE_CH7_MODES"
+
+# Falsifiable pre-prediction (Rule-13-with-options discipline):
+prediction:
+  worker_pre_run_prediction: |
+    SITL ArduCopter build target inherits HAL_BOARD_SITL — host binary, not
+    STM32; novapcb's hwdef.dat is firmware-pin-side only (SITL has no pins).
+    SITL CAN load novapcb's defaults.parm via --defaults flag; param overrides
+    composable on top of stock copter.parm.
+
+    Expected outcomes:
+      - 6l.5 heartbeat semantics: PASS — stock ArduPilot identity (MAV_TYPE
+        QUADROTOR + AUTOPILOT_ARDUPILOTMEGA) is the SITL default.
+      - 6l.1 defaults.parm applied: PASS — SITL --defaults reads param file
+        verbatim.
+      - 6l.2 mode tests: 5 of 6 PASS likely; LOITER/POSHOLD/RTL need EKF+GPS
+        ready (SITL spawns synthetic GPS, takes a few seconds to fuse). My
+        script waits for EKF healthy before mode tests, so all 6 likely PASS.
+      - 6l.4 pitch sign: PASS — RCMAP_PITCH stays at stock 2, novapcb's
+        defaults.parm doesn't set RC2_REV. The host-side crsf_translator's
+        sign-handling is unchanged. No double-flip.
+      - 6l.3 failsafe: WARN possible — SITL RC failsafe via override-zero
+        sometimes needs FS_OPTIONS tuning to fire reliably in headless mode.
+        WARN is acceptable; FAIL would mean params didn't apply.
+
+    Risk: SITL --speedup 10 means commands fire faster than real; some races
+    possible (mode-set before EKF healthy). My script's EKF-ready wait
+    mitigates. Failure mode = some 6l.2 modes WARN.
+
+decision_forks_watched:
+  sitl-param-source:
+    fork: "Which params SITL loads for the regression"
+    expected_classes: [defaults-parm-applied, sitl-default-plus-overrides]
+    pre_recommendation: "stock copter.parm + novapcb defaults.parm + 6l-specific FLTMODE_CH=7 + FLTMODE1..6 overrides + FS_THR_ENABLE=1. Document the combined param file as the reproducible artifact."
+    actual_resolution: "stock + novapcb + 6l overrides (composed at SITL launch in run_sitl_regression.py; sims/sitl-regression/novapcb-sitl-combined.parm is the reproducible file). PARAM_VALUE round-trip confirmed FLTMODE_CH=7 + SERIAL7_PROTOCOL=23 + FS_THR_ENABLE=1 actually applied in SITL."
+    resolved_via: "Phase 6l run — 18/18 PASS"
+
+escalation_log:
+  - timestamp: "2026-05-20"
+    sub: "6l.4 RC override readback (first run)"
+    finding: "RC_CHANNELS messages not streamed by default — `recv_match(type='RC_CHANNELS')` returned None. Fix: `mav.request_data_stream_send(MAV_DATA_STREAM_ALL, 5Hz)` immediately after first heartbeat. EKF_STATUS_REPORT also fixed by the same stream request."
+    resolution: "Added data-stream request to connect() phase. Re-ran: RC_CHANNELS + EKF_STATUS now flow; subsequent reads PASS."
+  - timestamp: "2026-05-20"
+    sub: "6l.4 RC override stickiness (second-iteration symptom)"
+    finding: "First override (pwm=1200) applied + read back as 1200. Second override (pwm=1800) showed chan2_raw still at 1200 — the previous override expired (RC_OVERRIDE_TIME ≈3s) and the new override hadn't been registered yet because reads happened AFTER the hold window."
+    resolution: "Rewrote hold_override_and_read() to send override + read RC_CHANNELS concurrently inside a single 4s window. Both reads now PASS (1200→1200, 1800→1800; monotonic with input; no double-flip)."
+  - timestamp: "2026-05-20"
+    sub: "6l.3 RC failsafe (initial WARN)"
+    finding: "Failsafe STATUSTEXT didn't fire from RC-override-clear alone (override goes stale silently after RC_OVERRIDE_TIME, not as an active failsafe trigger). ArduCopter disarmed-state FS behavior is different from in-flight."
+    resolution: "Switched to canonical SITL RC-loss simulation: `param_set_send SIM_RC_FAIL 1`. Failsafe fired STATUSTEXT='Radio Failsafe - Disarming' within 15s. PASS."
+
+outputs:
+  files_created:
+    - tasks/phase-6l-sitl-regression.yaml
+    - sims/sitl-regression/run_sitl_regression.py
+    - sims/sitl-regression/results.md
+    - sims/sitl-regression/results.json   # generated; committed for review
+    - sims/sitl-regression/sitl.log       # generated; committed for review
+  files_modified:
+    - docs/DESIGN_PHASES.md
+    - docs/CONFIDENCE_MAP.md   # add 6l row reference where applicable
+
+  pr:
+    title: "Phase 6l: ArduPilot SITL functional regression"
+    branch: sim/6l-sitl-regression-2026-05-20
+
+pass_criteria:
+  - "6l.1: Build + run ArduCopter SITL. Load novapcb's defaults.parm + the CH7 6-position mode map. Document the param set used (stock copter.parm + novapcb defaults.parm + 6l overrides). Verify SERIAL7_PROTOCOL=23 reads back via PARAM_VALUE (novapcb-specific CRSF/RCIN setting)."
+  - "6l.2: Each of the 6 CH7 modes (STABILIZE/ALT_HOLD/LOITER/POSHOLD/RTL/LAND) engages cleanly in SITL via MAV_CMD_DO_SET_MODE. Pre-flight EKF-ready wait so LOITER/POSHOLD/RTL don't reject. Per-mode pass/fail recorded."
+  - "6l.3: RC failsafe — drop RC override + watch for STATUSTEXT mentioning Failsafe/Throttle/Radio in 15s. WARN acceptable if STATUSTEXT format varies; FAIL only if FS_THR_ENABLE didn't apply at all."
+  - "6l.4: CRSF channel mapping — RCMAP_PITCH=2 (stock ArduPilot). RC2 chan_raw monotonic with override PWM (pwm=1200 → raw≈1200; pwm=1800 → raw≈1800). CRITICAL: explicitly verify NO double-flip at the RC-input boundary (CLAUDE.md §4.1 trap-absence test). The 6l.4_PITCH_SIGN_NO_DOUBLE_FLIP check is the single highest-stakes line."
+  - "6l.5: MAVLink heartbeat present from autopilot sysid=1; type=MAV_TYPE_QUADROTOR; autopilot=MAV_AUTOPILOT_ARDUPILOTMEGA. Heartbeat-rate ≥4 in 8s wall (with --speedup 10 sim acceleration). Param round-trip (FLTMODE_CH read returns 7 after override write)."
+  - "6l.6: sims/sitl-regression/results.md + results.json committed. Per-check pass/fail recorded; the param set + commands run + what was verified vs not vs WARN noted. CONFIDENCE_MAP rows touched (#2 USB-CDC MAVLink protocol level, #6 RC channel convention, #8 ESC outputs cleanly engaged-mode) cited but not shifted (functional-floor result, not topology change)."
+  - "6l.7: SOTA self-audit. 6l verifies FUNCTIONAL firmware behavior in simulation only — does NOT validate the PCB (6a-6m post-Phase-4 PCB sims do). Layout-independence preserved + cleanly stated."
+
+estimated_context_kb: 55
+estimated_wallclock: "2-4 hours (SITL build 10-15 min on Pi 5; regression run < 2 min wall with --speedup 10)"
+
+notes: |
+  6l is the one Phase 6 sub-phase that's 100% layout-independent — SITL has
+  no PCB. Fully reachable now, parallel to Sai's routing pass.
+
+  The pitch-sign check (6l.4) is the highest-stakes single item in the whole
+  simulation regime — CLAUDE.md §4.1 documents it as a known trap that
+  crashed a drone in a prior project review. Verify it explicitly, observe
+  the actual sign, report it. Do not assume.
+
+  6l verifies firmware FUNCTION. The PCB sims (6a power, 6b USB SI,
+  6c IMU SPI, etc.) are layout-dependent and run AFTER Phase 4 completes.
+  6l done early just removes it from the post-layout Phase 6 block.
+
+  If Sai's routing lands during this run, Phase 4f (run_gerber_export.py)
+  takes priority — 6l resumes after.

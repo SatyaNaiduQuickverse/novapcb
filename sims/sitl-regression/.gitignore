@@ -1,0 +1,10 @@
+# SITL run artifacts — regenerated each `python3 run_sitl_regression.py` run.
+# Committed: results.json, sitl.log, results.md, run_sitl_regression.py.
+# Discarded-on-rerun (SITL working state, not load-bearing for review):
+eeprom.bin
+terrain/
+novapcb-sitl-combined.parm
+
+# Project root .gitignore excludes *.log globally; un-ignore the SITL stdout
+# capture so reviewers can see what SITL emitted during the regression run.
+!sitl.log
