@@ -43,9 +43,34 @@ The RC link arrives via an ELRS RP4TD receiver. Today this is bridged through an
 
 | Property | Value |
 |---|---|
-| Channel count | 8 (DShot300/600 preferred, PWM fallback) — see DECISIONS #3 |
-| Protocol | DShot300 / DShot600 preferred; PWM fallback |
+| Channel count | **8 channels locked** (DShot300/600 preferred, PWM fallback) — see DECISIONS #3. Inherited from MatekH743-bdshot variant PWM 1-8 per Phase 2e amended 2026-05-20. |
+| Protocol | DShot300 / DShot600 standard direction on all 8 channels; PWM fallback. **4/8 BIDIR-DShot enabled** (motor RPM telemetry on PB0/PA0/PA2/PD12 — one per timer per H743 "one BIDIR per timer" constraint). |
 | Connector | TBD — JST-SH 1.0 or solder pads |
+
+**Locked pin / timer / channel / BIDIR assignment** (Phase 2e amended, MatekH743-bdshot inheritance, lines 23-30):
+
+| PWM # | Pin | Timer | Channel | GPIO# | BIDIR |
+|---:|---|---|---|---:|:---:|
+| 1 | PB0  | TIM3 | CH3  | 50 | ✓ |
+| 2 | PB1  | TIM3 | CH4  | 51 | — |
+| 3 | PA0  | TIM2 | CH1  | 52 | ✓ |
+| 4 | PA1  | TIM2 | CH2  | 53 | — |
+| 5 | PA2  | TIM5 | CH3  | 54 | ✓ |
+| 6 | PA3  | TIM5 | CH4  | 55 | — |
+| 7 | PD12 | TIM4 | CH1  | 56 | ✓ |
+| 8 | PD13 | TIM4 | CH2  | 57 | — |
+
+**DMA isolation:** `DMA_NOSHARE SPI1* TIM3* TIM2* TIM5* TIM4*` — motor timers get dedicated DMA streams, no conflict with SPI1 (IMU). Pattern matches MatekH743-bdshot exactly.
+
+**Channels intentionally NOT exposed on novapcb v1** (available on MatekH743 base but trimmed per DECISIONS §3's 8-channel cap):
+
+- PWM 9: PD14 TIM4_CH3
+- PWM 10: PD15 TIM4_CH4
+- PWM 11: PE5 TIM15_CH1
+- PWM 12: PE6 TIM15_CH2
+- PWM 13: PA8 TIM1_CH1 (WS2812 LED — no documented novapcb v1 LED requirement)
+
+These pins are *available on the H743* if a future v1.x respin needs more channels; not routed in v1.
 
 ## Sensors required for ArduCopter parity
 
