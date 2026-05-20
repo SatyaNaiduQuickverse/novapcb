@@ -56,22 +56,22 @@ Acceptance for the whole Phase 2: every sub-phase PR merged; final
 hwdef.dat reflects v1's actual design (not MatekH743); cumulative
 flash delta tracked in BUILD_BASELINE.md.
 
-## Phase 2.5 — Footprint reality check (NEW, before Phase 3)
+## Phase 2.5 — Footprint reality check (DONE 2026-05-20)
 
-Per worker recommendation 2026-05-19. Doc-only KiCad sketch — placement only, no schematic. Catches "do all selected peripherals + connectors actually fit on 30.5 × 30.5 mm with M3 mounting holes?" CHEAP, before Phase 3 schematic decisions cascade.
+Per worker recommendation 2026-05-19. Doc-only KiCad sketch — placement only, no schematic. Catches "do all selected peripherals + connectors actually fit on the Pixhawk-standard mini-FC form factor?" CHEAP, before Phase 3 schematic decisions cascade.
+
+Form factor (clarified 2026-05-20 P1.1 escalation; see `CLAUDE.md §1` + `DECISIONS.md §2`): **board outline 36 × 36 mm**, **mounting holes 30.5 × 30.5 mm c-to-c M3** (Pixhawk-standard pattern; matches MatekH743 reference).
 
 Scope:
-- Initialize a throwaway KiCad project (`hardware/kicad/footprint-check/` — gitignored once Phase 3 starts, only for this check)
-- Drop footprints for: STM32H743V (LQFP-100), ICM-42688-P, DPS310, IST8310 (off-board via GPS header), USB-C connector, microSD socket, 4× JST-GH (per DECISIONS.md §7) for power/GPS/CRSF/I²C compass, 8× ESC pads (or JST-SH if connectorized), debug header
-- Verify all fit within 30.5 × 30.5 mm outline with M3 mounting hole pattern preserved
-- Document findings in `hardware/kicad/footprint-check/notes.md`
+- KiCad project at `hardware/kicad/footprint-check/` (committed per `P0_REPORT.md §P0.3`, NOT throwaway — Phase 3 references it).
+- `generate.py` (pcbnew API script, authoritative source) places: STM32H743VIT6 (LQFP-100), ICM-42688-P (generic LGA-14 for Phase 2.5; custom TDK-precision deferred to Phase 4), DPS310 (Bosch LGA-8 geom-match), USB-C HRO mid-mount, microSD Hirose DM3AT push-push, 4× JST-GH (telem 6P, GPS combined 10P, power 6P, CAN/aux 4P) per `DECISIONS.md §7`, 2× JST-SH 4P for 8 ESC outputs, SWD 2x5 1.27mm on bottom layer.
+- IST8310/RM3100 are EXTERNAL (on GPS module) — not placed on novapcb per `CLAUDE.md §3.5`.
+- MAX7456 is deferred (`OPEN_QUESTIONS.phase2exit-1`, recommendation: omit) — not placed.
+- DRC + categorical violation report via `kicad-cli pcb drc`.
 
-If layout doesn't fit:
-- Reduce ESC connector type (JST-SH solder pads instead of JST-GH) OR
-- Reduce peripheral set (drop microSD, route mag to GPS header only) OR
-- Escalate to supermaster: form factor revisit (DECISIONS.md §2 may need v1 revision)
+Result: **fit confirmed plausible.** Area density ~56% (660 mm² components / 1168 mm² usable). Coarse sketch DRC has 197 violations across 16 categories — itemized in `notes.md` with Phase 2.5 / Phase 4 attribution. Phase 4 layout work needs sub-mm precision on specific tight spots (microSD vs MCU+IMU vertical clearance, JST-GH 10-pin vs M3 keep-outs, USB-C mid-mount cable-egress overhang). None of the three fallback options (reduce connector type, reduce peripheral set, escalate form factor) was triggered.
 
-Acceptance: a placement plot showing all components fit, OR a documented constraint that forces a Phase 2.5 escalation.
+Two doc clarifications landed in the Phase 2.5 PR (master adjudicated, supermaster-visibility flagged): KiCad 8→9 in `CLAUDE.md §6.1` + `§10.2` (escalation #1); 30.5×30.5 board-vs-hole-spacing disambiguation in `CLAUDE.md §1` + `DECISIONS.md §2` (escalation #2).
 
 ## Phase 3 — Schematic in KiCad (NOT STARTED)
 

@@ -1,0 +1,140 @@
+id: phase-2.5-footprint-check
+phase: "2.5"
+title: "Footprint reality check — verify major components fit Pixhawk-standard mini-FC before Phase 3"
+status: done
+depends_on:
+  - phase-2-exit
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - docs/DECISIONS.md
+    - docs/DESIGN_PHASES.md
+    - docs/OPEN_QUESTIONS.md
+    - CLAUDE.md
+  refs:
+    - "CLAUDE.md §1 — Pixhawk-standard 30.5 x 30.5 mm form factor, M3 mounting holes"
+    - "DECISIONS.md §2 (form factor) + §7 (connector standard: JST-GH)"
+    - "CLAUDE.md §3.5 — sensor list (ICM-42688-P, DPS310 on-board; IST8310/RM3100 are EXTERNAL/off-board — NOT placed on novapcb)"
+    - "hwdef.dat — the locked Phase 2 peripheral set (MCU, IMU, baro, 8 ESC outputs, CRSF UART, GPS UART, microSD, USB, power ADC)"
+    - "KiCad 8 standard footprint libraries (master contract assumed KiCad 8; novarobotics64 ships KiCad 9.0.2 from Debian trixie — see escalation_log entry 1)"
+    - "OPEN_QUESTIONS phase2exit-1 — MAX7456: recommendation omit; do NOT place it"
+
+decision_forks_watched:
+  board-size-vs-hole-spacing:
+    fork: "Pixhawk '30.5×30.5 mm M3' phrasing — board outline or hole spacing?"
+    expected_classes: [board-outline, hole-spacing-only]
+    pre_recommendation: "hole-spacing-only per industry convention (board ~36×36 with 30.5 c-to-c holes)"
+    actual_resolution: "RESOLVED via escalation #2: master decision A — board 36×36mm, hole spacing 30.5×30.5mm c-to-c M3. CLAUDE.md §1 + DECISIONS §2 disambiguated in this PR."
+    resolved_via: "escalation_log entry 2 (board-outline-vs-hole-spacing)"
+  kicad-install:
+    fork: "KiCad install method + version on novarobotics64"
+    expected_classes: [apt, flatpak]
+    pre_recommendation: "apt (Debian trixie ships KiCad; simplest, version-pinned by distro)"
+    actual_resolution: "ALREADY INSTALLED via apt: KiCad 9.0.2+dfsg-1 from Debian trixie main. No install action taken. Surprise: master contract assumed KiCad 8 (Bookworm-era); trixie shipped 9. Escalated as escalation_log entry 1 for master adjudication of CLAUDE.md §6.1 'KiCad 8 default' update."
+    resolved_via: "escalation_log entry 1 (KiCad-9-vs-8)"
+  headless-approach:
+    fork: "How to do KiCad work without a GUI"
+    expected_classes: [pcbnew-python-api, kicad-cli, hand-write-sexpr]
+    pre_recommendation: "pcbnew Python API for board/footprint scripting; kicad-cli for DRC/export"
+    actual_resolution: "pcbnew Python API works headless on KiCad 9 — confirmed via end-to-end test (NewBoard + FootprintLoad LQFP-100_14x14mm + SetPosition + SaveBoard → 27 KB .kicad_pcb output, no DISPLAY required). kicad-cli also available for DRC/render. Workflow CONFIRMED."
+    resolved_via: "inline (P0.2)"
+  project-structure:
+    fork: "Where the throwaway footprint-check project lives + library strategy"
+    expected_classes: [in-repo, gitignored-scratch]
+    pre_recommendation: "hardware/kicad/footprint-check/ committed (it's a real artifact Phase 3 references); in-repo lib only if a needed footprint is missing from KiCad standard libs"
+    actual_resolution: "PROPOSED — hardware/kicad/footprint-check/ committed; generate.py (pcbnew script, authoritative source) + footprint-check.kicad_pcb (committed text output of script, reviewable in diffs) + notes.md (findings). No in-repo lib needed (P0.4 found all 8 component classes have suitable standard-lib footprints). Master to confirm at P0.5 gate."
+    resolved_via: "P0.5 gate"
+  icm42688p-footprint:
+    fork: "ICM-42688-P footprint sourcing (sub-fork from P0.4 inventory)"
+    expected_classes: [standard-lib-generic, custom-tdk-specific]
+    pre_recommendation: "standard-lib-generic for placement-fit check (Phase 2.5 scope); custom TDK-specific footprint for production layout (Phase 4)"
+    actual_resolution: "PROPOSED — use Package_LGA.pretty/LGA-14_3x2.5mm_P0.5mm_LayoutBorder3x4y.kicad_mod (generic geometric match). ICM-42688-P datasheet body = 2.5x3mm LGA-14 0.5mm pitch; KiCad generic 3x2.5 matches geometry under rotation. Acceptable for placement-fit check (not for production pad-precision). Master to confirm at P0.5 gate."
+    resolved_via: "P0.5 gate"
+
+escalation_log:
+  - timestamp: 2026-05-20T02:22:12Z
+    subphase: "2.5-P0"
+    trigger: "P0.1 discovery — KiCad 9.0.2 already installed on novarobotics64 (apt from Debian trixie main); master contract assumed KiCad 8"
+    options_presented:
+      - "(A) Use KiCad 9.0.2 (Debian trixie default). Update CLAUDE.md §6.1 'KiCad 8 default' to reflect reality."
+      - "(B) Force-install KiCad 8 via flatpak/older repo for CLAUDE-8-default compliance. Adds install complexity + diverges from trixie ecosystem."
+      - "(C) Use KiCad 9 but only commit files KiCad 9 can save in 8-compatible format. Brittle."
+    pre_recommendation: "A — use trixie-default KiCad 9; CLAUDE.md was bootstrapped 2026-05-18 when trixie status was unclear; reality moved."
+    master_decision: "A (KiCad 9, update CLAUDE.md §6.1 + §10.2). SUPERMASTER-VISIBILITY FLAG: factual tooling correction, within bounded authority; flagged in PR body for Sai's review on return."
+    reasoning: "Already installed + trixie-native + no sudo needed (KiCad 8 install would gate on supermaster password). novarobotics64 is the only Pi doing KiCad work; forward-incompat (KiCad 8 can't read 9 files) has near-zero blast radius. KiCad 9 is current stable in trixie main; right call regardless. Decision is effectively forced by reality."
+  - timestamp: 2026-05-20T02:28:52Z
+    subphase: "2.5-P1"
+    trigger: "P1.1 discovery — 'Pixhawk 30.5×30.5 mm M3' in master contract reads as board outline, but industry convention says it's mounting hole spacing on a typically 36×36mm board. Literal interpretation (board=30.5×30.5) is mechanically impossible (M3 holes at corners with 0 edge clearance)."
+    options_presented:
+      - "(A) Industry convention: board ~36×36, hole spacing 30.5×30.5 c-to-c, M3. Matches MatekH743 reference + Oscar Liang industry-standard reference. Also clarify CLAUDE.md §1 + DECISIONS §2 wording."
+      - "(B) Literal contract: board IS 30.5×30.5, hole-spacing ~24mm c-to-c. Doesn't fit Pixhawk-standard brackets. Wrong by convention."
+      - "(C) Compromise: board 30.5×30.5 with hole-spacing also 30.5×30.5 (holes AT corners, 0 inset). Mechanically broken; would crack at any stress."
+    pre_recommendation: "A — industry convention + reference board match + bracket compatibility. Plus CLAUDE.md/DECISIONS clarification in same PR (same supermaster-visibility-flag pattern as KiCad 8→9 update)."
+    master_decision: "A (board outline 36×36mm, mounting hole spacing 30.5×30.5mm c-to-c M3). CLARIFICATION not decision-change — literal 30.5×30.5 board is mechanically impossible (zero edge clearance) so docs MUST have always meant hole-spacing. CLAUDE.md §1 + DECISIONS §2 updates AUTHORIZED. SUPERMASTER-VISIBILITY FLAG: factual disambiguation, within bounded authority. Master-side miss in contract phrasing acknowledged for next retro."
+    reasoning: "Mechanically impossible literal reading + industry convention citations (Oscar Liang FC mounting article, MatekH743 reference 36×36 board / 30.5 hole spacing) + Pixhawk-bracket compatibility requirement. 'Surely-working' calibration = match the proven reference; MatekH743 ships 36×36 so we ship 36×36. ~32×32 mm usable area inside M3 keep-outs is a plausible fit envelope. Caught at P1.1 with zero board file created — 'fail cheap' worked as designed."
+
+outputs:
+  files_created:
+    - tasks/phase-2.5-footprint-check.yaml          # this file
+    - hardware/kicad/footprint-check/P0_REPORT.md   # P0 setup gate report
+    - hardware/kicad/footprint-check/                # placement sketch dir (Part 1)
+    - hardware/kicad/footprint-check/generate.py    # Part 1 pcbnew script
+    - hardware/kicad/footprint-check/footprint-check.kicad_pcb  # Part 1 sketch
+    - hardware/kicad/footprint-check/notes.md       # Part 1 findings
+  files_modified:
+    - docs/DESIGN_PHASES.md                # mark Phase 2.5 status
+    - docs/OPEN_QUESTIONS.md               # if fit check forces a form-factor escalation
+    - CLAUDE.md                            # if KiCad 9 vs 8 fork resolves to update §6.1
+  pr:
+    title: "Phase 2.5: footprint reality check"
+    branch: hw/phase-2.5-footprint-check-2026-05-20
+
+pass_criteria:
+  # PART 0 — SETUP GATE (mandatory Rule 13 stop)
+  - "P0.1: Install KiCad 8 on novarobotics64. Report: install method (apt/flatpak), exact version, install size, whether standard footprint libraries came with it. STATUS: complete — KiCad 9.0.2 already installed via apt from Debian trixie main; 570 MB total / 176 MB footprints; standard libraries present; no install action needed."
+  - "P0.2: Determine + report the headless-KiCad approach. Worker has no GUI. Verify the pcbnew Python API is importable (python3 -c 'import pcbnew; print(pcbnew.Version())'). Report whether board+footprint scripting via pcbnew works headless. STATUS: complete — pcbnew.Version() == 9.0.2; end-to-end NewBoard+FootprintLoad+SetPosition+SaveBoard test passes headless; kicad-cli 9.0.2 also available."
+  - "P0.3: Propose the footprint-check project structure: directory layout under hardware/kicad/footprint-check/, whether it's a full .kicad_pro/.kicad_pcb or a script that generates one, library strategy. STATUS: complete — see P0_REPORT.md §3."
+  - "P0.4: Inventory footprint availability. STATUS: complete — see P0_REPORT.md §4. All 8 component classes have suitable standard-lib footprints; ICM-42688-P uses generic LGA-14 3x2.5mm (sub-fork escalated)."
+  - "P0.5: STOP. Rule 13 gate. Report P0.1-P0.4 findings + recommendations. Wait for master confirmation before ANY Part 1 work. STATUS: at gate; ping sent."
+
+  # PART 1 — footprint reality check (ONLY after Part 0 gate cleared by master)
+  - "P1.1: Create the board outline: 30.5 x 30.5 mm square, with the Pixhawk-standard M3 mounting hole pattern (4 holes — verify the standard spacing from a Pixhawk mechanical reference; cite it)."
+  - "P1.2: Place footprints for all major components from the P0.4 inventory. IST8310/RM3100 are EXTERNAL (on the GPS module) — do NOT place them. MAX7456 is deferred (OPEN_QUESTIONS phase2exit-1, recommend omit) — do NOT place it. Place: MCU, primary IMU, baro, USB-C, microSD, 4x JST-GH connectors, 8 ESC outputs, SWD header."
+  - "P1.3: Connectors must be edge-accessible (JST-GH + USB-C + microSD on board edges, not buried mid-board). Verify each connector's placement allows cable egress off the board edge."
+  - "P1.4: Check for overlaps + verify everything fits inside the 30.5x30.5 outline minus the M3 keep-outs. This is GROSS fit — passives (decoupling caps, resistors) are Phase 4, not placed here, but leave plausible room for them."
+  - "P1.5: Write hardware/kicad/footprint-check/notes.md: does it fit (yes/no), per-component placement reasoning, any tight spots, any component that forced a hard choice. If it does NOT fit, document the constraint + the three DESIGN_PHASES Phase 2.5 fallback options (reduce connector type, reduce peripheral set, escalate form factor) and Rule 13 stop."
+  - "P1.6: This is a doc/sketch artifact — NO firmware build. The 'build' equivalent is: KiCad DRC on the placement sketch runs clean (no courtyard overlaps), and kicad-cli can render it."
+
+estimated_context_kb: 60
+estimated_wallclock: "KiCad install ~0 (already installed) + Part 0 report ~30 min; then after gate, Part 1 ~2-4 hours (first KiCad work, scripted via pcbnew API)"
+
+notes: |
+  Phase 2.5 exists to fail cheap. If 30.5x30.5mm can't hold the
+  peripheral set, we MUST know before Phase 3 schematic — because
+  schematic decisions cascade into layout and a form-factor change
+  after Phase 3 is a multi-day re-spin.
+
+  This is placement-only. No schematic, no netlist, no routing, no
+  passives. Just: do the big rocks fit in the jar.
+
+  pcbnew Python API: KiCad 9 ships a `pcbnew` Python module that can
+  create boards, add footprints, set outlines, run DRC — all
+  headless. Confirmed in P0.2.
+
+  The 30.5x30.5 + M3 pattern is the Pixhawk mechanical standard —
+  it's what lets the A/B swap against the CubeOrange+ be
+  mechanical-only (CLAUDE.md §1). The M3 hole spacing is a specific
+  documented number — grep/research a Pixhawk mechanical drawing,
+  cite it, don't guess. Phase 2.5 Part 1 work.
+
+  If something genuinely doesn't fit: that's a real finding, not a
+  failure. Rule 13 stop, present the fallback options. Better to
+  learn it here than at Phase 4.
+
+  Schema note: this is the first contract to carry the formal
+  decision_forks_watched + escalation_log blocks per the Phase 2-exit
+  retro action item. Master pre-blessed schema 2026-05-20 with: full
+  ISO timestamps + subphase field on escalation_log entries;
+  resolved_via field on decision_forks_watched entries (either
+  "inline" or escalation_log reference).
