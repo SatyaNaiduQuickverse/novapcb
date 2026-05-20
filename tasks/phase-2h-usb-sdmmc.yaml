@@ -1,0 +1,92 @@
+id: phase-2h-usb-sdmmc
+phase: 2
+subphase: 2h
+title: "Verify + lock USB descriptor strings and SDMMC microSD config (inheritance-only sub-phase)"
+status: in_progress
+depends_on:
+  - phase-2g-power
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - firmware/hwdef-novapcb/hwdef-bl.dat
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md
+    - docs/CONFIDENCE_MAP.md
+    - docs/INTERFACE_CONTRACT.md
+    - docs/DECISIONS.md
+    - docs/OPEN_QUESTIONS.md
+    - CLAUDE.md
+  refs:
+    - "MatekH743-bdshot hwdef.dat + base MatekH743 — grep for USB_STRING_*, USB_VENDOR, USB_PRODUCT, APJ_BOARD_ID, and SDMMC/SDIO pin lines. Report each with line citation."
+    - "novapcb-v1 current hwdef.dat — USB strings were set in Phase 1 identity fork; report current USB_STRING_MANUFACTURER + USB_STRING_PRODUCT values."
+    - "INTERFACE_CONTRACT.md §3.1 — USB descriptor requirement: USB_VENDOR_STRING must start with 'ArduPilot' for udev by-id resolution on the drone Pi"
+    - "OPEN_QUESTIONS.md / DECISIONS §9 — USB VID/PID allocation (still tracked: ArduPilot allocation TBD)"
+    - "SIMULATION_PLAN.md §6f — SDMMC SDR25 target (50 MHz, not chasing SDR50/104)"
+    - "STM32H743V datasheet — SDMMC1 pin availability on LQFP-100 (CLK/CMD/D0-D3 — confirm all present on -V package)"
+    - "CLAUDE.md §3.x — microSD logging requirement (ArduPilot .bin logs)"
+    - "Pixhawk6X hwdef.dat — SDMMC cross-reference"
+    - "ArduPilot common/stm32h7_A3_mcuconf.h:540-543 — STM32_SDC_MAX_CLOCK 12500000 (12.5 MHz global H7 SDMMC clock default)"
+    - "Generated build/novapcb-v1/hwdef.h — HAL_USB_VENDOR_ID + HAL_USB_PRODUCT_ID values from the current Phase 2g build"
+
+outputs:
+  files_created:
+    - tasks/phase-2h-usb-sdmmc.yaml  # this file
+  files_modified:
+    - firmware/hwdef-novapcb/BUILD_BASELINE.md  # append Phase 2h section (no hwdef change expected)
+    - docs/CONFIDENCE_MAP.md                  # row 2 (USB) + row 7 (microSD) evidence
+    - docs/INTERFACE_CONTRACT.md              # §3.1 USB section: lock VID/PID found + per-unit serial template; add microSD section if absent
+    # hwdef.dat: NO EDIT EXPECTED — USB strings set in Phase 1, SDMMC pins inherited cleanly from MatekH743
+  pr:
+    title: "Phase 2h: verify + lock USB strings + SDMMC microSD (inheritance audit)"
+    branch: fw/hwdef-phase2h-usb-sdmmc-2026-05-20
+
+pass_criteria:
+  - "Report current novapcb-v1 USB_STRING_MANUFACTURER + USB_STRING_PRODUCT from hwdef.dat (Phase 1 work, lines 12-13). Verify USB_STRING_MANUFACTURER starts with 'ArduPilot' per INTERFACE_CONTRACT §3.1. PASS."
+  - "Report VID/PID resolved by the build via build/novapcb-v1/hwdef.h: HAL_USB_VENDOR_ID + HAL_USB_PRODUCT_ID. novapcb hwdef does NOT set USB_VID / USB_PID, so ArduPilot global default applies. Document the resolved values. Map back to DECISIONS §9 status (option a: ArduPilot allocation; current default 0x1209:0x5740 is the pid.codes-derived ArduPilot family default that downstream tools already recognize)."
+  - "Grep MatekH743-bdshot + base MatekH743 for SDMMC/SDIO pin lines. Report the CLK/CMD/D0-D3 pin assignments with line citations. MatekH743/hwdef.dat:163-168 SDMMC1 on PC8/PC9/PC10/PC11/PC12/PD2. bdshot variant has zero SDMMC override (inherits via 'include ../MatekH743/hwdef.dat')."
+  - "Verify all SDMMC1 pins present on H743V LQFP-100. PC8/PC9/PC10/PC11/PC12 + PD2 are standard low-numbered GPIOs available on LQFP-100; production-validated via MatekH743 (same package, same pins, shipping in volume). Trust path: production-validated inheritance (same as Phase 2e BIDIR claims), not datasheet PDF (not on Pi). Cite MatekH743 hwdef.dat:163-168."
+  - "Verify SDMMC speed target. Current resolved: STM32_SDC_MAX_CLOCK = 12500000 (12.5 MHz) from hwdef/common/stm32h7_A3_mcuconf.h:543 — ArduPilot global H7 default. This is SLOWER than SDR25's 50 MHz target per SIMULATION_PLAN §6f → MORE conservative (less SI risk). Phase 2h: no override needed; Phase 6f sim can decide whether to lift to 25 MHz / 50 MHz once layout exists."
+  - "Verify no DMA conflict between SDMMC and the Phase 2e DMA_NOSHARE protected streams (SPI1*/TIM2/3/4/5*). H743 SDMMC has its OWN internal DMA (IDMA) on the peripheral — does NOT contend with system DMA1/DMA2 streams. Cross-confirm via common/stm32h7_A3_mcuconf.h:420-421 (STM32_SDC_SDMMC1_DMA_PRIORITY + IRQ priority defines, no DMA_STREAM line for H7 like the L4 variant has)."
+  - "Card-detect GPIO: NOT defined in novapcb hwdef OR MatekH743 inheritance. Phase 2h does NOT add one. This is a Phase 4 layout dependency (socket type with/without CD switch). Document in INTERFACE_CONTRACT microSD section + BUILD_BASELINE Phase 2h NOT section."
+  - "SDMMC pin pull-ups: NO PULL directive on SDMMC pins in novapcb OR MatekH743. STM32 default is no internal pull. External pull-ups (typical 47 kΩ on CMD + D0-D3) are a Phase 4 layout concern. Document in INTERFACE_CONTRACT microSD section + BUILD_BASELINE Phase 2h NOT section."
+  - "USB string content check: novapcb USB_STRING_PRODUCT = 'novapcb-v1' (NOT 'MatekH743' stale). Phase 1 stuck. PASS."
+  - "If USB strings + SDMMC config inherit cleanly: NO hwdef.dat edit. Build should be bit-identical to Phase 2g sha256 (9ddb37d4…c06b1db7). Documents-only PR."
+  - "./waf copter exits 0, zero warnings. board_id 5350 preserved."
+  - "BUILD_BASELINE.md appended with Phase 2h section: USB inheritance + resolved VID/PID + SDMMC pin inheritance + clock-default-vs-target comparison + DMA-non-conflict note + card-detect/pull-up Phase-4-deferral, sha256, flash delta vs 2g (should be 0 or trivial)."
+  - "CONFIDENCE_MAP row 2 (USB-CDC) + row 7 (microSD): bump per evidence."
+
+estimated_context_kb: 35
+estimated_wallclock: "20-60 minutes (mostly verification, no hwdef edit expected)"
+
+decision_forks_watched:
+  1: |
+    USB VID/PID fork. Status: RESOLVED. Current default 0x1209:0x5740 is
+    ArduPilot's global family default (pid.codes-derived, downstream-recognized).
+    DECISIONS §9 stays. No escalation.
+  2: |
+    microSD card-detect pin fork. Status: NO inherited card-detect from
+    MatekH743 (or novapcb). Phase 4 layout dependency. Document in
+    INTERFACE_CONTRACT microSD section; no hwdef edit.
+  3: |
+    SDMMC pull-ups fork. Status: NO PULL directive in novapcb or MatekH743.
+    External board pull-ups (Phase 4 layout). Document; no hwdef edit.
+  4: |
+    USB string content fork. Status: 'novapcb-v1' correctly set in Phase 1.
+    PASS (not 'MatekH743' stale). No action.
+
+notes: |
+  Phase 2h is the "verify Phase 1 + MatekH743 inheritance stuck and is
+  correct" sub-phase. Expected output: docs-only PR with no hwdef change.
+
+  Notable finding for the BUILD_BASELINE narrative: ArduPilot's H7
+  global SDMMC clock default is 12.5 MHz — significantly slower than
+  the SIMULATION_PLAN §6f target of SDR25 (50 MHz). This is OK; running
+  slower is more conservative for SI. Phase 6f sim can decide if a
+  hwdef override (define STM32_SDC_MAX_CLOCK 25000000 or 50000000) is
+  warranted once layout exists.
+
+  VID/PID note: novapcb resolves to 0x1209:0x5740 (ArduPilot family
+  default) — DECISIONS §9 option (a) "ArduPilot allocation" is
+  effectively this for the entire ArduPilot family in 2026 (allocation
+  was done years ago via pid.codes). A future refresh of DECISIONS §9
+  could note this; not blocking Phase 2h.

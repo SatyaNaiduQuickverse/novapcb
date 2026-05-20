@@ -12,6 +12,7 @@ Recorded ArduCopter build results per sub-phase. Each section is self-contained:
 | Phase 2e (8 ESC channels with **4 BIDIR**, MatekH743-bdshot inherit) | 1,521,688 | 182,244 | `8c3adbfa…2df234d93f` |
 | Phase 2f (CRSF UART lock + defaults.parm at 420 kbaud) | 1,523,100 | 180,828 | `0ec597c1…d9a58b3c` |
 | Phase 2g (VBAT+CURRENT ADC lock; Mauch HS-200-LV researched SCALEs) | 1,523,104 | 180,828 | `9ddb37d4…c06b1db7` |
+| Phase 2h (USB strings + SDMMC verify, zero hwdef change) | 1,523,104 | 180,828 | `9ddb37d4…c06b1db7` (bit-identical) |
 
 Phase 2a delta from Phase 1: text −11,228 B, BSS −1,860 B → total flash used **−11,224 B**, free flash **+11,224 B**. Drop comes from un-linking the three legacy IMU drivers (`mpu6000`, `icm20602`, `icm42605`) we removed.
 
@@ -672,3 +673,135 @@ sha256  9ddb37d420c166ab7b425cf6aa0fd7cdaf234dc250ecd31adf2a9419c06b1db7  arduco
 - BATT2 scaffolding (PA4/PA7 + BATT2 defines) retained as harmless inherited cruft (BATT_MONITOR2 = 0 default → never read; `#ifdef`-guarded SCALE = zero runtime cost). Removal queued for Phase 2-exit candidate list (joins HAL_BUZZER_PIN from Phase 2e + PC7 RCININT historical-comment cruft).
 - HV variant tracking — if airframe upgrades to >6S, hwdef needs the `9.0 → 18.0` flip noted above. Not future-proofed via a multi-config define; Phase 1 commitment to a single canonical hwdef per variant family.
 - ADC settling time + filter cap design — Phase 4 layout / Phase 6h sim concerns; hwdef only declares which channel is which.
+
+---
+
+## Phase 2h — USB strings + SDMMC microSD verify (2026-05-20)
+
+Phase 2h is a **pure-verify, zero-hwdef-change** sub-phase. Phase 1 set the USB identity strings; MatekH743 inheritance covers SDMMC1. Phase 2h's job is to grep + cite + document, not to edit hwdef. Build is bit-identical to Phase 2g (same sha256 `9ddb37d4…c06b1db7`), confirming zero binary impact.
+
+### USB descriptor — current resolved values
+
+Source 1: novapcb `hwdef.dat:12-13` (Phase 1 identity fork):
+
+```
+USB_STRING_MANUFACTURER "ArduPilot"
+USB_STRING_PRODUCT "novapcb-v1"
+```
+
+Source 2: generated `build/novapcb-v1/hwdef.h` after Phase 2g build:
+
+```
+#define HAL_USB_VENDOR_ID 0x1209
+#define HAL_USB_PRODUCT_ID 0x5740
+#define HAL_USB_STRING_MANUFACTURER "ArduPilot"
+#define HAL_USB_STRING_PRODUCT "novapcb-v1"
+#define HAL_USB_STRING_SERIAL "%SERIAL%"
+```
+
+| Field | Value | How it lands |
+|---|---|---|
+| `HAL_USB_VENDOR_ID` | `0x1209` | ArduPilot global default via `chibios_hwdef.py` (pid.codes-derived ArduPilot family allocation). novapcb hwdef does NOT override. Same VID Pixhawk 6X / Cube Orange+ enumerate with. |
+| `HAL_USB_PRODUCT_ID` | `0x5740` | ArduPilot global default (paired with VID 0x1209). novapcb hwdef does NOT override. |
+| `USB_STRING_MANUFACTURER` | `"ArduPilot"` | novapcb `hwdef.dat:12` (Phase 1). Satisfies udev `usb-ArduPilot_*` prefix per INTERFACE_CONTRACT §3.1. |
+| `USB_STRING_PRODUCT` | `"novapcb-v1"` | novapcb `hwdef.dat:13` (Phase 1). Correct novapcb identity, not stale Matek. |
+| `HAL_USB_STRING_SERIAL` | `"%SERIAL%"` template | ArduPilot template substitution at boot using STM32 96-bit unique device ID → unique-per-FC serial in by-id path. No hwdef override needed. |
+
+DECISIONS §9 was resolved 2026-05-18 to option (a) "ArduPilot allocation, request via forum when needed; meanwhile USB_VENDOR_STRING starts with `ArduPilot`." Current state implements this: VID/PID = ArduPilot family default (which IS what option (a) resolves to in 2026 — ArduPilot got `0x1209:0x5740` allocated via pid.codes years ago); strings satisfy udev. A future PR could request a dedicated novapcb-specific PID under `0x1209`; not blocking Phase 2 or any downstream phase.
+
+### SDMMC1 microSD — inheritance lock
+
+Source 1: novapcb `hwdef.dat:187-192`:
+
+```
+PC8  SDMMC1_D0  SDMMC1
+PC9  SDMMC1_D1  SDMMC1
+PC10 SDMMC1_D2  SDMMC1
+PC11 SDMMC1_D3  SDMMC1
+PC12 SDMMC1_CK  SDMMC1
+PD2  SDMMC1_CMD SDMMC1
+```
+
+Source 2: MatekH743 `hwdef.dat:163-168` (parent / inheritance reference):
+
+```
+PC8 SDMMC1_D0 SDMMC1
+PC9 SDMMC1_D1 SDMMC1
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2 SDMMC1_CMD SDMMC1
+```
+
+**Identical.** Pure inheritance. bdshot variant has zero SDMMC override (includes `../MatekH743/hwdef.dat`).
+
+| Property | Value | Source |
+|---|---|---|
+| Peripheral | SDMMC1 | MatekH743 inheritance (Pixhawk6X uses SDMMC2 on different pins — divergence is layout choice) |
+| Data width | 4-bit (D0-D3) | Standard SDMMC 4-bit interface |
+| FATFS | `HAL_OS_FATFS_IO 1` at novapcb `hwdef.dat:248` (inherited from MatekH743 `hwdef.dat:217`) | ArduPilot mounts as FAT filesystem |
+| Clock cap | `STM32_SDC_MAX_CLOCK 12500000` = **12.5 MHz** | `hwdef/common/stm32h7_A3_mcuconf.h:543` (ArduPilot H7 global default). Comment in source: "limit SDMMC clock to 12.5MHz by default. This increases [SI safety]" |
+| Speed target (`SIMULATION_PLAN §6f`) | SDR25 (50 MHz) | Current default at 12.5 MHz is MORE conservative than target → less SI risk. Phase 6f sim can decide whether to lift via `define STM32_SDC_MAX_CLOCK 25000000` or `50000000` once layout exists. |
+| H743V LQFP-100 availability | PC8/PC9/PC10/PC11/PC12 + PD2 all exposed on -V package | Production-validated via MatekH743 (same package, shipping in volume). Datasheet PDF cite deferred (not on this Pi). |
+| DMA | H743 SDMMC has its OWN internal DMA (IDMA) on the peripheral | Zero conflict with Phase 2e's `DMA_NOSHARE SPI1* TIM3* TIM2* TIM5* TIM4*` (those are DMA1/DMA2 system streams). Confirmed via `hwdef/common/stm32h7_A3_mcuconf.h:420-421` — no DMA_STREAM line for H7 (vs L4's `STM32_SDC_SDMMC1_DMA_STREAM STM32_DMA_STREAM_ID(2, 4)` in `stm32l4_mcuconf.h:259`). |
+| Card-detect GPIO | NOT defined | Phase 4 layout dependency. MatekH743 doesn't have one; novapcb doesn't either. ArduPilot polls SDMMC controller for card presence on boot. |
+| External pull-ups | NOT in hwdef | STM32 default = no internal pull on SDMMC pins. External 47 kΩ pull-ups on CMD + D0-D3 belong on the board (Phase 4 layout). |
+
+### DECISION FORKS WATCHED (per master's new contract format)
+
+Master pre-warned about 4 fork classes. Resolution per Phase 2h grep:
+
+| Fork | Status | Reason |
+|---|---|---|
+| 1. USB VID/PID | **No fork** | Resolved already to ArduPilot family default `0x1209:0x5740` — matches DECISIONS §9 option (a) intent. |
+| 2. microSD card-detect pin | **No hwdef change; Phase 4 dependency** | Not in MatekH743 or novapcb. Documented as Phase 4 in INTERFACE_CONTRACT microSD section. |
+| 3. SDMMC pull-ups | **No hwdef change; Phase 4 dependency** | No PULL directive anywhere. External pull-ups on the board. Documented in INTERFACE_CONTRACT microSD section. |
+| 4. USB string content | **No fork** | `USB_STRING_PRODUCT "novapcb-v1"` correct (not stale Matek). Phase 1 stuck. |
+
+### Build wall-clock
+
+| Step | Time |
+|---|---|
+| `./waf configure --board=novapcb-v1` | sub-second |
+| `./waf copter` | **8.193 s** (ccache hit — no source changed since Phase 2g; identity build) |
+| Compiler warnings | **0** (Werror build) |
+
+### Flash budget (`bin/arducopter`)
+
+| Section | Bytes | Δ vs Phase 2g |
+|---|---:|---:|
+| Text | 1,518,576 | 0 |
+| Data | 4,528 | 0 |
+| BSS | 136,676 | 0 |
+| **Total flash used** | **1,523,104** | **0** |
+| **Free flash** | **180,828** | 0 |
+| External flash used | Not Applicable | — |
+
+**Bit-identical to Phase 2g** — no hwdef change, no source change → ccache reproduces exactly. This is the strongest possible confirmation that Phase 2h is a pure-verify sub-phase.
+
+### Checksums
+
+```
+sha256  9ddb37d420c166ab7b425cf6aa0fd7cdaf234dc250ecd31adf2a9419c06b1db7  arducopter.bin
+        ^ identical to Phase 2g
+```
+
+### Verification (post-build)
+
+- `board_id` in `arducopter.apj` = `5350` ✓ (preserved).
+- `image_size: 1523108`, `image_maxsize: 1703936` ✓.
+- Exit code from `./waf copter` = `0`, `Enabling -Werror : yes`.
+- Generated `hwdef.h` USB defines match expected ArduPilot global defaults + Phase 1 novapcb strings.
+- hwdef.dat: **NO EDIT** — verify-only sub-phase, confirmed by bit-identical sha256.
+
+### What this Phase 2h build is NOT
+
+- Not bench-validated against a real microSD card. SDMMC1 pin allocation is correct on paper; real card mount + write + read needs hardware (Phase 9). FATFS mount on power-up with an inserted card is the surely-working outcome.
+- Not bench-validated USB enumeration. Strings + VID/PID are correct in the built binary; udev by-id symlink resolution on the drone Pi needs a real FC plugged in (Phase 9). Trust path until then: ArduPilot's USB-CDC machinery is mature + shipped across the Pixhawk 6X family with the same VID/PID.
+- Card-detect + external pull-ups + microSD socket selection deferred to Phase 4 layout — documented in INTERFACE_CONTRACT microSD section.
+- SDMMC clock-cap lift (12.5 MHz → 25/50 MHz toward SDR25 target) deferred to Phase 6f sim — needs SI analysis on real layout.
+- USB VID/PID dedicated allocation (vs sharing the ArduPilot family `0x1209:0x5740`) is an OPEN_QUESTIONS #9 / DECISIONS §9 follow-up; not blocking any downstream phase.
+
+### Phase 2 progress + handoff to Phase 2-exit
+
+This Phase 2h PR closes the per-sub-phase Phase 2 work. Sub-phases shipped: 2a (IMU) → 2b (baro) → 2c (mag) → 2d (GPS verify) → 2e (ESC outputs amended for bdshot) → 2f (CRSF defaults.parm) → 2g (Mauch HS-200-LV power) → 2h (USB + SDMMC verify). Per master's standing instructions, the next sub-phase is **Phase 2-exit** — strip Matek-only cruft (HAL_BUZZER_PIN, PC7 RCININT historical comment, BATT2 scaffolding, MAX7456 OSD if still present) + perform the Phase 2-exit retrospective re-audit (re-grep all Phase 2 critical claims, re-verify sha256 reproduce, recheck cumulative flash arithmetic) per the 01:00 retro cross-review action item.

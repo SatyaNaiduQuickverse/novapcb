@@ -11,17 +11,19 @@ The hard pin-level / protocol constraints the FC must honor to drop into the exi
 | Protocol | MAVLink v2, ArduPilot dialect | MAVROS depends on this |
 | Identifier | Must enumerate as `usb-ArduPilot_*` for udev by-id pinning | drone_handoff/PROMPT.md serial pinning section |
 
-**USB descriptor fields (load-bearing for the udev by-id path above):**
+**USB descriptor fields (load-bearing for the udev by-id path above) — Phase 2h locked 2026-05-20:**
 
-| Field | Value | Notes |
+| Field | Value | Source |
 |---|---|---|
-| `USB_VID` | TBD (ArduPilot allocation) | See DECISIONS #9. |
-| `USB_PID` | TBD (ArduPilot allocation) | See DECISIONS #9. |
-| `USB_VENDOR_STRING` | TBD; **must start with `ArduPilot`** | udev composes `usb-{VENDOR}_{PRODUCT}_{SERIAL}` (spaces → underscores); the `ArduPilot_*` glob in drone-side scripts matches on this prefix. |
-| `USB_PRODUCT_STRING` | TBD | Concatenated after the vendor string in the by-id path. |
-| `USB_SERIAL` | non-empty, unique-per-unit | If two FCs share a serial (or one is empty), udev by-id symlinks alias and the wrong device opens. |
+| `HAL_USB_VENDOR_ID` | `0x1209` | ArduPilot global default via `chibios_hwdef.py` (pid.codes-derived ArduPilot family allocation; effectively DECISIONS §9 option (a) — downstream tools that whitelist ArduPilot-family VIDs recognize this). novapcb hwdef does NOT override; inherits the global default. Reported by generated `build/novapcb-v1/hwdef.h`. |
+| `HAL_USB_PRODUCT_ID` | `0x5740` | ArduPilot global default (paired with VID 0x1209). Same inheritance path as VID; same `hwdef.h` source. |
+| `USB_STRING_MANUFACTURER` | `"ArduPilot"` | novapcb `hwdef.dat:12` (Phase 1 identity fork). Satisfies INTERFACE_CONTRACT §3.1 udev `usb-ArduPilot_*` prefix requirement. |
+| `USB_STRING_PRODUCT` | `"novapcb-v1"` | novapcb `hwdef.dat:13` (Phase 1 identity fork). Correct novapcb identity, not stale Matek string. |
+| `HAL_USB_STRING_SERIAL` | `"%SERIAL%"` (template) | ArduPilot inherits its template-based serial generation — `%SERIAL%` is replaced at runtime with a unique per-unit serial derived from the STM32 unique device ID (3 × 32-bit, factory-burned). Each novapcb FC enumerates with a different serial → udev by-id symlinks resolve uniquely even when two FCs are plugged in. Verified for the global ArduPilot scheme; no hwdef override needed. |
 
-udev only requires the **strings** prefix to match — VID/PID are not part of the by-id name. They still matter for any downstream consumer (some GCSs) that filters on VID/PID.
+udev only requires the **strings** prefix to match — VID/PID are not part of the by-id name. They still matter for any downstream consumer (some GCSs) that filters on VID/PID; `0x1209:0x5740` is the same VID/PID the Pixhawk 6X and other ArduPilot-family boards enumerate with, so VID/PID-filtering consumers (Mission Planner, MAVProxy, QGroundControl) accept novapcb without changes.
+
+DECISIONS §9 still leaves open the option of requesting a dedicated VID/PID allocation via the ArduPilot forum (would replace `0x5740` with a novapcb-specific PID under the same `0x1209` VID). Not blocking; current inheritance is functionally correct for the Nova stack.
 
 ## RC input — CRSF over UART
 
@@ -123,6 +125,37 @@ These pins are *available on the H743* if a future v1.x respin needs more channe
 | ADC peripheral | ADC1 (all 4 BATT pins). MatekH743 + Pixhawk6X both use ADC1 for primary battery monitoring; H743V (LQFP-100) exposes all 4 channels. |
 | DMA | ADC DMA uses DMA2 streams, no conflict with Phase 2e's `DMA_NOSHARE SPI1* TIM3* TIM2* TIM5* TIM4*` (those are on DMA1 or other DMA2 streams). |
 | Sources | Mauch HS-200-HV product page (`mauch-electronic.com/products/076-hs-200-hv` — ACS-250U sensor + "0.0V (0A) until 3.3V" full-range claim); Craft & Theory listing for Mauch 075 HS-200-LV (`craftandtheoryllc.com/store/mauch-075-hs-200-lv/` — "up to 6S max 28V for LV version"); ArduPilot wiki Mauch page (`ardupilot.org/copter/docs/common-mauch-power-modules.html` — divider 9:1 (LV) and 18:1 (HV), per-unit calibration card workflow). |
+
+## microSD logging (SDMMC1)
+
+ArduPilot writes `.bin` logs to microSD for post-incident analysis (`DECISIONS.md §6`). Phase 2h locked the SDMMC1 pin allocation (inherited cleanly from MatekH743) on 2026-05-20.
+
+**novapcb v1 FC-side SDMMC1 allocation** (Phase 2h, 2026-05-20):
+
+| Property | Value |
+|---|---|
+| Peripheral | SDMMC1 (STM32H743 has SDMMC1 + SDMMC2; SDMMC1 is the inherited choice from MatekH743) |
+| Data width | 4-bit (D0-D3) |
+| D0 | PC8 — `hwdef.dat:187` (inherited from MatekH743 `hwdef.dat:163`) |
+| D1 | PC9 — `hwdef.dat:188` (inherited from MatekH743 `hwdef.dat:164`) |
+| D2 | PC10 — `hwdef.dat:189` (inherited from MatekH743 `hwdef.dat:165`) |
+| D3 | PC11 — `hwdef.dat:190` (inherited from MatekH743 `hwdef.dat:166`) |
+| CK | PC12 — `hwdef.dat:191` (inherited from MatekH743 `hwdef.dat:167`) |
+| CMD | PD2 — `hwdef.dat:192` (inherited from MatekH743 `hwdef.dat:168`) |
+| Filesystem | FATFS via `define HAL_OS_FATFS_IO 1` (`hwdef.dat:248`, inherited from MatekH743 `hwdef.dat:217`) |
+| Clock cap (current) | `STM32_SDC_MAX_CLOCK 12500000` = **12.5 MHz** — ArduPilot global H7 default from `hwdef/common/stm32h7_A3_mcuconf.h:543`. SLOWER than SDR25 (50 MHz) target per SIMULATION_PLAN §6f → MORE conservative (less SI risk). Phase 6f sim can decide whether to override upward once layout exists. |
+| DMA | H743 SDMMC uses its own internal DMA (IDMA) on the peripheral — does NOT contend with system DMA1/DMA2 streams. Zero conflict with Phase 2e's `DMA_NOSHARE SPI1* TIM3* TIM2* TIM5* TIM4*`. |
+| H743V LQFP-100 package availability | PC8/PC9/PC10/PC11/PC12 + PD2 all exposed on LQFP-100 — production-validated via MatekH743 (same package, same pins, shipping in volume). Datasheet PDF cite deferred (not on Pi); trust path = MatekH743 inheritance. |
+| Card-detect GPIO | **NOT defined** in novapcb or MatekH743 hwdef. Phase 4 layout dependency (socket type with/without CD switch). ArduPilot polls SDMMC controller for card presence on boot if no CD GPIO is wired. |
+| External pull-ups | **NOT in hwdef** (STM32 default = no internal pull on SDMMC pins; external pull-ups belong on the board). Phase 4 layout concern: typical 47 kΩ on CMD + D0-D3 per SD spec. |
+
+**What this section does NOT lock** (Phase 4 / Phase 6f territory):
+
+- Specific microSD socket part + mechanical footprint
+- Card-detect switch wiring (if any)
+- External pull-up resistor values + placement
+- PCB trace impedance for SDMMC1_CK + SDMMC1_CMD + D0-D3
+- Whether to lift `STM32_SDC_MAX_CLOCK` from 12.5 MHz toward 25 MHz / 50 MHz (SDR25)
 
 ## Ports the Pi expects to reach (none directly on the FC)
 
