@@ -156,12 +156,17 @@ for fp in brd.GetFootprints():
 # ============================================================
 # Step 4 — swap placeholder footprints (custom solder pads)
 # ============================================================
-print(f"[4/7] custom-fp swap: J11-J18 ESC pads + J10 CRSF pads + U6 eFuse QFN", flush=True)
+print(f"[4/7] custom-fp swap: J11-J18 ESC pads + J10 CRSF pads + U6 eFuse QFN + U3 IMU", flush=True)
 # The TPS25940A WQFN-20 4×3 mm symbol-side footprint name doesn't match any
 # in the KiCad 9 stock library; the equivalent KiCad-stock footprint is
 # `Package_DFN_QFN:QFN-20-1EP_3x4mm_P0.5mm_EP1.65x2.65mm` (same body just
 # named 3×4 rather than 4×3; orientation choice).
 KICAD_QFN_LIB = "/usr/share/kicad/footprints/Package_DFN_QFN.pretty"
+# U3 ICM-42688-P: KiCad-stock LGA-14_3x2.5mm uses STMicro LSM6DS3TR-C-derived
+# pads (0.625×0.35 mm) that violate our 0.2 mm netclass clearance with 0.15 mm
+# pad-edge gap. Replace with in-repo `novapcb_lib:ICM-42688-P_LGA-14_2.5x3mm_P0.5mm`
+# (pads 0.975×0.25 mm, 0.25 mm pad-edge gap — passes DRC). See OPEN_QUESTIONS
+# phase4a-1 for the footprint-resolution research history.
 swapped = 0
 for fp in list(brd.GetFootprints()):
     ref = fp.GetReference()
@@ -171,6 +176,8 @@ for fp in list(brd.GetFootprints()):
         custom_lib, custom_name = NOVAPCB_LIB, "CRSF_solder_pad"
     elif ref in MOTOR_CONN_REFS:
         custom_lib, custom_name = NOVAPCB_LIB, "ESC_solder_pad"
+    elif ref == "U3":
+        custom_lib, custom_name = NOVAPCB_LIB, "ICM-42688-P_LGA-14_2.5x3mm_P0.5mm"
     if custom_lib is None:
         continue
     new_fp = pcbnew.FootprintLoad(custom_lib, custom_name)

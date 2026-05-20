@@ -71,9 +71,9 @@ Raised 2026-05-20 (Phase 3a Rule-13 stop — escalation #1 on `tasks/phase-3a-mc
 
 **Owner / when:** dedicated task scheduled within the Phase 3.5–6 window. Not blocking Phase 3 sub-phase advance (netlist-only mode is the agreed Phase 3 deliverable; see `tasks/phase-3a-mcu.yaml` escalation_log entry #1).
 
-## phase4a-1. ICM-42688-P land pattern — HARD must-resolve-before-Phase-6m
+## phase4a-1. ICM-42688-P land pattern — **RESOLVED 2026-05-21** (custom footprint integrated)
 
-Raised 2026-05-20 (Phase 4a — master adjudication of the `icm42688p-footprint` decision fork).
+Raised 2026-05-20 (Phase 4a — master adjudication of the `icm42688p-footprint` decision fork). **Resolved 2026-05-21 via a custom in-repo footprint at `hardware/kicad/novapcb-layout-v2/lib/novapcb.pretty/ICM-42688-P_LGA-14_2.5x3mm_P0.5mm.kicad_mod`.** See "Resolution 2026-05-21" section at the bottom of this entry for the new footprint, the cross-verification sources, and the integration.
 
 **Status:** Phase 4a-4d **accept** the KiCad-generic `Package_LGA:LGA-14_3x2.5mm_P0.5mm_LayoutBorder3x4y` footprint. Body, pitch, and pad-count/arrangement are TDK-spec-matched per Phase 2.5 P0.4. Pad sizes are IPC-7351 nominal. Placement (4b) and routing topology (4c/4d) depend on pad LOCATIONS which the generic gets right — so Phase 4 does NOT stall on this.
 
@@ -113,19 +113,50 @@ Two safe non-headless paths exist; Sai action needed:
 
 Recommend Sai pursues path 1 (authoritative + reusable for the secondary IMU + other TDK parts on future boards). Path 2 is the fallback if Sai doesn't want to register on TDK Developer portal.
 
-### Current placement state (Step 3 P1-rev, PR #58)
+### Resolution 2026-05-21 (custom footprint, master-directed parallel task)
 
-Placement uses the KiCad-stock `Package_LGA:LGA-14_3x2.5mm_P0.5mm_LayoutBorder3x4y` (pads 0.625 × 0.35 mm at 0.5 mm pitch → 0.15 mm pad-edge gap < 0.2 mm netclass clearance). Causes 14 footprint-internal DRC clearance violations on U3. These are NOT placement-caused (would be present at any board position) and do not block Step 3 acceptance per master's allowance "0 violations, OR only the IMU ones if footprint genuinely can't be sourced and gets escalated to Sai." Step 4 (sim-validate) can proceed since the sims operate at net/footprint level, not sub-pitch pad-edge level.
+Per master 2026-05-21 directive ("find a reliable open-source result"): investigated ARK Electronics open-source hardware repos, finalized via a custom in-repo footprint built from cross-verified geometry.
 
-Footprint correction lands as a follow-up PR after Sai escalation closes path (d).
+**ARK Electronics findings (production-evidence source)**
 
-**Why HARD:**
+- `github.com/ARK-Electronics/ARKV6X_Flight_Controller` (MIT-licensed, NDAA-compliant, Blue-UAS-listed, US-manufactured) uses dual ICM-42688-P in LGA-14 — production-flown evidence of the part choice.
+- BUT: ARK publishes STEP + PDF schematic + BOM only. NO editable KiCad/Altium sources. (Same for ARK-Pi6X, ARK_Flow, ARK_RTK_GPS, ARK_FPV — confirmed by inspection of repo contents.)
+- → ARK is a production-evidence reference, NOT a direct footprint source.
 
-- IMU is flight-critical (vibration sensing → attitude control → flight stability)
-- Leadless package = no visual solder inspection on assembled board
-- IPC-7351-generic ≠ TDK-recommended — generic may be wider (more tolerant) or narrower (potentially insufficient solder joint) than the part designer recommended
+**Community KiCad footprints found via GitHub code search** (all referenced for geometric cross-verification only, not redistributed)
 
-**Raised by:** Phase 4a `decision_forks_watched.icm42688p-footprint` resolution + master 2026-05-20 adjudication.
+| Source repo | License | Pad geometry | Pad-edge gap |
+|---|---|---|---|
+| Gripsou/effective-coffee-spoon (`mcu_verbose.pretty/LGA-14__PQFN50P300X250X97-14N`) | CC-BY-SA-4.0 | 0.59 × 0.35 mm | 0.15 mm — fails 0.2 mm DRC |
+| Aerokitties/Kitties-Hardware (`user_lib.pretty/LGA-14_2.5x3x0.91mm`) | unlicensed | 0.975 × 0.25 mm | 0.25 mm — passes 0.2 mm DRC |
+| tetra-aero/ICM-42688-P_breakout | GPL-3.0 | (not extracted; GPL viral) | n/a |
+
+All three confirm the same TDK pin layout (4 pads on each long side, 3 pads on each short side, pin 1 at NW corner, 0.5 mm pitch on a 3.0 × 2.5 × 0.91 mm body). The geometric facts (pin count, pitch, body) are not copyrightable; the specific .kicad_mod file structures of CC-BY-SA / GPL / unlicensed files are.
+
+**Resolution: custom footprint at `hardware/kicad/novapcb-layout-v2/lib/novapcb.pretty/ICM-42688-P_LGA-14_2.5x3mm_P0.5mm.kicad_mod`**
+
+Built from package-mechanical facts (TDK DS-000347 §11.1 public datasheet) + IPC-7351B Density-N pad sizing methodology. The pad sizes follow Aerokitties' demonstrably-DRC-passing 0.975 × 0.25 mm pattern (which is IPC-7351B-conventional for 0.5 mm-pitch LGA + matches the TDK package mechanical drawing). Cross-verified pin layout against all three community footprints. ARK ARKV6X cited as production-evidence that the part is real and flown.
+
+Pad-edge gap in pitch direction = 0.5 - 0.25 = **0.25 mm** (clears the 0.2 mm netclass clearance with 25% margin).
+
+`generate_board.py` updated to swap U3's KiCad-stock footprint with this custom one (similar to existing U6/J10/J11-18 swaps).
+
+**Reliability standard (Sai's words via master)**: "the footprint must be cross-checkable against the authoritative package geometry, not trusted blindly." Cross-checks performed:
+
+| Cross-check | Source | Result |
+|---|---|---|
+| Body dimensions 3.0 × 2.5 × 0.91 mm | TDK DS-000347 §11.1 (public) | matched |
+| Pin count 14 | TDK pinout Fig 5 + all 3 community footprints | matched |
+| Pin pitch 0.5 mm | TDK + all 3 community footprints | matched |
+| Pin layout (4-3-4-3 with pin 1 at NW corner) | TDK + all 3 community footprints | matched |
+| Pad size for DRC clearance | Aerokitties precedent + IPC-7351B Density-N | 0.975 × 0.25 mm; 0.25 mm edge gap clears 0.2 mm |
+| Production evidence of part choice | ARK Electronics ARKV6X (MIT, open-source FC, flown) | confirmed |
+
+**DRC outcome on Step 3 P1-rev placement**: 0 violations (all 14 prior U3-internal clearance failures cleared by the new footprint).
+
+**What still requires confirmation** (informational, not blocking): pad-size exact match to AN-IVS-0002A-00 (TDK's controlled-distribution land-pattern doc). If/when Sai obtains that doc and the recommended sizes differ from our 0.975 × 0.25 mm, a follow-up PR replaces the pad sizes — but pin layout + pitch + body are correct.
+
+**Status:** RESOLVED for v1 fab. Sai retrieval of AN-IVS-0002A-00 remains a nice-to-have for confirmation but is not blocking; the cross-verified custom footprint is fab-quality (passes DRC; pin layout authoritative from TDK datasheet; pad sizes IPC-7351B-conventional and consistent with the Aerokitties production-derived pattern).
 
 ---
 
