@@ -15,7 +15,7 @@ Created 2026-05-20 (03:00 retro action item; landed in Phase 3a PR per master di
 | `kicad-cli` | 9.0.2 | bundled w/ KiCad apt package, at `/usr/bin/kicad-cli` | ✓ Phase 2.5 (`pcb drc`) + Phase 3 P0 (`sch erc`, `sch export pdf`) |
 | SKiDL | 2.2.3 | `pip install --user skidl` | ✓ Phase 3 P0 smoke (small circuit) / Phase 3a (netlist) |
 | kicad-skip | 0.2.5 | `pip install --user kicad-skip` | candidate for `phase3-render-1`; not yet exercised |
-| kinet2pcb | 1.1.4 | `pip install --user kinet2pcb` (SKiDL ecosystem, xesscorp) | ✓ Phase 4 P0 (netlist → .kicad_pcb headless) / Phase 4a (board scaffolding) |
+| kinet2pcb | 1.1.4 | `pip install --user kinet2pcb` (SKiDL ecosystem, xesscorp) | ✓ Phase 4 P0 (netlist → .kicad_pcb headless) / Phase 4a (board scaffolding) / Phase 4b placement |
 | OpenJDK 25 JRE (aarch64) | 25.0.3+9 (LTS) | user-space tarball at `~/local/jre/jdk-25.0.3+9-jre/` — see `PHASE4_P0_REPORT.md §P0.1` install table | ✓ Phase 4 P0 (Freerouting runtime) |
 | Freerouting | v2.2.4 | user-space JAR at `~/local/freerouting/freerouting.jar` — see `PHASE4_P0_REPORT.md §P0.1` install table | ✓ Phase 4 P0 (DSN parse + auto-route ingest) |
 
@@ -206,6 +206,70 @@ SKiDL writes `skidl_REPL.erc` / `.log` to the current working directory when inv
 `kicad-cli pcb` has `drc` + `export` (gerbers, drill, STEP, PDF, etc.) — fully covered for Phase 4 layout + Phase 7 fab work.
 
 ---
+
+## pcbnew Python API gotchas (Phase 4c)
+
+### ZONE.SetOutline(SHAPE_POLY_SET) — holds outline by REFERENCE not by value
+
+KiCad 9 SWIG binding: `zone.SetOutline(outline)` stores a reference to the SHAPE_POLY_SET, NOT a copy. If `outline` is a function-local variable, it gets garbage-collected when the function returns, and the zone's outline becomes empty on save (zones save with 0 outline points; KiCad GUI shows empty zones).
+
+Wrong:
+```python
+def add_zone(brd, ...):
+    outline = pcbnew.SHAPE_POLY_SET()
+    outline.NewOutline()
+    outline.Append(...)
+    z = pcbnew.ZONE(brd)
+    z.SetOutline(outline)
+    brd.Add(z)
+    # `outline` gc'd on return → zone's outline now invalid
+```
+
+Right:
+```python
+_zone_outline_refs = []  # module-level keeps SHAPE_POLY_SETs alive
+
+def add_zone(brd, ...):
+    outline = pcbnew.SHAPE_POLY_SET()
+    # ... build outline ...
+    z.SetOutline(outline)
+    _zone_outline_refs.append(outline)  # keep alive past function return
+    brd.Add(z)
+```
+
+Discovered debugging Phase 4c (5/2026) — 7 added zones all appeared in `brd.Zones()` pre-save but saved as 0-point empty zones until the keep-alive list was added.
+
+### ZONE_FILLER.Fill() — segfaults on multi-layer kinet2pcb boards (aarch64)
+
+```python
+filler = pcbnew.ZONE_FILLER(brd)
+ok = filler.Fill(list(brd.Zones()))   # SEGFAULTS
+```
+
+Observed on KiCad 9.0.2 aarch64 (Raspberry Pi 5) with a 4-copper-layer kinet2pcb-derived board + 7 zones across 3 layers. Specific to this combination; the GUI Fill operation works fine.
+
+Workaround: don't call ZONE_FILLER.Fill(). Save zones unfilled; `kicad-cli pcb drc` auto-fills before checking, and KiCad GUI fills on open. Zone outlines + net assignments persist in the .kicad_pcb, which is what 4d Freerouting DSN export reads.
+
+### NETNAMES_MAP keys are wxString, not Python str
+
+```python
+nets = brd.GetNetsByName().asdict()
+nets.get("GND")   # returns None — key is wxString('GND'), not 'GND'
+```
+
+Right:
+```python
+for k, v in nets.items():
+    if str(k) == "GND":
+        return v
+```
+
+### ZONE.GetLayerName() returns "F.Cu" for all zones (KiCad 9 binding bug?)
+
+`zone.GetLayer()` returns the correct numeric layer ID (e.g. 4 for In1.Cu, 6 for In2.Cu, 2 for B.Cu after `SetCopperLayerCount(4)`), but `GetLayerName()` always returns "F.Cu" regardless. Trust the numeric ID; use a manual lookup table for display:
+```python
+LAYER_NAME = {0: "F.Cu", 2: "B.Cu", 4: "In1.Cu", 6: "In2.Cu"}
+```
 
 ## When you encounter a new gotcha
 

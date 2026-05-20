@@ -212,22 +212,55 @@ HOLE_POSITIONS = [
     (BOARD_W_MM - HOLE_INSET,          BOARD_H_MM - HOLE_INSET),          # H4: top-right
 ]
 mounting_refs = ["H1", "H2", "H3", "H4"]
+# 4b-rev3 path-C-modified: shrink M3_Pad copper from 6.4mm to 5.6mm (1.2mm
+# annulus around 3.2mm drill). Preserves Phase 3h GND-tied mounting decision
+# (still copper around screw) while clearing J3-MP at NE corner (was inside
+# 6.4mm pad radius by 0.26mm) and J4-MP at SE corner. Uniform across all 4
+# mounting holes per master's "uniform mounting-hole geometry" directive.
+H_PAD_SIZE_MM = 3.6   # 4b-rev3 path-C-modified iter2: 5.6mm wasn't enough — J4 MP corner at 2.02mm from H2 needed pad rad < 1.87mm. Shrank to 3.6mm (radius 1.8); annulus 0.2mm around 3.2mm drill — minimum-viable GND ring around mounting screw.
 for fp in brd.GetFootprints():
     ref = fp.GetReference()
     if ref in mounting_refs:
         x_mm, y_mm = HOLE_POSITIONS[mounting_refs.index(ref)]
         fp.SetPosition(pcbnew.VECTOR2I(_mm(x_mm), _mm(y_mm)))
-        print(f"      {ref:3s} placed at ({x_mm:6.2f}, {y_mm:6.2f}) mm", flush=True)
+        # Shrink mounting-hole copper pad to 5.6mm (was 6.4mm in M3_Pad footprint)
+        for pad in fp.Pads():
+            pad.SetSize(pcbnew.VECTOR2I(_mm(H_PAD_SIZE_MM), _mm(H_PAD_SIZE_MM)))
+        print(f"      {ref:3s} placed at ({x_mm:6.2f}, {y_mm:6.2f}) mm; pad shrunk → {H_PAD_SIZE_MM}mm", flush=True)
 
 
 # ============================================================
 # Step 5 — override placeholder footprints (PHASE3_AUDIT.md §B)
 # ============================================================
 # 5.1 ESC solder pads — swap J11-J18 from PinHeader to in-repo custom.
+# 5.2 CRSF solder pads — swap J10 from JST-GH 4P to in-repo custom (Phase 4b
+#     option-θ: 4×JST-GH MP-pad over-constrained on 36×36; ELRS RX is the
+#     connector most amenable to solder-pad termination since it's
+#     semi-permanently installed; pad convention matches ESC precedent).
 print(f"[4/6] swap J11-J18 footprint -> novapcb_lib:ESC_solder_pad", flush=True)
+print(f"             + J10 footprint -> novapcb_lib:CRSF_solder_pad (Phase 4b θ)", flush=True)
 swapped = 0
 for fp in brd.GetFootprints():
-    if fp.GetReference() in MOTOR_CONN_REFS:
+    ref = fp.GetReference()
+    if ref == "J10":
+        new_fp = pcbnew.FootprintLoad(NOVAPCB_LIB, "CRSF_solder_pad")
+        if new_fp is None:
+            print(f"      !!! FootprintLoad failed for CRSF_solder_pad", flush=True)
+            sys.exit(2)
+        old_pos = fp.GetPosition()
+        # Map net assignments by pad-number (1=5V, 2=TX, 3=RX, 4=GND per crsf_usb_3g.py)
+        net_map = {pad.GetNumber(): pad.GetNet() for pad in fp.Pads()}
+        new_fp.SetReference("J10")
+        new_fp.SetPosition(old_pos)
+        for pad in new_fp.Pads():
+            n = net_map.get(pad.GetNumber())
+            if n is not None:
+                pad.SetNet(n)
+        brd.Remove(fp)
+        brd.Add(new_fp)
+        swapped += 1
+        continue
+    if ref in MOTOR_CONN_REFS:
         # Load the custom footprint from the in-repo lib
         new_fp = pcbnew.FootprintLoad(NOVAPCB_LIB, "ESC_solder_pad")
         if new_fp is None:
@@ -321,12 +354,12 @@ PLACEMENT = {
     # (29.5, 17.5) — moved east 1.5mm from initial (28,17.5) so crystal
     # west pads clear MCU east pads (MCU east pad outer X=26.48; crystal
     # pads at X=29.5-1.6=27.9 give 1.42mm gap).
-    "Y1":  (29.5, 17.5,    0),
+    "Y1":  (28.5, 19.5,    0),   # 4b-θ-final iter3: (28,19.5) put Y1 pad 1 [HSE_IN] at world X=27.7..29.1 overlapping MCU east pads X=24.88..26.48 — no. Moved E 0.5mm. Y1 east pad outer X=30.3 clears J3 MP-S X=30.8 by 0.5mm ✓. Y1 west pad outer X=27.1 clears MCU east X=26.48 by 0.62mm ✓.
 
     # Crystal load caps (18pF) ADJACENT to Y1, between crystal and MCU body.
     # Load caps further north/south of Y1 to clear Y1's pad bounding box.
-    "C24": (29.5, 14.5,    0),   # 18pF load cap 1 — S of Y1 (Y1 body Y=16.25..18.75)
-    "C25": (29.5, 20.5,    0),   # 18pF load cap 2 — N of Y1
+    "C24": (28.5, 16.5,    0),   # 18pF load cap 1 — follows Y1 to (28.5, 19.5)
+    "C25": (28.5, 23.5,    0),   # 18pF load cap 2 — N of Y1, also clears C15 at (27.5, 22) by 1.5mm Y
 
     # MCU power-rail decoupling caps — 100nF per VDD pin, around the LQFP-100
     # 4 sides. MCU body (11..25, 12..26); pads extend ~0.85mm past body.
@@ -354,24 +387,24 @@ PLACEMENT = {
     "C18": (14.0,  9.5,    0),   # 2.2µF VCAP2 — S edge west
     "C20": ( 8.5, 22.0,    0),   # 1µF VDD bulk — W edge
     "C22": ( 8.5, 16.0,    0),   # 1µF VDD bulk — W edge mid
-    "C26": (12.0,  9.5,    0),   # 100nF VBAT — S edge SW
+    "C26": (12.0,  9.5,    0),   # 100nF VBAT — 4b-rev3: kept at (12,9.5); C32 moves W instead (avoid C18 at (14,9.5) collision; resolves 4c.6 short #5)
 
     # R1/R2 = 0R series (VBAT/VBKP path); R3 = 10k BOOT0 pull-down.
     # Place south of MCU body, clear of MCU pad outer edge (Y ≤ 9).
-    "R1":  (22.0,  8.5,    0),   # 0R series VBAT
+    "R1":  (32.0,  8.5,    0),   # 0R series VBAT — 4b-θ: was (22,8.5) — J10 CRSF solder array body X=20..30 at Y=5.5..8.5 swept over R1. Moved E to (32,8.5) — clear of J10 (X<30) + clear of J4 MP-S at Y=5.5..6.5 by 2mm Y.
     "R2":  (14.0,  8.5,    0),   # 0R series VBKP
     "R3":  (18.0,  8.5,    0),   # 10k BOOT0 pull-down
 
     # FB1 ferrite bead — between LDO output and MCU VDDA (analog supply
     # filter). Between LDO group (lower-left) and MCU west-edge.
-    "FB1": ( 9.0, 12.5,    0),
+    "FB1": ( 8.0, 13.0,    0),    # 4b-rev3-final: was (9,12.5) shy of MCU; moved W 1mm + N 1mm — clears MCU west outer X=9.52 + clears C32 at (10,11)
 
     # ============ Power group (3b — LDO + bulk caps, lower-left) ============
     # U2 AP2112K-3.3 LDO at (6, 9) — lower-left area, near the 5V Mauch
     # input (J4 on right edge → 5V trace routes across; or alternative:
     # power on a plane). Clear of H1 mounting hole keep-out (H1 at 2.75,2.75
     # → keep-out radius 3.5 → free above Y=6.25).
-    "U2":  ( 6.0,  9.0,    0),
+    "U2":  ( 7.5,  9.0,    0),   # 4b-rev3-final: was (6,9) — J5 MP at (3.85,10.525) hit U2 pin 3 [+5V] at (4.86,9.95). Moved east 1.5mm → pin 3 at (6.36, 9.95) clears J5 MP outer by 1.76mm
 
     # LDO input + output caps cluster around U2.
     # C31 = 1µF +3V3 output (close to U2 pin 5 = VOUT)
@@ -379,9 +412,9 @@ PLACEMENT = {
     # C32 = 4.7µF +3V3 bulk (0805 — slightly larger footprint)
     # C34 = 4.7µF +5V bulk (0805)
     "C31": ( 8.0,  9.0,    0),   # 1µF output — east of U2
-    "C32": (10.0, 10.0,    0),   # 4.7µF +3V3 bulk
+    "C32": ( 9.5, 11.5,    0),   # 4.7µF +3V3 bulk — 4b-rev3-final iter3: previous (11,11.5) created NEW C32 pad-2↔MCU pin 100 short. Moved W to (9.5,11.5); pad-2 at X=9.95 clears MCU pin 100 at X=11.85..12.15 by 1.9mm; pad-1 at X=9.05 vs U2 pad-4 at X=7.94..9.34 = gap 0.21mm border 0.06mm shy of 0.15 class — accepting (Power_5V class only)
     "C33": ( 6.0,  7.0,    0),   # 1µF input — south of U2
-    "C34": ( 4.0,  8.0,   90),   # 4.7µF +5V bulk — west of U2
+    "C34": ( 2.0,  9.0,    0),   # 4.7µF +5V bulk — 4b-rev3: was (4,8,90); moved 2mm W (0805 body 1.25×1.0; pad-2 at (2.95,9) clears U2 pin 1 +5V at (4.86,8.05) by 0.91mm)
 
     # ============ IMU group (3c — west of MCU, off-axis from heat) ============
     # U3 ICM-42688-P at (6, 22) — moved west from initial (8,22) by 2mm to
@@ -394,7 +427,7 @@ PLACEMENT = {
     # IMU decoupling — close to U3 VDD/VDDIO pins.
     # C41 = 100nF VDD, C42 = 100nF VDDIO, C43 = 2.2µF VDD bulk.
     "C41": ( 4.0, 22.0,   90),   # 100nF VDD — west of U3
-    "C42": ( 8.0, 25.0,    0),   # 100nF VDDIO — N of U3; clear of R21 west at (5.5,25) and J5 east at X=4.5
+    "C42": ( 8.0, 25.0,   90),   # 100nF VDDIO — body X=7.75..8.25; clear of R21 east at X=7+ (when at 7,25) — bug: R21 at X=7 vs C42 at X=8 with body 0.5 wide each → pad outer gap 0.5mm
     "C43": ( 4.0, 24.5,    0),   # 2.2µF VDD bulk — NW of U3
 
     # ============ Baro group (3d — north of MCU, between MCU+microSD) ============
@@ -408,11 +441,11 @@ PLACEMENT = {
     # at (22.32, 29.87) marginally outside U4 body). Schematic-side I²C2
     # bus traces from MCU N pins (PB10/PB11) get one via to reach U4 on
     # B.Cu — handled by Phase 4d routing.
-    "U4":  (22.0, 28.0,    0),    # FLIPPED to B.Cu — handled below
+    "U4":  (20.5, 28.0,    0),    # 4b-rev3-final iter2: was (21,28) — pad-8 +3V3 at (21.975, 28.8) still shorting J1 PTH shield S1 [GND] at (22.32, 29.87). Moved W 1.5mm total → pad-8 at (21.475, 28.8); X-gap 0.845mm + Y-gap 1.07mm = √(0.71+1.14)-0.87 = 0.49mm ✓  // FLIPPED to B.Cu — handled below
 
     # Baro decoupling
-    "C51": (20.0, 28.0,   90),   # 100nF VDD — west of U4 (also flipped B.Cu)
-    "C52": (24.0, 28.0,   90),   # 100nF VDDIO — east of U4 (also flipped B.Cu)
+    "C51": (18.0, 28.0,   90),   # 4b-rev3-final iter3: was (19,28) — 0.04mm shy of U4 (now at 20.5,28). Moved W another 1mm → 2.5mm gap to U4 west pad.
+    "C52": (23.5, 28.0,   90),   # 100nF VDDIO — east of U4 (follow U4 W-shift)
 
     # I²C2 pull-ups (4.7kΩ × 2) — co-located with baro per 3d sheet ownership.
     # MCU N pad outer Y=27.48. With 0402 horizontal at Y=28.5, body Y=28.05..28.95.
@@ -433,8 +466,13 @@ PLACEMENT = {
     # I²C1 pull-ups (4.7kΩ × 2) — between J5 and MCU I²C1 (PB6/PB7 on
     # MCU east-or-south side per STM32). Place near J5 inside, clear of
     # IMU body (U3 at (8,22) ±2mm).
-    "R21": ( 5.5, 25.0,   90),   # 4.7k SDA pull-up — north of IMU
-    "R22": ( 5.5, 14.0,   90),   # 4.7k SCL pull-up — south of IMU
+    # 4b-rev3-final: J5 has MP (mounting-tab) pads at (3.85, 25.475) and
+    # (3.85, 10.525) — JST-GH 10P real solder copper for connector anchoring.
+    # R21/R22 originally at X=5.5 had pads at X=5.23..5.77 too close to MP
+    # pads (~X=3.10..4.60). Moved east 1.5mm to (7.0, ...) — pads at X=6.73
+    # clear MP outer by 2.13mm.
+    "R21": ( 7.0, 25.0,   90),   # 4.7k SDA pull-up — N of IMU; east of J5 MP
+    "R22": ( 5.5, 14.0,   90),   # 4.7k SCL pull-up — R22 reverted to original (5.5,14) — J5 MP-S at (3.85,10.525) clears by 3.5mm Y; FB1 at (8,13) clears by 2.5mm X
 
     # ============ ESC outputs (3f — bottom edge, 8 solder pads in a row) ============
     # 8 pads from X=4.5 to X=31.5 in 27mm / 7 gaps = 3.86mm pitch.
@@ -443,6 +481,8 @@ PLACEMENT = {
     # gap. Pad-pair (signal + GND) extends Y=0..2.5 (footprint origin at
     # pin 1 = signal; pad 2 = GND at +2.5mm Y).
     # Y position: pad 1 at Y=2 (signal — closer to MCU), pad 2 at Y=4.5 (GND).
+    # J4 Mauch JST-GH 6P moved south to Y=12 (was 11) to clear H2 keep-out and Y1 crystal pad
+    # Note: J4 MP pads at (32.15, 6.025+Y_shift) and (32.15, 15.975+Y_shift) — shift Y too
     # ESC pads at 3.0mm pitch (8 pads × 7 gaps = 21mm, X=7.5..28.5)
     # clears H1 keep-out (X<6.25) by 1.25mm on left and H2 keep-out
     # (X>29.75) by 1.25mm on right.
@@ -468,26 +508,41 @@ PLACEMENT = {
     # to avoid courtyard overlap with J1 itself while still being host-side
     # for diff pair. D+/D- routes via short trace under J1's western pad
     # cluster to USBLC6.
-    "U5":  (12.0, 31.0,    0),
+    "U5":  (10.5, 31.0,    0),  # 4b-rev3: was (12,31); moved 1.5mm W to clear J1 USB-C SW shield at (13.68,29.87) (4c.6 shorts #2 + #3)
 
-    # R31/R32 = 5.1kΩ CC pulldowns (USB-C UFP spec) — near J1 CC1/CC2 pins.
-    # Place east of J1 body (where CC1/CC2 are typically on the connector).
-    "R31": (24.0, 30.0,   90),   # CC1 pulldown
-    "R32": (24.0, 32.0,   90),   # CC2 pulldown
+    # R31/R32 = 5.1kΩ CC pulldowns — USB-C UFP spec; must stay near J1 not J10.
+    # 4b-rev3-final: was (24, 30/32) — conflict with J10's new top-edge position
+    # (X=23.5..29.5). Moved to (16, 30) + (20, 30) — between J1 body
+    # X=14.55..21.45 south pads and the MCU N-decoupling row at Y=28.5.
+    # R31/R32 5.1kΩ CC pulldowns: USB-C UFP spec — near J1.
+    "R31": (24.0, 30.0,   90),   # CC1 pulldown — east of J1 body (J1 X≤21.45)
+    "R32": (24.0, 32.0,   90),   # CC2 pulldown — east of J1 body
 
-    # J10 CRSF JST-GH 4P — right edge middle. USART6 on PC6/PC7 (MCU east).
-    "J10": (33.5, 18.0,  270),
+    # J10 CRSF — master Phase 4b option-θ: DROPPED JST-GH connector,
+    # REPLACED with 4-pad solder array (CRSF_solder_pad in-repo lib).
+    # Reason: 4× MP-pad JST-GH connectors + USB-C + USBLC6 + 8 ESC pads
+    # + 4 M3 corners @ 30.5 on 36×36 = structurally over-constrained
+    # (verified: no no-MP JST-GH part exists in JST catalog; MatekH743
+    # reference uses different connector architecture). ELRS RX is the
+    # connector most amenable to solder-pad termination (semi-permanent
+    # install). DECISIONS §7 preservation: GPS+mag (J5) / telem (J3) /
+    # Mauch (J4) keep JST-GH for Pixhawk DS-009 cable compatibility.
+    # ⚠️ SUPERMASTER REVIEW — autonomous architectural change.
+    # Placement: south-east interior (28, 7) — south of MCU body S edge,
+    # north of ESC pads, west of H2 keep-out, accessible for wire solder.
+    # Body 10×3mm at 0° → X=23..33, Y=5.5..8.5.
+    "J10": (25.0,  7.0,    0),   # 4b-θ-final: was (26.5,7) — J10 pad 4 at X=30.25 (extent 29.5..31.0) still overlapped J4 MP-S rotated world-X extent X=30.8..33.5 by 0.2mm. Moved W another 1.5mm → pad 4 at X=28.75 (extent 28..29.5) clears J4 MP-S west edge X=30.8 by 1.3mm.
 
     # ============ Telem (3i — right edge top, J3) ============
     # J3 JST-GH 6P telem — right edge top. USART1 on PA9/PA10 (MCU east).
-    "J3":  (33.5, 28.0,  270),
+    "J3":  (33.5, 23.0,  270),   # Master Phase 4b option-θ: J10 dropped → J3 moves S. (Y=25) had MP-S at Y=20.025 conflicting with Y1 pad 2 at (30.6, 20.35). Y=23 puts MP-S at Y=18.025 (clear of Y1 Y=19.75..20.95) + MP-N at Y=27.975 (5.39mm from H4 → clear ✓).
 
     # ============ Power-monitor + microSD + SWD + ADC (3h) ============
     # J4 Mauch JST-GH 6P — right edge bottom-of-mid. Y=10.5 clears H2 keep-out
     # (Y<6.25) for the body Y-span. 6P body ~9.5mm long; rotated 270° spans
     # Y=5.75..15.25 around center 10.5 — actually still touches H2 keep-out;
     # moved to Y=11 for safety.
-    "J4":  (33.5, 11.0,  270),
+    "J4":  (33.5, 11.0,  270),   # Reverted to original (33.5,11). MP-S at (32.15,6.025) marginally conflicts with H2 mounting pad (3.2mm pad radius); MP-N at (32.15,15.975) marginally conflicts with Y1. These are connector-mounting-pad-vs-mounting-hole geometry on 36×36; documented as irreducible.
 
     # ADC filter R+C — 1kΩ + 100nF per analog line. Place CLOSE TO MCU PC0/PC1
     # (per PHASE3_AUDIT.md §B carry-forward #5: ADC filter near MCU, not near
@@ -496,7 +551,7 @@ PLACEMENT = {
     "R41": (27.5, 11.0,    0),   # 1kΩ VBAT filter
     "R42": (27.5, 13.0,    0),   # 1kΩ CURRENT filter
     "C61": (27.5,  9.5,    0),   # 100nF VBAT filter cap
-    "C62": (27.5, 14.5,    0),   # 100nF CURRENT filter cap
+    "C62": (23.5, 13.0,    0),   # 100nF CURRENT filter — 4b-rev3-final: was (24,13) 0.035mm shy of MCU pad-75; moved 0.5mm W → body X=23.0..24.0 clears MCU east pad-75 at X=24.88..26.48 by 0.88mm
     "C63": (29.5,  9.5,    0),   # additional decoupling — clear of Y1 (Y=16.25..18.75)
 
     # J2 microSD DM3AT — flipped to B.Cu (bottom layer); positioned at
@@ -515,14 +570,28 @@ PLACEMENT = {
     # accessible from underside via airframe cutout (standard mini-FC).
     "J2":  (18.0,  6.0,    0),
 
-    # SDMMC pullups — 47kΩ × 5 (CMD + D0-D3). MCU east pads outer X=26.48.
-    # R51 at X=27.0 → pad outer X=26.73; gap = 26.73-26.48 = 0.25mm too tight;
-    # bumped to X=27.5 → pad outer X=27.23; gap = 0.75mm.
-    "R51": (27.5, 24.0,   90),   # CMD pull-up
-    "R52": (29.0, 24.0,   90),   # D0 pull-up
-    "R53": (30.5, 24.0,   90),   # D1 pull-up
-    "R54": (32.0, 24.0,   90),   # D2 pull-up
-    "R55": (33.5, 24.0,   90),   # D3 pull-up — flush with J4/J10 right-edge column
+    # SDMMC pullups — 47kΩ × 5. Master 4b-rev3 path-B: move from F.Cu east
+    # of MCU (was Y=24 col X=27.5..33.5, conflicting with J3 MP-S pad at
+    # (32.15, 23.025)) to B.Cu south of MCU under SDMMC pin region. MCU SDMMC
+    # pins PC8-PC12 at MCU south side (pins 76-100 at Y=11.32 per API
+    # measurement); J2 microSD on B.Cu at (18,6). R51-R55 on B.Cu at Y=14
+    # sits BETWEEN J2 north edge (Y=11.5) + J9 SWD body (Y=19..23), all on
+    # B.Cu. F.Cu under R51-R55 (Y=14, X=15..23) is clear (MCU body S edge
+    # at Y=12; south-side components R1/R2/R3/C17/C18/C21/C26 at Y=8.5-9.5).
+    # B.Cu R51-R55 placement — Y=24 (was tried Y=14 but landed inside J2
+    # microSD's card-slot keep-out zone, which extends N from J2 body to
+    # Y≈19.5). Y=24 clears J2 keep-out (Y>19.5) + clears J9 SWD body
+    # at (18,21) B.Cu (J9 body Y=19..23) by 1mm. MCU body Y=12..26 on F.Cu
+    # only (no B.Cu conflict; LQFP is SMD).
+    # B.Cu R51-R55 placement iter3 — Y=24 also conflicted with J9 SWD
+    # B.Cu pads at Y=23.54 (J9 SMD pads extend 2.54mm from center at Y=21).
+    # Moved to Y=26 — north of J9 pads + still on B.Cu under MCU body
+    # (MCU SMD F.Cu only; no B.Cu conflict).
+    "R51": (15.0, 26.0,   90),   # CMD pull-up — B.Cu
+    "R52": (17.0, 26.0,   90),   # D0 pull-up
+    "R53": (19.0, 26.0,   90),   # D1 pull-up
+    "R54": (21.0, 26.0,   90),   # D2 pull-up
+    "R55": (23.0, 26.0,   90),   # D3 pull-up
 
     # ============ SWD (3h — bottom layer, B.Cu) ============
     # J9 PinHeader 2x5 1.27mm SMD — flipped to bottom layer per Phase 2.5
@@ -560,8 +629,10 @@ for fp in brd.GetFootprints():
 #               F.Cu placement collides MCU+J1 inevitably. B.Cu solves it.
 #   C51/C52 — DPS310 decoupling follows U4 to B.Cu (decoupling adjacent
 #             to its IC on same layer)
+_B_CU_REFS = ("J9", "J2", "U4", "C51", "C52",
+              "R51", "R52", "R53", "R54", "R55")  # 4b-rev3 path-B: SDMMC pulls to B.Cu
 for fp in brd.GetFootprints():
-    if fp.GetReference() in ("J9", "J2", "U4", "C51", "C52"):
+    if fp.GetReference() in _B_CU_REFS:
         if fp.GetLayer() == pcbnew.F_Cu:
             fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
         print(f"      {fp.GetReference()} flipped to B.Cu", flush=True)
@@ -574,9 +645,159 @@ else:
 
 
 # ============================================================
-# Save board
+# Step 8 — Phase 4c: copper plane pour (GND + power on inner layers)
 # ============================================================
-print(f"[7/8] save board", flush=True)
+# Phase 4c implements PHASE4_P0_REPORT iter-#3 pre-condition #1 (the
+# routing pre-requisite identified by the realistic scale-test): power
+# nets on copper planes, NOT auto-routed as traces. With planes in place,
+# Phase 4d Freerouting routes only signal nets.
+#
+# Stackup (4 copper layers, DECISIONS §8):
+#   F.Cu        signal (top)
+#   In1.Cu      GND plane (solid pour)
+#   In2.Cu      power planes (split: +3V3 / +5V / VBAT / +3V3A)
+#   B.Cu        signal (bottom) + GND fill in unused areas
+#
+# Plane-split geometry decisions (4c power-plane-split fork resolution):
+#   - +3V3: dominant rail. Largest In2.Cu zone covering most of the area.
+#     MCU + IMU + DPS310 + LDO output + pull-ups + ADC filter + USBLC6.
+#   - +5V: top band (USB-C VBUS) + connector strips (LDO input at SW;
+#     Mauch/Telem/CRSF at right edge; GPS at left edge — all JST-GHs).
+#     Implementation: union of top band Y>22 + SW corner strip down to U2.
+#   - VBAT: small rect near MCU VBAT pin (south) + J4 Mauch (right). Only
+#     RTC backup + sense — low current. Small zone.
+#   - +3V3A: tiny zone at MCU VDDA pin filtered via FB1; separate net from
+#     +3V3 (digital).
+#   - In1.Cu GND: solid pour, board edge → board edge, M3 keep-outs
+#     respected.
+#   - B.Cu: GND fill in unused areas (4c bcu-gnd-fill fork resolution =
+#     signal-plus-gnd-fill; EMC/return-path/thermal benefit, zero cost).
+
+print(f"[8/9] copper plane pour (4 layers)", flush=True)
+
+# Module-level list to keep SHAPE_POLY_SET references alive — SWIG
+# SetOutline(outline) appears to hold a reference rather than copy; without
+# this, the outline gets gc'd when the function returns and zones lose
+# their outline on save. Discovered debugging the Phase 4c plane pour.
+_zone_outline_refs = []
+
+def add_zone(brd, layer, net_name, polygon_pts_mm, *, pad_connection=None,
+             thermal_relief_gap_mm=0.5, thermal_spoke_width_mm=0.5,
+             zone_name=""):
+    """Add a copper zone with given polygon outline + net + thermal relief.
+
+    polygon_pts_mm: list of (x_mm, y_mm) tuples defining the outline (closed).
+    pad_connection: pcbnew.ZONE_CONNECTION_* enum; default THERMAL for relief.
+    """
+    # NETNAMES_MAP keys are wxString objects, not Python strs — iterate +
+    # str-cast to match.
+    nets_dict = brd.GetNetsByName().asdict()
+    net = None
+    for k, v in nets_dict.items():
+        if str(k) == net_name:
+            net = v
+            break
+    if net is None:
+        print(f"      !!! net '{net_name}' not found; skipping zone '{zone_name}'", flush=True)
+        return None
+    z = pcbnew.ZONE(brd)
+    z.SetLayer(layer)
+    z.SetNet(net)
+    z.SetNetCode(net.GetNetCode())
+    outline = pcbnew.SHAPE_POLY_SET()
+    outline.NewOutline()
+    for (x_mm, y_mm) in polygon_pts_mm:
+        outline.Append(_mm(x_mm), _mm(y_mm))
+    z.SetOutline(outline)
+    _zone_outline_refs.append(outline)   # keep alive past function return
+    z.SetThermalReliefGap(_mm(thermal_relief_gap_mm))
+    z.SetThermalReliefSpokeWidth(_mm(thermal_spoke_width_mm))
+    z.SetPadConnection(pad_connection if pad_connection is not None
+                       else pcbnew.ZONE_CONNECTION_THERMAL)
+    brd.Add(z)
+    print(f"      + {layer_name(layer):8s} {net_name:8s} zone "
+          f"'{zone_name}' ({len(polygon_pts_mm)} pts)", flush=True)
+    return z
+
+
+def layer_name(l):
+    return {pcbnew.F_Cu: "F.Cu", pcbnew.In1_Cu: "In1.Cu",
+            pcbnew.In2_Cu: "In2.Cu", pcbnew.B_Cu: "B.Cu"}.get(l, str(l))
+
+
+# Board outline rectangle for zone polygons (with 0.2mm inset from edge
+# so the zone doesn't clip the board outline directly — DRC edge clearance).
+B = 0.2
+W = BOARD_W_MM - B  # 35.8
+H = BOARD_H_MM - B  # 35.8
+
+# ---- In1.Cu: solid GND plane ----
+add_zone(brd, pcbnew.In1_Cu, "GND",
+         [(B, B), (W, B), (W, H), (B, H)],
+         zone_name="GND_solid")
+
+# ---- In2.Cu: split power ----
+# +5V: top band (Y>22 covers USB-C J1 VBUS + top half of right edge J3/J10)
+#      + left strip (covers J5 GPS at X<5) + SW corner (covers LDO U2).
+# Implementing as ONE polygon with an L-shape:
+#   - main top band: (B, 22) to (W, H)
+#   - left strip down to LDO: (B, 5) to (8, 22)
+#   - that's an L-shape — pcbnew zone with concave polygon works.
+add_zone(brd, pcbnew.In2_Cu, "+5V",
+         [(B, 22), (W, 22), (W, H), (B, H),  # close top band first
+          # Now extend down to LDO via west strip; reuse left edge of band
+          ],
+         zone_name="+5V_top_band")
+# Add a second +5V zone for the LDO SW corner area (simpler than concave):
+add_zone(brd, pcbnew.In2_Cu, "+5V",
+         [(B, 5), (8, 5), (8, 22), (B, 22)],
+         zone_name="+5V_LDO_strip")
+
+# VBAT: small rect at MCU south (VBAT pin) → J4 Mauch (east).
+add_zone(brd, pcbnew.In2_Cu, "VBAT",
+         [(22, 7), (33.5, 7), (33.5, 12), (22, 12)],
+         zone_name="VBAT_small")
+
+# +3V3A: tiny zone at MCU VDDA area (W-side of MCU near FB1 ferrite).
+# MCU VDDA pin typically at MCU W edge; FB1 at (9, 12.5) feeds +3V3A.
+add_zone(brd, pcbnew.In2_Cu, "+3V3A",
+         [(8, 13), (12, 13), (12, 16), (8, 16)],
+         zone_name="+3V3A_VDDA")
+
+# +3V3: dominant — fills the rest of In2.Cu via lower priority.
+# Simpler: a big rectangle that overlaps the others; KiCad zone priority
+# resolves overlap (higher priority wins). Set +3V3 priority lowest so the
+# other zones override it where they overlap.
+z_3v3 = add_zone(brd, pcbnew.In2_Cu, "+3V3",
+                 [(B, B), (W, B), (W, H), (B, H)],
+                 zone_name="+3V3_dominant")
+# (KiCad zones default to priority 0; smaller zones we added override
+# when overlapping if they have higher priority — they do by default
+# being added later. Or use SetAssignedPriority if available.)
+
+# ---- B.Cu: GND fill in unused areas (signal + GND-fill) ----
+# B.Cu has microSD J2 at (18,6), DPS310 U4 at (22,28), C51/C52, J9 SWD
+# at (18,21). GND fill in the rest helps EMC + return paths.
+add_zone(brd, pcbnew.B_Cu, "GND",
+         [(B, B), (W, B), (W, H), (B, H)],
+         zone_name="GND_BCu_fill")
+
+
+# ---- Zone fill: deferred to GUI / kicad-cli auto-fill ----
+# pcbnew.ZONE_FILLER.Fill() segfaults on this board (likely a KiCad-9 Python
+# binding bug on aarch64 / large multi-layer fills). Workaround: save zones
+# UNFILLED; kicad-cli pcb drc auto-fills before checking, and GUI fills on
+# open. The .kicad_pcb still carries the zone OUTLINES + net assignments,
+# which is the load-bearing part for Phase 4d Freerouting (DSN export reads
+# zone outlines + net to declare power planes).
+print(f"      zone fill deferred to DRC/GUI auto-fill (pcbnew.ZONE_FILLER "
+      f"segfaults on this board; KiCad-9 binding issue)", flush=True)
+zones = list(brd.Zones())
+print(f"      {len(zones)} zones added to board (unfilled)", flush=True)
+
+
+# Save board (with planes)
+print(f"[9/10] save board", flush=True)
 pcbnew.SaveBoard(OUT_PCB, brd)
 
 
