@@ -1,0 +1,134 @@
+id: phase-0.5-sim-toolchain
+phase: "0.5"
+title: "Simulation toolchain install + smoke-test (Phase 6 prerequisite)"
+status: in_progress
+depends_on:
+  - phase-5-bom
+
+inputs:
+  files:
+    - docs/SIMULATION_PLAN.md
+    - hardware/kicad/KICAD9_NOTES.md
+  refs:
+    - "SIMULATION_PLAN.md §'Stage 0.5 prerequisite' — tool list (ngspice, LTspice/Wine, PySpice, OpenEMS, scikit-rf, Elmer FEM, matplotlib+numpy+scipy, gerbv, InteractiveHtmlBom, kicost). Acceptance = every tool's hello-world produces expected output, versions committed to sims/TOOLCHAIN.md."
+    - "novarobotics64 env — Debian trixie 13 aarch64, no passwordless sudo (verified 2026-05-20: `sudo -n true` returns 'password required'). pip --user + user-space tarballs are the working install pattern."
+
+# Falsifiable prediction (Rule-13-with-options discipline):
+prediction:
+  worker_pre_run_prediction: |
+    Sudo wall is REAL — apt-install for ngspice/octave/elmerfem-csc/gerbv all
+    require password. Without source-builds, those don't install.
+
+    Predicted outcome:
+      INSTALLED (userspace, no sudo):
+        - PySpice 1.5 (pure pip, depends on libngspice C shared lib)
+        - scikit-rf (pure pip)
+        - kicost (pure pip)
+        - InteractiveHtmlBom (pure pip)
+        - numpy/scipy/matplotlib (already-inherited from venv-ardupilot)
+        - ngspice — POSSIBLE via Debian .deb extract userspace (dpkg-deb -x).
+          If libs link cleanly to system /lib/aarch64-linux-gnu, this works.
+        - libngspice (shared lib for PySpice) — same .deb-extract route.
+
+      NEEDS-SUDO-HANDOFF:
+        - gerbv (apt — though KiCad GUI is a viable inspection alternative)
+        - Octave (apt — only needed for OpenEMS Octave bindings)
+
+      NOT-IN-APT (would require multi-day source-build chain):
+        - OpenEMS (source-build chain = Boost + VTK + Qt + tinyxml + CGAL +
+          fparser + HDF5 + CSXCAD; every dep is apt-only-without-sudo + non-trivial
+          source-builds itself; multi-day yak-shave INFEASIBLE in Phase 0.5
+          budget). DEFER to Sai-handoff + provide analytical fallback for
+          Phase 6b/6k (Hammerstad-Jensen + scikit-rf transmission-line model).
+        - Elmer FEM (similar source-build chain). DEFER + analytical thermal
+          fallback for Phase 6j.
+
+      SKIPPED (master directive):
+        - LTspice/Wine (NICE-TO-HAVE only; visual SPICE debug; ngspice+PySpice
+          does the real SPICE work; Wine-on-aarch64 = box64 emulation = wasted
+          time).
+
+    Phase 6 reachability prediction:
+      - 9 of 13 sub-phases fully unblocked (6a/6c/6d/6e/6f/6g/6h/6i/6l/6m)
+      - 2 partially blocked with analytical fallback (6b USB diff pair, 6k EMC)
+      - 1 fully blocked pending Sai-handoff (6j thermal — Elmer FEM)
+    Net: ~85% of Phase 6 reachable without further apt installs.
+
+decision_forks_watched:
+  openems-arm:
+    fork: "OpenEMS install on ARM trixie — the highest-risk tool"
+    expected_classes: [apt-installs, source-builds-userspace, infeasible-escalate]
+    pre_recommendation: "DEFER per Phase 0.5 budget — source build = multi-day yak-shave (Boost + VTK + Qt + tinyxml + CGAL + fparser + HDF5 + CSXCAD, each apt-only or source-build). Provide analytical fallback (Hammerstad-Jensen geometry + scikit-rf transmission-line model) for Phase 6b/6k. OpenEMS becomes deeper-validation pass post-installable."
+    actual_resolution: "DEFERRED-WITH-ANALYTICAL-FALLBACK — OpenEMS not in trixie apt; source-build chain explodes; analytical + scikit-rf path covers Phase 6b/6k v1 requirement; OpenEMS deferred to post-Phase-9 deeper validation when Sai grants sudo for full toolchain"
+    resolved_via: "Phase 0.5 budget gate"
+  apt-tools-sudo:
+    fork: "apt-package tools (ngspice, Octave, Elmer FEM, gerbv) install route"
+    expected_classes: [userspace-source-build, deb-extract, needs-sudo-handoff]
+    pre_recommendation: "deb-extract for ngspice (binary + libngspice); ngspice is Phase 6 critical-path (PySpice needs libngspice). Rest → NEEDS-SUDO handoff or deferred."
+    actual_resolution: "ngspice → userspace-deb-extract (works, smoke-tested); gerbv/Octave/Elmer → NEEDS-SUDO handoff documented"
+    resolved_via: "Phase 0.5 install runs"
+
+escalation_log:
+  - timestamp: "2026-05-20"
+    sub: "0.5.3 ngspice source-build attempt"
+    finding: "ngspice source build requires bison + flex (parser/lexer generators). Both apt-only-without-sudo. Source-build route abandoned in favor of dpkg-deb extract userspace from Debian .deb (the .deb extracts cleanly, binary links to system libs already in /lib/aarch64-linux-gnu, no NEEDS-SUDO escalation required for ngspice itself)."
+    resolution: "ngspice + libngspice0 + libngspice0-dev .debs extracted to ~/local/ngspice/usr/{bin,lib}/. ngspice -v works. PySpice transient simulation works via LD_LIBRARY_PATH=~/local/ngspice/usr/lib/aarch64-linux-gnu."
+  - timestamp: "2026-05-20"
+    sub: "0.5.4 OpenEMS install"
+    finding: "OpenEMS NOT in Debian trixie apt at all (apt-cache search returns nothing). Source build (per thliebig/openEMS-Project/update_openEMS.sh) requires Boost + VTK 9 + Qt 5 + tinyxml + CGAL + fparser + HDF5 + CSXCAD + AppCSXCAD + cmake — every single one is apt-only-without-sudo. Userspace source-build of the dep chain = multi-day yak-shave; cmake itself is missing and would need source-build. Hard-escalating per the openems-arm fork pre_recommendation: DEFER with analytical fallback."
+    resolution: "OpenEMS deferred to post-Phase-9 deeper-validation; Phase 6b (USB diff-pair) uses Hammerstad-Jensen analytical geometry (already computed Phase 4d, 90Ω diff at W=0.25/S=0.10) + scikit-rf transmission-line model for S-parameter visualization; Phase 6k (EMC) uses analytical clock-harmonic estimate + scikit-rf. Documented in sims/TOOLCHAIN.md NEEDS-SUDO-HANDOFF section."
+
+outputs:
+  files_created:
+    - tasks/phase-0.5-sim-toolchain.yaml
+    - sims/TOOLCHAIN.md
+  files_modified:
+    - docs/DESIGN_PHASES.md
+  pr:
+    title: "Phase 0.5: simulation toolchain install + smoke-test"
+    branch: hw/phase-0.5-sim-toolchain-2026-05-20
+
+pass_criteria:
+  - "0.5.1: Inventory present tools — numpy 2.4.5 + scipy 1.17.1 + matplotlib 3.10.9 already in venv-ardupilot. Version-pin documented in sims/TOOLCHAIN.md."
+  - "0.5.2: PySpice + scikit-rf + kicost + InteractiveHtmlBom installed via pip --user. Versions pinned. Hello-world smoke-tests pass (RC lowpass for PySpice via libngspice; S-parameter Touchstone round-trip for scikit-rf; CLI presence for kicost + InteractiveHtmlBom)."
+  - "0.5.3: ngspice 46 + libngspice0 46 extracted userspace from Debian .deb (dpkg-deb -x to ~/local/ngspice/). Binary at ~/local/ngspice/usr/bin/ngspice -v works; PySpice transient simulation via libngspice.so.0.0.15 collects 4030 time-points + correct v(out) settling on the smoke-test RC."
+  - "0.5.4: OpenEMS deferred per openems-arm fork resolution — NOT in apt, source-build chain infeasible in Phase 0.5 budget. Analytical fallback documented for Phase 6b/6k. Honest escalation in escalation_log + TOOLCHAIN.md NEEDS-SUDO."
+  - "0.5.5: Octave + Elmer FEM + gerbv per apt-tools-sudo fork — documented in NEEDS-SUDO-HANDOFF in TOOLCHAIN.md. Phase 6j (Elmer thermal) gets analytical fallback if Sai defers install."
+  - "0.5.6: LTspice/Wine skipped per master directive (NICE-TO-HAVE, not load-bearing; Wine-on-ARM impractical). Documented as 'skipped, not load-bearing'."
+  - "0.5.7: Every installed tool has a smoke-test result recorded — pass/fail/not-installed. Per-tool: name, version, install route, smoke-test outcome."
+  - "0.5.8: sims/TOOLCHAIN.md deliverable carries — INSTALLED vs NEEDS-SUDO-HANDOFF split + Phase 6 sub-phase reachability map (which subs are unblocked vs which wait on a handoff tool)."
+  - "0.5.9: SOTA self-audit. Note which Phase 6 sub-phases are unblocked (6a/6c-6i, 6l, 6m) vs analytical-fallback (6b, 6k) vs Sai-handoff-blocked (6j Elmer)."
+
+estimated_context_kb: 50
+estimated_wallclock: "~1-2 hours (pip installs + ngspice .deb extract + OpenEMS infeasibility escalation; faster than predicted because OpenEMS bailed early instead of consuming hours of source-build)"
+
+notes: |
+  Phase 0.5 paper outcome:
+    INSTALLED (userspace, no sudo) — 8 of 10 from SIMULATION_PLAN
+      numpy/scipy/matplotlib (inherited)
+      PySpice 1.5 (pip)
+      scikit-rf 1.12.0 (pip)
+      kicost 1.1.20 (pip)
+      InteractiveHtmlBom 2.11.1 (pip)
+      ngspice 46 + libngspice0 46 (Debian .deb extract userspace)
+
+    NEEDS-SUDO-HANDOFF — 3
+      gerbv (apt; KiCad GUI fallback exists)
+      Octave (apt; only needed for OpenEMS Octave bindings)
+      Elmer FEM (NOT in Debian main; needs source-build or PPA — Sai chooses)
+
+    DEFERRED-WITH-FALLBACK — 1
+      OpenEMS (NOT in apt anywhere; source-build chain = multi-day yak-shave;
+      analytical Hammerstad-Jensen + scikit-rf path covers Phase 6b/6k v1 SI;
+      deeper OpenEMS validation deferred to post-Phase-9)
+
+    SKIPPED (master directive) — 1
+      LTspice/Wine (NICE-TO-HAVE; visual debug only; Wine-on-aarch64 impractical)
+
+  Phase 6 reachability:
+    Fully unblocked: 6a (power), 6c (IMU SPI), 6d (I²C), 6e (UART), 6f (SDMMC),
+                     6g (DShot), 6h (VBAT/current sense), 6i (ESD/transient),
+                     6l (SITL — Phase 0 done), 6m (DRC + InteractiveHtmlBom)
+    Analytical fallback (OpenEMS deferred): 6b (USB diff pair), 6k (EMC)
+    Sai-handoff blocked: 6j (thermal via Elmer FEM — analytical estimate
+                        possible as v1 floor)
