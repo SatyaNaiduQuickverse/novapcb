@@ -1,0 +1,91 @@
+id: phase-3e-gps-mag
+phase: "3"
+subphase: "3e"
+title: "GPS + external-mag connector sheet — JST-GH 10-pin Pixhawk DS-009 standard"
+status: done
+depends_on:
+  - phase-3a-mcu
+  - phase-3b-power
+  - phase-3d-baro
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - hardware/kicad/novapcb/sheets/mcu_3a.py
+    - hardware/kicad/novapcb/sheets/baro_3d.py
+    - hardware/kicad/novapcb/sheets/common.py
+    - docs/CONFIDENCE_MAP.md
+  refs:
+    - "hwdef.dat:117-118 — USART2 GPS1 TX/RX (PD5/PD6). AUTHORITATIVE per hwdef-cited discipline."
+    - "hwdef.dat:60-61 — I²C1 SCL/SDA (PB6/PB7)"
+    - "hwdef.dat:64-65 — I²C2 SCL/SDA (PB10/PB11) [reference; this sheet uses I²C1]"
+    - "hwdef.dat:179 — BUZZER GPIO on PA15 (Phase 2e)"
+    - "hwdef.dat: NO SAFETY_SW / SAFETY_LED pins assigned (grep'd)"
+    - "Pixhawk Connector Standard DS-009 (pixhawk/Pixhawk-Standards GitHub) — canonical 10-pin GPS connector pin order. Researched + cross-confirmed via PX4 + Holybro GPS module docs."
+    - "Phase 2c — external mag IST8310 (0x0E) + RM3100 (0x20) on COMPASS I2C:ALL_EXTERNAL. Mag chips OFF-board (on GPS daughtermodule); this sheet captures only the I²C lines on the connector."
+    - "baro_3d.py docstring — I²C pull-up ownership rule (always-present-bus-side co-located)"
+    - "CONFIDENCE_MAP rows 6 (external mag + GPS, HIGH ~96%) + 12 (EMC/RF, LOW)"
+
+decision_forks_watched:
+  gps-i2c-bus:
+    fork: "Which I²C bus the GPS connector's external compass uses — I2C1 or I2C2"
+    expected_classes: [i2c1-separate, i2c2-shared]
+    pre_recommendation: "I2C1 — keep external GPS connector bus separate from on-board baro (I²C2). Cable-fault isolation."
+    actual_resolution: "I2C1 (SEPARATE from baro I²C2). Reasoning: cable faults on long external bus isolated from on-board baro; Phase 4 layout routes both cleanly. I²C ALL_EXTERNAL designator (Phase 2c COMPASS lines + HAL_I2C_INTERNAL_MASK 0) covers both buses — choice is electrical/SI, not firmware-driven. I²C1 pull-ups (4.7 kΩ each on SDA + SCL to +3V3) co-located here per 3d ownership rule (always-present-bus-side / master-side)."
+    resolved_via: "inline (master pre_rec + 3d ownership pattern)"
+  safety-switch:
+    fork: "Safety switch + safety LED — wired to MCU per hwdef, or connector-only"
+    expected_classes: [wired-per-hwdef, connector-pins-only, escalate]
+    pre_recommendation: "grep hwdef for SAFETY pins; if absent, connector-pins-only (testpoints); do not invent MCU pin assignments"
+    actual_resolution: "CONNECTOR-PINS-ONLY (testpoints). hwdef.dat grep returned NO SAFETY_SW / SAFETY_LED definitions. Pixhawk DS-009 still carries these pins (cable pin 6/7); captured as SAFETY_SW_TP + SAFETY_LED_TP testpoint nets — route to PCB test pads (Phase 4 layout decision). If user attaches a GPS module with safety features, those features are electrically non-functional until hwdef-rev + Phase 4 layout wires testpoints to MCU GPIOs. No invented MCU pin."
+    resolved_via: "inline (hwdef grep + master pre_rec)"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-3e-gps-mag.yaml
+    - hardware/kicad/novapcb/sheets/gps_mag_3e.py
+  files_modified:
+    - hardware/kicad/novapcb/generate.py    # import sheets.gps_mag_3e
+    - hardware/kicad/novapcb/novapcb.net    # regenerated
+    - hardware/kicad/novapcb/generate.erc   # regenerated
+    - docs/CONFIDENCE_MAP.md                # rows 6 + 12 evidence notes
+    - docs/DESIGN_PHASES.md                 # Phase 3: 3a-3e done
+
+  pr:
+    title: "Phase 3e: GPS + external-mag connector sheet (JST-GH 10P)"
+    branch: hw/phase-3e-gps-mag-2026-05-20
+
+pass_criteria:
+  - "3e.1: hwdef.dat grep'd for GPS UART + I²C buses + BUZZER + SAFETY pins. Lines cited: 60-61 (I²C1), 64-65 (I²C2 ref), 117-118 (USART2 GPS1), 179 (PA15 BUZZER). SAFETY_* pins NOT in hwdef. UART/I²C/BUZZER wiring matches hwdef.dat exactly — verified by guard PASS."
+  - "3e.2: Pixhawk DS-009 10-pin GPS connector pinout researched + cited (pixhawk/Pixhawk-Standards GitHub canonical source; web-confirmed via PX4 + Holybro GPS docs). Pin order: 1=VCC5V / 2=UART_TX / 3=UART_RX / 4=I²C_SCL / 5=I²C_SDA / 6=SAFETY_SW / 7=SAFETY_LED / 8=+3V3 / 9=BUZZER / 10=GND."
+  - "3e.3: I²C1 chosen per gps-i2c-bus fork. I²C1 pull-ups (4.7 kΩ × 2) on this sheet. Shared nets via n() — I2C1_SCL + I2C1_SDA + GPS1_TX + GPS1_RX + BUZZER + +5V + +3V3 + GND all use n()."
+  - "3e.4: BUZZER routed to connector pin 9 per DS-009 + hwdef.dat:179 PA15. SAFETY_SW + SAFETY_LED testpoints per safety-switch fork resolution."
+  - "3e.5: ESD protection NOT captured this sheet — explicitly deferred to Phase 3.5 reference audit + Phase 6.5 forum review + Phase 6k EMC sim. CONFIDENCE_MAP row 12 evidence note + gps_mag_3e.py docstring."
+  - "3e.6: Pipeline result — SKiDL ERC 0 errors / 83 warnings (DOWN 3 from 3d's 86: −5 MCU pins newly connected (PD5/PD6/PB6/PB7/PA15) + 2 testpoint single-pin warnings). generate_netlist 0 errors / 88 warnings. Rail-uniqueness guard PASSED. 15 unique cross-sheet nets (was 9): added BUZZER, GPS1_RX, GPS1_TX, I2C1_SCL, I2C1_SDA, IMU_INT1_TP."
+  - "3e.7: CONFIDENCE_MAP rows 6 (HIGH ~96% → ~97%) + 12 (LOW ~60% unchanged) evidence notes."
+  - "3e.8: SOTA self-audit in PR body. Authoritative sources: hwdef.dat (MCU pin map), Pixhawk DS-009 (connector pinout)."
+
+estimated_context_kb: 50
+estimated_wallclock: "1-1.5 hours (datasheet research + connector wiring + I²C ownership pattern application)"
+
+notes: |
+  3e is a connector sheet — schematic-correctness deliverable, no IC
+  placement. GPS module + IST8310/RM3100 mag chips OFF-board (on GPS
+  daughtermodule); only the connector + its wiring are captured here.
+
+  Two judgement calls resolved inline:
+  - I²C1 vs I²C2: I²C1 separates external bus from baro's I²C2.
+    Cable-fault isolation is the load-bearing argument.
+  - Safety pins: hwdef-silent → testpoints. No invented MCU pin
+    assignments. Phase 4 layout + hwdef-rev resolves if/when needed.
+
+  ESD on the external connector is the genuine open gap. CONFIDENCE_MAP
+  row 12 LOW reflects it. Phase 3.5 + Phase 6.5 + Phase 6k will
+  address. Schematic this PR is the bare wiring; protection lands
+  later with proper review/sim authority.
+
+  Pipeline + guard discipline working as designed — 5 MCU pins newly
+  connected, ERC warnings dropped 3, 15 unique cross-sheet nets, no
+  _N duplicates. The framework continues to do its job.
