@@ -16,13 +16,21 @@ Everything from Phase 2 onward unstarted.
 - ArduPilot cloned at `~/ardupilot` with submodules.
 - MatekH743 reference builds clean (Task 3, 2026-05-18) — baseline.
 
-## Phase 0.5 — Sim toolchain (DEFERRED — install just-in-time before Phase 6)
+## Phase 0.5 — Sim toolchain (IN PROGRESS — PR open 2026-05-20)
 
-Per ENGINEERING_RIGOR.md and worker recommendation 2026-05-19, the sim toolchain install is deferred from Phase 0 until just before Phase 6 starts. This avoids paying apt/pip cost (and OpenEMS install-flakiness risk) for tools that won't be used for many hours of Phase 2-5 work.
+Just-in-time install per ENGINEERING_RIGOR.md (originally deferred from Phase 0). Now landing while Sai routes Phase 4 GUI residual + before Phase 6.
 
-Full tool list and acceptance criteria live in `docs/SIMULATION_PLAN.md` "Stage 0.5 prerequisite — sim toolchain install" section.
+**Outcome (per `sims/TOOLCHAIN.md`)**: 8 of 10 SIMULATION_PLAN tools installed userspace (no sudo); 3 NEEDS-SUDO-HANDOFF; 1 deferred-with-analytical-fallback (OpenEMS); 1 skipped (LTspice/Wine per master directive).
 
-Acceptance: every tool's hello-world produces expected output; results committed to `sims/TOOLCHAIN.md`.
+**Phase 6 reachability**: ~85% — 10 of 13 sub-phases fully unblocked; 2 partial-with-analytical-fallback (6b USB diff pair, 6k EMC); 1 Sai-handoff-pending (6j thermal via Elmer FEM).
+
+**Installed userspace**: numpy 2.4.5, scipy 1.17.1, matplotlib 3.10.9 (inherited from venv-ardupilot) + PySpice 1.5, scikit-rf 1.12.0, kicost 1.1.20, InteractiveHtmlBom 2.11.1 (pip user) + ngspice 46, libngspice0 46 (dpkg-deb extract from Debian arm64 .deb to `~/local/ngspice/`).
+
+**Sai-handoff list** (apt installs needing sudo): gerbv, octave, elmerfem-csc (source-build or PPA needed). One-liner in `sims/TOOLCHAIN.md §8`.
+
+**Deferred-with-fallback**: OpenEMS — not in apt anywhere; source-build chain (Boost + VTK + Qt + tinyxml + CGAL + fparser + HDF5 + CSXCAD) infeasible in Phase 0.5 budget. Analytical Hammerstad-Jensen + scikit-rf transmission-line model covers Phase 6b/6k v1 SI; OpenEMS becomes deeper-validation pass post-Phase-9 when Sai grants sudo.
+
+Full per-tool smoke-test results + reproducible install paths: `sims/TOOLCHAIN.md`.
 
 ## Phase 1 — Identity fork (IN REVIEW)
 
