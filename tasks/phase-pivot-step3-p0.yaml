@@ -1,0 +1,133 @@
+id: phase-pivot-step3-p0
+phase: pivot
+subphase: "step-3-p0"
+title: "Step 3 P0 — thermal-input prep + placement strategy (planning PR, no components placed)"
+status: in_progress
+depends_on:
+  - phase-pivot-step1-emi-thermal-tooling   # Phase 0.6 (sim tooling — merged PR #56)
+  - phase-pivot-step2-inrush-mitigation     # Step 2 eFuse front-end (merged PR #55)
+
+inputs:
+  files:
+    - sims/PHASE6_P0_RESULTS.md           # Phase 6 P0 findings (the failure-mode evidence base)
+    - sims/thermal-6j/results.json        # 6j thermal baseline (LDO Tj=88°C @ 40°C ambient FAIL)
+    - sims/emc-6k/results.json            # 6k EMC harmonics (USB-self-band intersections)
+    - sims/power-6a/                      # 6a PDN findings (133mΩ at 100 kHz, inrush — now resolved by Step 2)
+    - docs/DECISIONS.md                   # §2 (form factor open), §8 (layer count open), §10 (reliability), §11 (eFuse)
+    - docs/OPEN_QUESTIONS.md              # pivot-2026-05-20 (placement constraints + Sai resolutions)
+    - bom/novapcb-bom.csv                 # 83 components to place
+    - hardware/kicad/novapcb/novapcb.net  # netlist (connectivity ground truth)
+
+  refs:
+    - "Master 2026-05-21 directive (post-Step-2-merge): Step 3 is the deliberate physics-guided placement — the creative core of the pivot. Per CLAUDE.md §6.2 (plan on paper before expensive layout work), Step 3 starts with a PLANNING deliverable for master review BEFORE placing ~80 components."
+    - "Sai pivot 2026-05-20 + dimension-freedom 2026-05-20 (later): rectangular board, sized to the placement (size is OUTPUT of good placement, not pre-decided input). Reliability mandate: 'won't fail'."
+    - "Phase 6 P0 failure-mode evidence: PDN anti-resonance 133mΩ at 100 kHz (6a); AP2112K LDO Tj=88°C 3°C over spec at 40°C ambient (6j) — would be worse at master's requested 50-60°C drone-bay ambient; 4 USB-self-band harmonics from SDMMC + USB + DShot intersections (6k). Density-driven; addressable via roomier placement + layer-count uplift + zoning."
+    - "Step 2 added 3 active components to the +5V front-end (Q2 reverse-polarity P-FET, D1 SMAJ6.0A TVS, U6 TPS25940A eFuse) plus support passives — these enter the placement plan as the 'power section' anchor at one end of the board."
+
+# Falsifiable pre-prediction
+prediction:
+  worker_pre_run_prediction: |
+    Three deliverables in this PR (planning only; NO KiCad placement work):
+
+    1. tasks/phase-pivot-step3-p0.yaml (this file)
+    2. docs/THERMAL_BUDGET.md — per-component power-dissipation table from
+       datasheets, material thermal model, worst-case boundary conditions.
+    3. docs/PLACEMENT_STRATEGY.md — subsystem zoning map, 4-vs-6 layer
+       recommendation with engineering case, board sizing target envelope,
+       mounting-hole pattern, place→sim→adjust methodology.
+
+    HEADLINE PREDICTIONS (falsifiable):
+
+    PRED-1 (layer count): RECOMMEND 6-layer.
+      Reasoning kernel:
+        - 4-layer's mixed 3V3+5V power plane drove the Phase 6a PDN 133mΩ
+          anti-resonance at 100 kHz. 6-layer enables separate 3V3 + 5V
+          planes → clean PDN → predicted impedance drop to <50mΩ on the
+          5V rail at 100 kHz.
+        - LDO thermal mitigation needs inner-copper heat-spreading. 6-layer
+          adds an extra power plane the AP2112K thermal pad can via to →
+          effectively doubles heat-spreading copper. Predict: brings LDO
+          Tj from 88°C (4-layer 40°C ambient) down to <80°C even at 50°C
+          ambient.
+        - 6k EMC top-4 harmonics are in USB-self-band (SDMMC + USB + DShot
+          intersections). Better reference-plane integrity from 6-layer
+          reduces radiated coupling between aggressor traces and the USB
+          differential pair.
+        - Sai dimension-freedom + reliability mandate: the 4-layer was a
+          cost optimization for 36×36 density. The new rectangle has no
+          such constraint; 6-layer is cheap insurance.
+        - Cost: JLCPCB 6-layer at qty 5: ~$5-7/board. 4-layer: ~$2-3.
+          Delta ≈ $15-20 for a 5-board prototype run. Negligible vs
+          resilience priority.
+        - Production reality: nearly every modern Pixhawk-class FC of this
+          complexity (Pixhawk 6X, etc.) is 6-layer. The 4-layer reference
+          was chosen as a low-cost baseline; the design has outgrown it.
+      DECISIONS.md §8 — RECOMMEND, master adjudicates.
+
+    PRED-2 (board envelope target): rectangle 50-55 mm × 35-40 mm
+      (≈ 1750-2200 mm², ~35-70% more area than the 36×36 = 1296 mm² baseline).
+      Aspect ratio ~1.3:1 to ~1.6:1. Sets generous spacing for thermal
+      headroom + connector accessibility + zoning separation.
+      NOT a hard dimension — explicit final size remains an OUTPUT of the
+      placement iteration loop. The envelope is a planning target so the
+      placement task knows the working area.
+
+    PRED-3 (mounting holes): 4× M3 corners, ≥3 mm edge inset; rectangular
+      pattern matching the chosen board outline. Sai released the Pixhawk
+      30.5×30.5 constraint; a new mounting tray is acceptable. Picking
+      6 holes (corners + long-edge midpoints) is a contingency if vibration
+      modeling in Phase 6 deep-pass shows the IMU needs additional
+      mechanical stiffness.
+
+    PRED-4 (zoning): four zones laid out end-to-end along the long axis:
+      Zone 1 (one short edge): POWER — Mauch J4, Q2 reverse-polarity FET,
+        D1 TVS, U6 eFuse, AP2112K LDO U2, +5V and +3.3V bulk caps. This is
+        the heat-generating zone — separated maximally from the IMU.
+      Zone 2 (centre): MCU — STM32H743VIT6 U1 + crystal Y1 + LQFP-100
+        decoupling halo + USB-C J1 + USBLC6 U5 + microSD J2.
+      Zone 3 (opposite short edge): SENSORS / ANALOG — ICM-42688-P IMU U3
+        on TOP with vibration-iso pad + DPS310 baro U4 on BOTTOM + ADC
+        input caps for VBAT/current monitoring. FAR from heat-generating
+        Zone 1.
+      Zone 4 (along the long edges): CONNECTORS — JST-GH (Telem J3, GPS+Mag
+        J5), SWD J9, CRSF J10 solder pads, ESC1-8 J11-J18 solder pads.
+        Edge placement preserves harness exit routing and keeps connector
+        EMI-aggressor traces on board periphery.
+
+    PRED-5 (place→sim→adjust loop): iterate three rounds at most:
+      Round 1: initial placement per zoning. Run Elmer-FEM thermal on
+               the placement geometry → identify hotspots.
+      Round 2: adjust LDO copper pour size + Zone 1 component spacing.
+               Re-sim. Confirm LDO Tj < 80°C at 50°C ambient.
+      Round 3: confirm OpenEMS spot-check of the USB diff-pair + DShot
+               trace routing channels are clear (no encroachment from
+               Zone 1 or 2 components).
+      If Round 2 still fails the thermal target: ESCALATE — heat-spreading
+      may need a metal-core PCB or an external heatsink, both of which are
+      v2 decisions, not Step 3 adjustments.
+
+acceptance:
+  - "Three planning files exist in this PR with the content described in PRED-1..PRED-5."
+  - "Thermal-input prep table contains EVERY heat source on the board (datasheet-grounded W; identified at what load condition); total board dissipation summed."
+  - "Layer-count recommendation has the full reasoning case (PDN + thermal + EMC + cost + production reality) — falsifiable, master can challenge specific numbers."
+  - "Board envelope target is given as a RANGE not a fixed dimension (Sai's directive: size is OUTPUT)."
+  - "Methodology section explicitly describes the place→sim→adjust iteration loop with sim-pass criteria."
+  - "NO KiCad placement work in this PR — confirmed by `git diff --name-only` showing only docs/ + tasks/ + (optionally) sims/ files; NO hardware/kicad/* changes."
+
+deliverables:
+  - tasks/phase-pivot-step3-p0.yaml         # this contract
+  - docs/THERMAL_BUDGET.md                  # power-dissipation budget + material model + BCs
+  - docs/PLACEMENT_STRATEGY.md              # zoning + layer rec + sizing + mounting + methodology
+
+# Gate
+gates:
+  master_review:
+    description: |
+      Master reviews the layer-count recommendation + thermal budget + zoning
+      strategy. Master adjudicates DECISIONS §8 (4 vs 6 layer) based on this
+      PR's reasoning. After adjudication, the actual placement work is
+      dispatched as Step 3 P1 (separate task contract); Step 3 P0 is closed
+      once the strategy + budget land in main.
+
+retrospective:
+  hourly_cadence: "Every hour while drafting; capture deviations from this contract."
