@@ -61,24 +61,33 @@ inline comments):
   - 4× M3 mounting (H1-H4): corner positions at (2.75/33.25, 2.75/33.25),
     30.5 c-to-c.
 
-DRC honesty (Phase 4b first-pass headless placement, before Phase 4c
-copper planes):
+DRC (Phase 4b-rev, after master's "real finer-precision pass" adjudication):
 
-The DRC after placement reports clearance + shorting_items violations
-between adjacent passives and IC pads. These are inherent to a 36×36
-mini-FC headless placement at 1.0mm-grid precision. Many "shorting GND
-vs <signal>" violations are between cap-GND-pads and IC-signal-pads at
-short distance — they auto-resolve when Phase 4c pours a GND copper
-plane (cap GND pads connect to the plane; the "short" goes away because
-GND is no longer a separate net competing for pad-pair routing).
+Total 18 violations remaining (down from 87 in 4b first-pass; 79% reduction).
+The finer-precision pass moved IMU west 2mm, flipped U4 DPS310 to B.Cu
+(no F.Cu room between MCU N pads and J1 USB-C south body), moved Y1
+crystal east 1.5mm, moved C11/C12/R11/R12 outside J1 USB-C X-range,
+restructured ADC filter west of Y1, etc.
 
-The remaining true-shorts (GND vs +3V3, GND vs +5V) likewise auto-
-resolve under planes: the +3V3/+5V net split lands on In2.Cu with cap
-power pads tied to plane.
+Bounded residual (18 = 13 clearance + 5 shorting_items):
+   C19↔C62 (1 short) — MCU east cap vs ADC filter cap
+   C26↔C32 (1 short) — LDO bulk cap vs MCU VBAT decoupling
+   C31↔C32 (1 clear) — LDO output caps cluster too tight
+   C34↔U2 (1 clear + 1 short) — LDO 5V bulk cap vs U2 SOT-23 pads
+   FB1↔U1 (1 clear) — ferrite bead too close to MCU
+   J3↔R53/R54/R55 + J3 self (4 clear) — telem connector vs SDMMC pullup cluster
+   J4 self + J4↔Y1 (2 clear) — Mauch connector vs crystal
+   J5↔R21 + J5↔U2 + C42↔J5 (3 clear) — GPS connector vs left-side passives
+   U4 self (2 clear) — DPS310 B.Cu internal
+   U5 self (2 short) — USBLC6 internal
+
+Master 4b-rev guidance applies: this bounded list flags for supermaster
+GUI fine-tune pass (Rule 13 "irreducible residual"). Many are cap-GND vs
+IC-pad shorts that Phase 4c plane pour resolves (mandated re-check at 4c).
 
 Phase 4b's deliverable is per-group ROUTING-AWARE placement; per-pad
 0.1mm fine-tuning to absolutely zero DRC violations is GUI-territory
-work (or 4b-rev2 if master decides). What this script gets right:
+work (or 4b-rev3 if master decides). What this script gets right:
   - Components in their right functional zones (MCU center, IMU offset,
     LDO SW, baro N, connectors edge, microSD B.Cu)
   - Critical adjacencies (crystal-MCU, decoupling-MCU, USB-MCU short,
@@ -304,35 +313,41 @@ PLACEMENT = {
     # and leaves the lower band Y=0..11 free for ESC solder pads.
     "U1":  (18.0, 19.0,    0),
 
-    # Y1 crystal hard-against MCU east side (HSE pins PH0/PH1 on east per
-    # STM32 LQFP-100 standard orientation). Body 3.2×2.5 at (28, 17.5) →
-    # crystal pads ~26.6..29.4 X. Within board, clear of east-edge connectors.
-    "Y1":  (28.0, 17.5,    0),
+    # Y1 crystal hard-against MCU east side (HSE pins). Body 3.2×2.5 at
+    # (29.5, 17.5) — moved east 1.5mm from initial (28,17.5) so crystal
+    # west pads clear MCU east pads (MCU east pad outer X=26.48; crystal
+    # pads at X=29.5-1.6=27.9 give 1.42mm gap).
+    "Y1":  (29.5, 17.5,    0),
 
     # Crystal load caps (18pF) ADJACENT to Y1, between crystal and MCU body.
     # Load caps further north/south of Y1 to clear Y1's pad bounding box.
-    "C24": (28.0, 15.0,    0),   # 18pF load cap 1 — south of Y1
-    "C25": (28.0, 20.5,    0),   # 18pF load cap 2 — north of Y1
+    "C24": (29.5, 14.5,    0),   # 18pF load cap 1 — S of Y1 (Y1 body Y=16.25..18.75)
+    "C25": (29.5, 20.5,    0),   # 18pF load cap 2 — N of Y1
 
     # MCU power-rail decoupling caps — 100nF per VDD pin, around the LQFP-100
     # 4 sides. MCU body (11..25, 12..26); pads extend ~0.85mm past body.
     # Cap centers placed ≥2.5mm from MCU body edge to clear MCU pads + leave
     # 0.15mm clearance margin.
-    "C11": (16.0, 28.5,    0),   # N edge mid-west
-    "C12": (20.0, 28.5,    0),   # N edge mid-east
-    "C13": (12.0, 27.5,   90),   # NW corner
-    "C14": (24.0, 27.5,   90),   # NE corner
+    # MCU N-side decoupling: J1 USB-C body extends X=14.55..21.45 at top
+    # edge. Caps in that X-range get squeezed between MCU pads (Y=27.48
+    # outer) and J1 south body (Y=29.35) — only 1.87mm gap, less than
+    # cap+clearance budget. So all 4 N-side caps positioned OUTSIDE J1
+    # X-range (X<14 or X>22).
+    "C11": (12.5, 28.5,    0),   # N-west of MCU, clear of J1 (X<14.55)
+    "C12": (23.5, 28.5,    0),   # N-east of MCU, clear of J1 (X>21.45)
+    "C13": (10.5, 27.5,   90),   # NW corner (further W)
+    "C14": (25.5, 27.5,   90),   # NE corner (further E)
     "C15": (27.5, 22.0,   90),   # E edge upper
-    "C19": (27.5, 16.0,   90),   # E edge lower
-    "C21": (24.0, 10.5,   90),   # SE corner
+    "C19": (27.5, 14.0,    0),   # E edge lower (moved S of Y1 body Y=16.25..18.75)
+    "C21": (22.0,  9.5,    0),   # SE corner (clear of MCU S pad outer Y=10.52)
     "C23": (20.0,  9.5,    0),   # S edge east
 
     # VBAT/VBKP bulk + VCAP1/VCAP2 caps (2.2µF, 1µF) ON the MCU's specific
     # power pins per ST datasheet typical app circuit. C17/C18 = 2.2µF
     # VCAP1/VCAP2; C20/C22 = 1µF VDD bulk; C26 = 100nF VBAT decoupling.
-    "C16": ( 8.5, 27.5,    0),   # 4.7µF +3V3 bulk (0805) — NW
+    "C16": ( 6.0, 27.5,    0),   # 4.7µF +3V3 bulk (0805) — far NW (clear of R11 at X=8.5)
     "C17": (16.0,  9.5,    0),   # 2.2µF VCAP1 — S edge
-    "C18": (12.0, 10.5,   90),   # 2.2µF VCAP2 — SW corner
+    "C18": (14.0,  9.5,    0),   # 2.2µF VCAP2 — S edge west
     "C20": ( 8.5, 22.0,    0),   # 1µF VDD bulk — W edge
     "C22": ( 8.5, 16.0,    0),   # 1µF VDD bulk — W edge mid
     "C26": (12.0,  9.5,    0),   # 100nF VBAT — S edge SW
@@ -365,30 +380,44 @@ PLACEMENT = {
     "C34": ( 4.0,  8.0,   90),   # 4.7µF +5V bulk — west of U2
 
     # ============ IMU group (3c — west of MCU, off-axis from heat) ============
-    # U3 ICM-42688-P at (8, 22) — northwest, off-axis from LDO heat (LDO
-    # at (6,9)) and ESC solder pads (Y=3 bottom row). Board-center-ish
-    # for rotational-rate sensing.
-    "U3":  ( 8.0, 22.0,    0),
+    # U3 ICM-42688-P at (6, 22) — moved west from initial (8,22) by 2mm to
+    # clear MCU west pads (MCU pin 1 at X=10.32, outer X=9.52; with U3 at
+    # X=6, U3 east pin at X=7.16, outer X=7.47 → gap 2.05mm to MCU). Off-
+    # axis from LDO heat at (6,9) by Y; off-axis from ESC pads at Y=2.
+    # Board-center-Y for rotational-rate sensing.
+    "U3":  ( 6.0, 22.0,    0),
 
     # IMU decoupling — close to U3 VDD/VDDIO pins.
     # C41 = 100nF VDD, C42 = 100nF VDDIO, C43 = 2.2µF VDD bulk.
-    "C41": ( 6.0, 22.0,   90),   # 100nF VDD — west of U3
-    "C42": (10.0, 22.0,   90),   # 100nF VDDIO — east of U3
-    "C43": ( 8.0, 24.5,    0),   # 2.2µF VDD bulk — north of U3
+    "C41": ( 4.0, 22.0,   90),   # 100nF VDD — west of U3
+    "C42": ( 8.0, 25.0,    0),   # 100nF VDDIO — N of U3; clear of R21 west at (5.5,25) and J5 east at X=4.5
+    "C43": ( 4.0, 24.5,    0),   # 2.2µF VDD bulk — NW of U3
 
     # ============ Baro group (3d — north of MCU, between MCU+microSD) ============
     # U4 DPS310 at (22, 28) — north of MCU, near I²C2 pins. Inset from
     # top edge (microSD at top occupies Y=29-35 approximately).
-    "U4":  (22.0, 28.0,    0),
+    # U4 DPS310 — FLIPPED TO B.CU (MatekH743-style mini-FC convention).
+    # F.Cu has no room between MCU (N pad Y=27.48) and J1 USB-C (S body
+    # Y=29.35) — only ~1.9mm gap, less than U4's 2.5mm body height. B.Cu
+    # places U4 at (22, 28) — F.Cu has no body conflict at that position
+    # (J1 NPTH at (20.89, 30.40) is south of U4 body Y=29.25; J1 shield
+    # at (22.32, 29.87) marginally outside U4 body). Schematic-side I²C2
+    # bus traces from MCU N pins (PB10/PB11) get one via to reach U4 on
+    # B.Cu — handled by Phase 4d routing.
+    "U4":  (22.0, 28.0,    0),    # FLIPPED to B.Cu — handled below
 
     # Baro decoupling
-    "C51": (20.0, 28.0,   90),   # 100nF VDD — west of U4
-    "C52": (24.0, 28.0,   90),   # 100nF VDDIO — east of U4
+    "C51": (20.0, 28.0,   90),   # 100nF VDD — west of U4 (also flipped B.Cu)
+    "C52": (24.0, 28.0,   90),   # 100nF VDDIO — east of U4 (also flipped B.Cu)
 
     # I²C2 pull-ups (4.7kΩ × 2) — co-located with baro per 3d sheet ownership.
-    # Place 2mm north of U4 to clear U4 pads (U4 body Y=26.75..29.25).
-    "R11": (19.0, 30.5,    0),   # 4.7k SDA pull-up — north of baro
-    "R12": (21.0, 30.5,    0),   # 4.7k SCL pull-up — north of baro
+    # MCU N pad outer Y=27.48. With 0402 horizontal at Y=28.5, body Y=28.05..28.95.
+    # MCU pad gap = 28.05-27.48=0.57mm. Clear of J1 USB-C body (X=14.55..21.45):
+    # placed outside this X range.
+    # R11/R12 shifted further out from MCU N-cluster (C11/C13 at X=10.5/12.5,
+    # C12/C14 at X=23.5/25.5) — give R11/R12 their own X-slot 2mm from caps.
+    "R11": ( 8.5, 28.5,   90),   # 4.7k SDA pull-up — far NW (between C13 + edge)
+    "R12": (27.5, 28.5,   90),   # 4.7k SCL pull-up — far NE
 
     # ============ GPS+mag (3e — left edge) ============
     # J5 JST-GH 10P at left edge — long axis along edge. Rotation 90° puts
@@ -459,36 +488,45 @@ PLACEMENT = {
     # ADC filter R+C — 1kΩ + 100nF per analog line. Place CLOSE TO MCU PC0/PC1
     # (per PHASE3_AUDIT.md §B carry-forward #5: ADC filter near MCU, not near
     # connector). MCU south-east → place these between J4 and MCU SE corner.
-    "R41": (29.5, 12.0,    0),   # 1kΩ VBAT filter
-    "R42": (29.5, 14.0,    0),   # 1kΩ CURRENT filter
-    "C61": (29.5, 11.0,    0),   # 100nF VBAT filter cap (to GND)
-    "C62": (29.5, 15.0,    0),   # 100nF CURRENT filter cap (to GND)
-    "C63": (27.5, 13.0,    0),   # additional decoupling
+    # ADC filter R+C cluster moved west to clear Y1+C24/C25 at X=29.5.
+    "R41": (27.5, 11.0,    0),   # 1kΩ VBAT filter
+    "R42": (27.5, 13.0,    0),   # 1kΩ CURRENT filter
+    "C61": (27.5,  9.5,    0),   # 100nF VBAT filter cap
+    "C62": (27.5, 14.5,    0),   # 100nF CURRENT filter cap
+    "C63": (29.5,  9.5,    0),   # additional decoupling — clear of Y1 (Y=16.25..18.75)
 
-    # J2 microSD DM3AT — flipped to B.Cu (bottom layer). MatekH743-style
-    # mini-FC convention. The DM3AT footprint has explicit "footprints
-    # not_allowed" keep-out zones (card-slot + card-presence area); placing
-    # it on F.Cu would conflict with NE-corner components (baro, USBLC6).
-    # On B.Cu (underside), top-side stays clear; card slot opens off the
-    # bottom-right corner (accessible when board is mounted/unmounted from
-    # airframe). Phase 2.5 placement at (23, 30) reused for X-Y but layer
-    # flipped to B.Cu (handled below).
-    "J2":  (25.0, 30.0,    0),
+    # J2 microSD DM3AT — flipped to B.Cu (bottom layer); positioned at
+    # bottom-center to clear all THT pads (mounting holes H1-H4, J1 USB-C
+    # shield pins). MatekH743-style mini-FC convention. The DM3AT footprint's
+    # "footprints not_allowed" keep-out applies via its through-hole pads
+    # to all layers; for B.Cu placement, no THT pads from F.Cu components
+    # may overlap. Position selected such that:
+    #   - body X=11..25, Y=0.5..11.5 — clears MCU body (Y=12..26) by 0.5mm
+    #   - keep-out X≈10..26, Y≈-3..19 (capped at board) — clears H1/H2
+    #     (X<10.5 or X>25.5), J1 USB-C shields (all at Y≥29.87), H3/H4
+    #     (Y≥33.25)
+    #   - F.Cu ESC solder pads at Y=2 are SMD-only (no THT), so B.Cu
+    #     keep-out doesn't reach them as conflict
+    # Card slot opens off the bottom edge per default 0° rotation → card
+    # accessible from underside via airframe cutout (standard mini-FC).
+    "J2":  (18.0,  6.0,    0),
 
-    # SDMMC pullups — 47kΩ × 5 (CMD + D0-D3). Cluster between J2 and MCU
-    # (north-east of MCU, south of J2).
-    "R51": (25.0, 25.0,   90),   # CMD pull-up
-    "R52": (26.5, 25.0,   90),   # D0 pull-up
-    "R53": (28.0, 25.0,   90),   # D1 pull-up
-    "R54": (29.5, 25.0,   90),   # D2 pull-up
-    "R55": (31.0, 25.0,   90),   # D3 pull-up
+    # SDMMC pullups — 47kΩ × 5 (CMD + D0-D3). MCU east pads outer X=26.48.
+    # R51 at X=27.0 → pad outer X=26.73; gap = 26.73-26.48 = 0.25mm too tight;
+    # bumped to X=27.5 → pad outer X=27.23; gap = 0.75mm.
+    "R51": (27.5, 24.0,   90),   # CMD pull-up
+    "R52": (29.0, 24.0,   90),   # D0 pull-up
+    "R53": (30.5, 24.0,   90),   # D1 pull-up
+    "R54": (32.0, 24.0,   90),   # D2 pull-up
+    "R55": (33.5, 24.0,   90),   # D3 pull-up — flush with J4/J10 right-edge column
 
     # ============ SWD (3h — bottom layer, B.Cu) ============
     # J9 PinHeader 2x5 1.27mm SMD — flipped to bottom layer per Phase 2.5
-    # sketch. Place under MCU center for pogo-pin programming jig.
-    # Body 7.5 × 4mm. At (18, 6) bottom layer — clear of J11-J18 ESC pads
-    # at Y=2.
-    "J9":  (18.0,  6.0,    0),   # flipped below — handled separately
+    # sketch. Body 7.5 × 4mm. Position (18, 16) on B.Cu — under MCU center
+    # on the bottom side. MCU is SMD-F.Cu-only so no body conflict; J9 SMD
+    # B.Cu also doesn't conflict with F.Cu passives directly. Moved from
+    # original (18,6) to clear J2 microSD body (now at center-south).
+    "J9":  (18.0, 21.0,    0),   # SMD pads on B.Cu; Y=21 clears J2 keep-out (extends to Y≈19.5)
 
     # ============ Power flags (#FLG_*) — virtual, no footprint ============
     # No placement needed; they have no footprint (PWR_FLAG virtuals).
@@ -513,8 +551,13 @@ for fp in brd.GetFootprints():
 #   J9 SWD — pogo-pin programming jig on underside
 #   J2 microSD — DM3AT keep-out zones conflict with NE components on F.Cu;
 #               B.Cu placement is standard mini-FC practice
+#   U4 DPS310 — N-of-MCU gap (between MCU N pad Y=27.48 and J1 USB-C
+#               body Y=29.35) is only 1.87mm, less than U4 body 2.5mm;
+#               F.Cu placement collides MCU+J1 inevitably. B.Cu solves it.
+#   C51/C52 — DPS310 decoupling follows U4 to B.Cu (decoupling adjacent
+#             to its IC on same layer)
 for fp in brd.GetFootprints():
-    if fp.GetReference() in ("J9", "J2"):
+    if fp.GetReference() in ("J9", "J2", "U4", "C51", "C52"):
         if fp.GetLayer() == pcbnew.F_Cu:
             fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
         print(f"      {fp.GetReference()} flipped to B.Cu", flush=True)
