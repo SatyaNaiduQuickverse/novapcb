@@ -1,0 +1,94 @@
+id: phase-3f-esc
+phase: "3"
+subphase: "3f"
+title: "ESC outputs sheet — 8 DShot channels to motor solder-pad pairs"
+status: done
+depends_on:
+  - phase-3a-mcu
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - hardware/kicad/novapcb/sheets/mcu_3a.py
+    - hardware/kicad/novapcb/sheets/common.py
+    - hardware/kicad/footprint-check/notes.md
+    - docs/CONFIDENCE_MAP.md
+  refs:
+    - "hwdef.dat:165-172 — Phase 2e bdshot pin map: PB0/PA0/PA2/PD12 (BIDIR) + PB1/PA1/PA3/PD13 (standard) on TIM3/TIM2/TIM5/TIM4"
+    - "MatekH743-bdshot/hwdef.dat:23-30 — same 8-pin motor block; NO series resistors on DShot lines (bare PWM declarations). novapcb inherits."
+    - "Phase 2.5 P0.4 inventory + footprint-check/notes.md — ESC connector type was explicitly TBD; placement-fit used 2× JST-SH 4-pin"
+    - "MatekH743 reference convention — mini-FC motor outputs are solder pads (not JST-SH connectors); smaller, lower-profile, lower BOM"
+    - "CONFIDENCE_MAP row 8 (ESC outputs, MEDIUM-HIGH ~88% before this PR)"
+
+decision_forks_watched:
+  esc-connector-type:
+    fork: "ESC output termination — JST-SH connector(s) vs solder pads"
+    expected_classes: [jst-sh, solder-pads, hybrid]
+    pre_recommendation: "Phase 2.5 leaned JST-SH for fit-check; confirm against MatekH743 + 8-channel reality"
+    actual_resolution: "SOLDER PADS. MatekH743 reference convention is mini-FC solder pads (not connectors); smaller area, lower profile, lower BOM. Phase 2.5 P0.4 explicitly noted 'JST-SH or solder pads — TBD'; the placement-fit sketch used JST-SH only because the KiCad lib had ready footprints. Solder pads take LESS area than JST-SH → Phase 2.5 fit assessment only improves. 8 motors × (signal + GND) = 16 pads total. Each modeled as Conn_01x02 in schematic (pin 1 = signal, pin 2 = GND). Phase 4 layout decides exact pad geometry (typical 2.5×1.5 mm at 2.5 mm pitch)."
+    resolved_via: "inline (MatekH743 ref + Phase 2.5 P0.4 TBD note)"
+  dshot-series-r:
+    fork: "Series resistors on DShot output lines"
+    expected_classes: [inherit-matek, none, small-series-r]
+    pre_recommendation: "inherit MatekH743-bdshot"
+    actual_resolution: "NONE — MatekH743-bdshot/hwdef.dat:23-30 declares PWM pins bare (no series-resistor convention). Surely-working = inherit. BIDIR-DShot consideration backed the choice: series-R would affect BOTH directions on the 4 BIDIR lines (PB0/PA0/PA2/PD12); MatekH743-bdshot ships in volume without R, so no R is BIDIR-correct. Phase 6g sim validates ringing; if sim shows issues, a series-R value will be properly impedance-analyzed there (not improvised here)."
+    resolved_via: "inline (MatekH743-bdshot inheritance + BIDIR reasoning)"
+  power-passthrough:
+    fork: "Motor connector power-passthrough (VBAT/5V to ESCs through FC)"
+    expected_classes: [signal-gnd-only, with-passthrough]
+    pre_recommendation: "signal + GND only per standard multirotor topology"
+    actual_resolution: "SIGNAL + GND ONLY. ESCs powered directly from main battery via airframe wiring (standard multirotor topology). FC motor outputs are low-current 3.3V DShot signal + GND return only. Per CLAUDE.md §3.4 logic-level 3.3V + MatekH743 convention. If future v1.x ever needs powered fan-out, that lands as explicit hwdef-rev + schematic-rev — not in v1."
+    resolved_via: "inline (CLAUDE.md §3.4 + standard topology)"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-3f-esc.yaml
+    - hardware/kicad/novapcb/sheets/esc_3f.py
+  files_modified:
+    - hardware/kicad/novapcb/generate.py     # import sheets.esc_3f
+    - hardware/kicad/novapcb/fp-lib-table    # +Connector_PinHeader_2.54mm (placeholder for solder pad)
+    - hardware/kicad/novapcb/novapcb.net     # regenerated
+    - hardware/kicad/novapcb/generate.erc    # regenerated
+    - docs/CONFIDENCE_MAP.md                 # row 8 evidence note
+    - docs/DESIGN_PHASES.md                  # Phase 3: 3a-3f done
+
+  pr:
+    title: "Phase 3f: ESC outputs sheet (8 DShot → solder pads)"
+    branch: hw/phase-3f-esc-2026-05-20
+
+pass_criteria:
+  - "3f.1: hwdef.dat:165-172 grep'd + cited. The 8 MCU pins (PB0/PB1/PA0/PA1/PA2/PA3/PD12/PD13) match Phase 2e lock exactly — verified by guard PASS + 8 unique MOT1..MOT8 nets in netlist."
+  - "3f.2: ESC connector decision per esc-connector-type fork: SOLDER PADS (16 pads = 8 motor signals + 8 GND returns). Modeled as 8× Conn_01x02 in schematic. Phase 4 layout decides exact pad geometry."
+  - "3f.3: esc_3f.py built — 8 PWM nets MOT1..MOT8 wired from MCU pins to pad pin 1 (signal); pad pin 2 (GND) to shared GND. No series resistors per dshot-series-r fork."
+  - "3f.4: Power-passthrough decided per fork: signal + GND only (no VBAT/5V on motor connector). ESCs powered direct-from-battery per multirotor topology."
+  - "3f.5: Pipeline result — SKiDL ERC 0 errors / 75 warnings (DOWN 8 from 3e's 83 — all 8 MCU PWM pins newly connected). generate_netlist 0 errors / 104 warnings. Rail-uniqueness guard PASSED. 8 unique MOT1..MOT8 nets confirmed (no _N duplicates). Total cross-sheet nets: 23."
+  - "3f.6: CONFIDENCE_MAP row 8 evidence note: MEDIUM-HIGH ~88% → ~89% (small bump for schematic-capture lock + topology decisions resolved)."
+  - "3f.7: SOTA self-audit in PR body. Authoritative sources: hwdef.dat (8 PWM pin map) + MatekH743-bdshot (no-series-R convention) + CLAUDE.md §3.4 (logic level + no power passthrough)."
+
+estimated_context_kb: 45
+estimated_wallclock: "1-1.5 hours (hwdef-mechanical for pin map + 3 topology forks resolved via inheritance/convention)"
+
+notes: |
+  3f is the hwdef-locked sub-phase (Phase 2e pre-locked all 8 PWM pins).
+  Real work: connector type (solder pads per MatekH743 ref) + series-R
+  (none per MatekH743-bdshot inheritance) + power passthrough (none per
+  standard topology + CLAUDE.md §3.4).
+
+  BIDIR-DShot consideration backed the no-series-R call. The 4 BIDIR
+  channels (PB0/PA0/PA2/PD12) have telemetry returning on the same wire
+  as the drive signal — series R would affect both directions equally;
+  no R is the BIDIR-correct choice that MatekH743-bdshot ships with.
+
+  Phase 4 layout work for 3f:
+  - Solder-pad geometry (2.5×1.5 mm at 2.5 mm pitch typical)
+  - DShot trace impedance target ~50Ω
+  - Trace routing on bottom edge per Phase 2.5 placement-fit sketch
+  - BIDIR-line attention (return path, EMI sensitivity)
+
+  Phase 6g sim:
+  - Ringing on all 8 channels (with no series R, ringing margin matters)
+  - BIDIR-line signal integrity at 600 kHz DShot600
+  - If ringing fails margin, Phase 6g recommends a series-R value
+    properly impedance-analyzed
