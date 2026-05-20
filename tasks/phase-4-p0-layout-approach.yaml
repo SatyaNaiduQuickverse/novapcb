@@ -1,0 +1,80 @@
+id: phase-4-p0-layout-approach
+phase: "4"
+subphase: "4-P0"
+title: "Investigate + recommend the headless PCB-layout + routing approach"
+status: in_progress
+depends_on:
+  - phase-3-exit
+
+inputs:
+  files:
+    - hardware/kicad/novapcb/novapcb.net
+    - hardware/kicad/novapcb/
+    - hardware/kicad/footprint-check/
+    - docs/PHASE3_AUDIT.md
+    - docs/REFERENCE_AUDIT.md
+    - docs/DECISIONS.md
+    - docs/CONFIDENCE_MAP.md
+    - hardware/kicad/KICAD9_NOTES.md
+  refs:
+    - "pcbnew Python API (KiCad 9) — board creation, footprint placement, track-laying, DRC, .dsn/.ses export-import. Phase 2.5 used it for placement; assess its routing-side surface."
+    - "Freerouting — the de-facto external autorouter for KiCad (Specctra .dsn export -> Freerouting Java -> .ses import). Investigate: installable + runnable headless on novarobotics64 (Java; no sudo for apt — check)? Does the export/route/import cycle work?"
+    - "kicad-cli (KiCad 9) — DRC, .dsn export, gerber/drill export capabilities"
+    - "DECISIONS §2 (36x36mm board, 30.5 M3 holes) + §8 (4-layer stackup); CLAUDE.md §6.1 (code-driven, scripted export, never click-export)"
+    - "The 7 Phase 4 carry-forward items from PHASE3_AUDIT.md §B — proper sensor footprints (TDK ICM-42688-P land pattern etc.), placeholder-footprint finalization"
+    - "Impedance-controlled nets — the USB D+/D- 90-ohm diff pair (Phase 3g flagged it); any other controlled-impedance nets"
+
+decision_forks_watched:
+  routing-approach:
+    fork: "How a headless Claude routes the novapcb 4-layer board"
+    expected_classes: [freerouting, pcbnew-scripted, hybrid, needs-supermaster-gui-pass]
+    pre_recommendation: "unknown — this contract IS the investigation. Freerouting is the likely primary candidate IF it runs headless. If NO headless routing approach is viable, that is itself a finding — escalate; a GUI routing pass by supermaster may be required, which is legitimate (not a failure)."
+    resolved_via: "4-P0 gate"
+  placement-approach:
+    fork: "Placement — pcbnew-scripted vs other"
+    expected_classes: [pcbnew-scripted, other]
+    pre_recommendation: "pcbnew Python API — Phase 2.5 proved coarse placement works headless. Phase 4 needs finer placement with the real netlist; confirm the API handles it."
+    resolved_via: "4-P0 gate"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-4-p0-layout-approach.yaml
+    - hardware/kicad/PHASE4_P0_REPORT.md
+  files_modified: []
+  pr:
+    title: "Phase 4 Part 0: PCB-layout + routing approach investigation"
+    branch: hw/phase-4-p0-layout-approach-2026-05-20
+
+pass_criteria:
+  - "P0.1: Enumerate the realistic headless layout+routing options. PLACEMENT: pcbnew API (confirmed-ish from Phase 2.5) — verify it scales to the real netlist import. ROUTING: (a) Freerouting via .dsn/.ses — is it installable + runnable headless on novarobotics64? (b) pcbnew-scripted track-laying; (c) hybrid; (d) the honest option — no viable headless routing, supermaster GUI pass needed. For each: feasibility, maturity, KiCad-9 compatibility."
+  - "P0.2: REALISTICALLY scale-test the top routing candidate — per the Phase 3a P0 lesson (a toy test proves an API exists, NOT that it scales). Do NOT test Freerouting on a 2-component board. Test it on something representative: ideally the actual novapcb netlist (31 cross-sheet nets + ~150 components), or failing that a deliberately MCU-scale subset. Report the actual result — did it route, how long, how clean."
+  - "P0.3: Netlist -> board import — verify the path from novapcb.net (SKiDL-generated) to a pcbnew board with footprints assigned. Note: footprints are partly placeholders (Phase 2.5 generic/geom-match). The 7 PHASE3_AUDIT §B carry-forward footprint items (proper TDK/Infineon/ST land patterns) — does Phase 4 do them first, or as it goes? Recommend."
+  - "P0.4: Design rules — propose the 4-layer stackup (DECISIONS §8 says 4-layer min), trace-width/clearance rules, and how impedance-controlled nets (USB 90-ohm diff pair) get handled. The DRC ruleset for the board."
+  - "P0.5: Recommend the layout+routing approach with reasoning. If the recommendation is 'no fully-headless routing is viable -> supermaster GUI pass for routing', say so plainly — that is a legitimate, honest outcome, not a failure. Placement + DRC + export could still be headless even if routing needs a human pass."
+  - "P0.6: Propose the Phase 4 sub-phase breakdown — and INCLUDE THE EXPLICIT COMPLETENESS LINE per the 08:00 retro process-change: state that the breakdown covers every netlist subsystem / every connector / every Phase 3 sheet. Master will refuse the breakdown at the gate if that line is missing."
+  - "P0.7: STOP. Rule 13 gate. Write PHASE4_P0_REPORT.md with P0.1-P0.6. Open the PR, ping master. Do NOT start any layout work until master adjudicates."
+
+estimated_context_kb: 70
+estimated_wallclock: "2-4 hours — investigation + a realistically-scaled routing smoke test"
+
+notes: |
+  Phase 4 P0 is an investigation. Deliverable = a report + a
+  recommendation, not a board.
+
+  The honest hard part: KiCad has no built-in autorouter (removed
+  years ago). Freerouting is the de-facto external option, but it's
+  a Java app and the headless export/route/import cycle needs to be
+  proven, not assumed. The Phase 3a P0 lesson applies HARD here:
+  scale-test it. A 2-component Freerouting test tells us nothing
+  about routing a 150-component 4-layer FC.
+
+  If the conclusion is "routing genuinely needs a supermaster GUI
+  pass" — that is a legitimate, honest finding. Phase 4 would then
+  be: headless placement + DRC + export, with one human routing pass
+  flagged for supermaster. Don't force a bad fully-headless answer to
+  avoid that outcome. Surely-working > clever.
+
+  This is NOT a straight-execute dispatch. It ends in a hard Rule 13
+  stop at P0.7. Expect a real back-and-forth on the approach.
