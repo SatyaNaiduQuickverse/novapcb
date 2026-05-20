@@ -33,17 +33,17 @@ import skidl
 from skidl import Part, Net
 
 from sheets.common import (
-    setup, FP_R_0402, FP_C_0402, FP_C_0805, FP_FB_0402, FP_XTAL_3225,
+    setup, n, FP_R_0402, FP_C_0402, FP_C_0805, FP_FB_0402, FP_XTAL_3225,
 )
 
 setup()
 
 
-# ---- shared power nets (referenced by all sheets) ----
-GND   = Net("GND")
-P3V3  = Net("+3V3")    # main digital supply rail
-P3V3A = Net("+3V3A")   # analog supply rail, post-ferrite from +3V3
-VBAT  = Net("VBAT")    # backup-domain supply (tied to +3V3 via 0R for v1, no battery)
+# ---- shared power nets (referenced by all sheets via the n() singleton fetcher) ----
+GND   = n("GND")
+P3V3  = n("+3V3")     # main digital supply rail (sourced by 3b LDO U2.VOUT)
+P3V3A = n("+3V3A")    # analog supply rail, post-ferrite from +3V3
+VBAT  = n("VBAT")     # backup-domain supply (tied to +3V3 via 0R for v1, no battery)
 
 
 # ---- MCU part ----

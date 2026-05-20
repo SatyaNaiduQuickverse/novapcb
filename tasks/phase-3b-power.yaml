@@ -1,0 +1,105 @@
+id: phase-3b-power
+phase: "3"
+subphase: "3b"
+title: "Power tree sheet — 5V input → AP2112K-3.3 LDO → +3V3 / +3V3A distribution"
+status: done
+depends_on:
+  - phase-3a-mcu
+
+inputs:
+  files:
+    - firmware/hwdef-novapcb/hwdef.dat
+    - hardware/kicad/novapcb/sheets/mcu_3a.py
+    - hardware/kicad/novapcb/sheets/common.py
+    - CLAUDE.md
+    - docs/DECISIONS.md
+    - docs/CONFIDENCE_MAP.md
+  refs:
+    - "CLAUDE.md §3.6 power table — 5V in from external BEC ≥3A; 3.3V on-board LDO; USB 5V bench-only; VBAT 4-6S MONITORED (via Mauch external, not regulated on-board)"
+    - "MatekH743 power tree — NOT sourceable from local files (ArduPilot tree has firmware hwdef only; no schematic). LDO + protection choices datasheet-grounded + flagged for Phase 3.5 reference audit."
+    - "STM32H743VI datasheet (ST DS12110) — 3.3V supply current characteristics (§6.3)"
+    - "ICM-42688-P datasheet (TDK DS-000347) — 3.3V VDDIO active mode current"
+    - "DPS310 datasheet (Infineon) — 3.3V active barometer measurement current"
+    - "AP2112 datasheet (Diodes Inc DS39724 Rev 2) — 600mA fixed-3.3V SOT-25 LDO; 250mV dropout @ 600mA; recommended 1µF X7R input + 1µF X7R output"
+    - "CONFIDENCE_MAP rows 3 (LDO+decoupling HIGH) + 11 (reverse-polarity/ESD LOW)"
+    - "mcu_3a.py — declares +3V3, +3V3A (via FB1 ferrite), VBAT (via R2 0R) nets to be driven by 3b"
+    - "hardware/kicad/KICAD9_NOTES.md — PWR_FLAG footprint handling, SKiDL Net merging via Net.fetch (added as Phase 3b lesson)"
+
+decision_forks_watched:
+  ldo-part:
+    fork: "3.3V regulator part selection"
+    expected_classes: [inherit-matek, datasheet-grounded-pick]
+    pre_recommendation: "source MatekH743 if available; else datasheet-grounded jellybean LDO ≥1A. Surely-working: proven part over exotic."
+    actual_resolution: "AP2112K-3.3 (Diodes Inc, 600mA SOT-25, 250mV dropout, ±1.5%). MatekH743 schematic NOT sourceable from local files. Datasheet-grounded pick at 600mA gives ~50% margin over ~300-400mA worst-case load (STM32H743 max + ICM-42688-P + DPS310 + GPS module). Jellybean part (DigiKey, LCSC, JLCPCB). KiCad symbol Regulator_Linear:AP2112K-3.3 exact-match verified. FLAGGED for Phase 3.5 reference audit — divergence from MatekH743 actual part (if it differs) needs review."
+    resolved_via: "inline (datasheet research)"
+  input-protection:
+    fork: "5V input protection — reverse polarity / ESD on the BEC 5V input"
+    expected_classes: [series-pfet, series-diode, none-inherited, tvs-only]
+    pre_recommendation: "source MatekH743's approach; if none, flag as Phase 3.5/6.5 review item — don't silently omit, don't silently add."
+    actual_resolution: "NOT IMPLEMENTED this sub-phase. MatekH743 schematic not sourceable locally; per master directive 'don't silently add a non-inherited topology', protection deferred to Phase 3.5 + Phase 6.5 + Phase 6i. CONFIDENCE_MAP row 11 evidence note updated. The +5V net is declared + power-flagged this sheet; the actual BEC source + any protection components land in sheets/power_mon_sd_swd_3h.py."
+    resolved_via: "inline (explicit defer per master rules of engagement)"
+  5v-rail-scope:
+    fork: "Is there any on-board 5V regulation, or is 5V purely an input rail"
+    expected_classes: [input-only, has-5v-reg]
+    pre_recommendation: "input-only per CLAUDE.md §3.6"
+    actual_resolution: "INPUT-ONLY confirmed. CLAUDE.md §3.6 explicit; no on-board 5V generation; the on-board power tree is 5V_in → AP2112K-3.3 → +3V3. No peripheral on novapcb needs 5V (ESC outputs run on MCU 3.3V IO; sensors on 3.3V; USB 5V is bench-only, not propagated to the main +5V rail)."
+    resolved_via: "inline (CLAUDE.md grep)"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-3b-power.yaml
+    - hardware/kicad/novapcb/sheets/power_3b.py
+  files_modified:
+    - hardware/kicad/novapcb/sheets/common.py    # +virtual_part_footprint_handler for PWR_FLAG; +n() Net.fetch wrapper
+    - hardware/kicad/novapcb/generate.py         # import sheets.power_3b
+    - hardware/kicad/novapcb/fp-lib-table        # +Package_TO_SOT_SMD (LDO footprint lib)
+    - hardware/kicad/novapcb/novapcb.net         # regenerated
+    - hardware/kicad/novapcb/generate.erc        # regenerated
+    - hardware/kicad/novapcb/sheets/mcu_3a.py    # use n() shared-net fetcher for GND/+3V3/+3V3A/VBAT
+    - hardware/kicad/KICAD9_NOTES.md             # +Phase 3b SKiDL lessons (PWR_FLAG handler override; Net.fetch for cross-sheet merging; POWER-OUT pin-conflict rule)
+    - docs/CONFIDENCE_MAP.md                     # rows 3 + 11 evidence notes
+    - docs/DESIGN_PHASES.md                      # Phase 3 section: 3a + 3b done
+  pr:
+    title: "Phase 3b: power tree (AP2112K-3.3 LDO + caps)"
+    branch: hw/phase-3b-power-2026-05-20
+
+pass_criteria:
+  - "3b.1: 3.3V load estimate documented in power_3b.py docstring — STM32H743 ~250-300mA max + ICM-42688-P ~2mA + DPS310 ~1mA + GPS module 30-80mA = ~300-400mA worst-case. Each cited from its datasheet."
+  - "3b.2: LDO selection: AP2112K-3.3 (Diodes Inc, 600mA SOT-25). ~50% margin over load. Datasheet-grounded pick (MatekH743 not sourceable). FLAGGED for Phase 3.5 reference cross-check. Cited Diodes DS39724 Rev 2 + the search results consensus on caps."
+  - "3b.3: power_3b.py built — +5V input net, AP2112K-3.3 LDO with EN tied to VIN (always-on), 1µF X7R in/out caps (datasheet) + 4.7µF X5R 0805 bulk on both rails, PWR_FLAGs on +5V/+3V3A/VBAT (NOT +3V3 — LDO VOUT is the POWER-OUT source; adding PWR_FLAG there produces two-power-source conflict). +3V3A via FB1 ferrite (declared mcu_3a.py); VBAT via R2 0R (declared mcu_3a.py)."
+  - "3b.4: Input protection deferred per master directive — flagged in CONFIDENCE_MAP row 11 + power_3b.py docstring. Phase 3.5 + Phase 6.5 + Phase 6i will resolve."
+  - "3b.5: Net-name consistency: GND, +3V3, +3V3A, VBAT all use n() = skidl.Net.fetch() — single Net instance shared across mcu_3a.py + power_3b.py. Without this fix, the netlist had two duplicate nets per name (+3V3 + +3V3_1 etc.) — silent topology bug. Verified by grep on novapcb.net: only unique +3V3 / +3V3A / +5V appear."
+  - "3b.6: Pipeline result — SKiDL ERC: 83 warnings (down 9 from 3a-alone's 92), 0 errors. generate_netlist: 0 errors, 64 warnings (random tags + missing-tag, all harmless). The 9-warning reduction matches the resolved power-rail driving."
+  - "3b.7: CONFIDENCE_MAP rows 3 + 11 evidence notes updated. Row 3 confidence unchanged (HIGH ~95% — power tree topology is textbook); row 11 confidence unchanged (LOW ~65% — protection deferred, no real verification this sub-phase, stays LOW until Phase 6.5)."
+  - "3b.8: SOTA self-audit in PR body. hwdef.dat NOT authoritative here (power tree isn't in hwdef); authority is CLAUDE.md §3.6 + AP2112 datasheet + STM32H743/ICM-42688-P/DPS310 datasheets."
+
+estimated_context_kb: 55
+estimated_wallclock: "1.5-3 hours (datasheet research + LDO selection + 2 SKiDL bugs caught + ERC pin-conflict + KICAD9_NOTES.md updates)"
+
+notes: |
+  3b surfaced two real SKiDL gotchas while implementing the contract — both
+  added to hardware/kicad/KICAD9_NOTES.md as Phase 3b lessons:
+
+  1. PWR_FLAG no-footprint error: SKiDL's default empty-footprint handler
+     errors on virtual symbols. Override via skidl.empty_footprint_handler
+     (added _virtual_part_footprint_handler() in sheets/common.py).
+
+  2. Net('name') creates a NEW net even if the name exists — SKiDL auto-
+     appends _1, _2 to disambiguate. mcu_3a's Net('+3V3') + power_3b's
+     Net('+3V3') created TWO separate nets (+3V3 and +3V3_1) with the
+     same intended name but no electrical connection. The MCU's VDD pins
+     and the LDO's VOUT would have been on different nets — silent
+     topology bug, would have shown up at first power-on. Fix: use
+     skidl.Net.fetch('name') for shared nets. Wrapped as n() in common.py.
+
+  ERC pin-conflict on the resolved net: when the LDO VOUT (POWER-OUT pin)
+  is on the same net as a PWR_FLAG (also POWER-OUT pin), KiCad ERC errors
+  with "Pin conflict: POWER-OUT <==> POWER-OUT" — only one POWER-OUT
+  source per net. Rule for novapcb power tree: PWR_FLAG goes ONLY on nets
+  that pass through passives (ferrite, 0R) from a real POWER-OUT pin, or
+  on input nets whose real source is in another sheet.
+
+  Both lessons committed in hardware/kicad/KICAD9_NOTES.md (the cross-
+  machine source-of-truth doc per master's 03:00 retro directive).

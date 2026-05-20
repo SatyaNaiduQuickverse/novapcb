@@ -115,6 +115,73 @@ WARNING: KICAD8_SYMBOL_DIR environment variable is missing, ...
 
 Resolution: in `sheets/common.py setup()`, set `os.environ["KICAD9_SYMBOL_DIR"] = "/usr/share/kicad/symbols"` AND append the path to `skidl.lib_search_paths["kicad9"]`. The env var quiets the warnings; the lib_search_paths actually lets SKiDL find symbols. Both needed.
 
+### `Net('name')` creates a NEW net even if the name exists (Phase 3b lesson)
+
+**Silent topology bug.** SKiDL's `Net('+3V3')` constructor creates a new Net object even when another Net with the same name already exists in the default Circuit. It auto-appends `_1`, `_2` to disambiguate (`+3V3`, `+3V3_1`, ...). Across sheet modules, this means:
+
+```python
+# WRONG — two sheets both call Net('+3V3'); result: TWO separate nets
+# in the netlist (+3V3 and +3V3_1), no electrical connection between them.
+# In novapcb's case: MCU VDD pins on +3V3, LDO VOUT on +3V3_1 — power
+# wouldn't reach the MCU on real silicon.
+
+# sheet_a.py:
+P3V3 = skidl.Net('+3V3')
+mcu['VDD'] += P3V3
+
+# sheet_b.py:
+P3V3 = skidl.Net('+3V3')   # NEW net, named '+3V3_1' in netlist
+ldo['VOUT'] += P3V3
+```
+
+**Correct pattern: `skidl.Net.fetch('name')`.** It looks up the existing Net by name and returns it; creates new only if absent.
+
+```python
+# CORRECT — fetch returns the singleton Net by name. Both sheets get
+# the SAME Net instance; netlist has only '+3V3'.
+
+# sheets/common.py:
+def n(name):
+    return skidl.Net.fetch(name)
+
+# sheet_a.py + sheet_b.py both:
+P3V3 = n('+3V3')   # same instance in both sheets
+```
+
+novapcb wraps this as `n()` in `sheets/common.py` and uses it for every shared rail (`+3V3`, `+3V3A`, `+5V`, `VBAT`, `GND`). Verify by grepping the generated netlist for unique `+RAIL` names — any `_1` suffix means a duplicate-net bug.
+
+### `PWR_FLAG` no-footprint error workaround (Phase 3b lesson)
+
+SKiDL's default `empty_footprint_handler` errors on any part without a footprint, but `PWR_FLAG` is a virtual netlist-only ERC marker that has no PCB footprint by design. Override the handler in your setup:
+
+```python
+def _virtual_part_footprint_handler(part):
+    if getattr(part, "name", "") == "PWR_FLAG":
+        return  # silently accept
+    # fall through to default error for real parts
+    from skidl.logger import active_logger
+    active_logger.raise_(ValueError, f"No footprint for {part.name}/{part.ref}")
+
+skidl.empty_footprint_handler = _virtual_part_footprint_handler
+```
+
+novapcb does this in `sheets/common.py setup()`. The override preserves the "real part missing footprint" check.
+
+### KiCad ERC pin-conflict on POWER-OUT pins (Phase 3b lesson)
+
+KiCad's ERC allows only ONE `POWER-OUT` pin per net. Both an LDO's `VOUT` pin AND a `PWR_FLAG` are `POWER-OUT` pins; putting both on the same net produces:
+
+```
+ERC ERROR: Pin conflict on net +3V3, POWER-OUT pin 1/~ of PWR_FLAG/#FLG_3V3
+           <==> POWER-OUT pin 5/VOUT of AP2112K-3.3/U2
+           (POWER-OUT connected to POWER-OUT)
+```
+
+**Rule for the novapcb power tree:**
+- Net DIRECTLY driven by a `POWER-OUT` pin (LDO output, regulator output): **NO PWR_FLAG**. The pin itself is the source.
+- Net driven THROUGH passives (ferrite, 0R, inductor) from a `POWER-OUT` pin: **PWR_FLAG needed**. Passives don't propagate the POWER-OUT attribute through ERC's net analysis.
+- Net whose real source lives in another sheet (e.g. `+5V` from the BEC connector in 3h): **PWR_FLAG needed** in the consuming sheet until the source sheet lands.
+
 ### `skidl_REPL.*` artefacts appear in cwd when running from repo root
 
 SKiDL writes `skidl_REPL.erc` / `.log` to the current working directory when invoked from a script named anything-other-than-the-circuit-name. Gitignored (`skidl_REPL.*` in `.gitignore`). When running the formal `generate.py`, SKiDL uses `generate.*` prefix — those are committed as the audit trail.
