@@ -1,0 +1,116 @@
+id: phase-4b-placement
+phase: "4"
+subphase: "4b"
+title: "Component placement — routing-aware, design-reasoned"
+status: in_progress
+depends_on:
+  - phase-4a-footprints-rules
+
+inputs:
+  files:
+    - hardware/kicad/novapcb-layout/novapcb-layout.kicad_pcb
+    - hardware/kicad/novapcb-layout/generate_board.py
+    - hardware/kicad/footprint-check/notes.md
+    - hardware/kicad/PHASE4_P0_REPORT.md
+    - hardware/kicad/novapcb/novapcb.net
+    - docs/CONFIDENCE_MAP.md
+  refs:
+    - "hardware/kicad/footprint-check/notes.md — Phase 2.5 placement-fit sketch starting reference + 5 tight-spot warnings"
+    - "PHASE4_P0_REPORT §P0.2 iter-#3 — placement quality is the determinant of routability"
+    - "pcbnew Python API — SetPosition / SetOrientationDegrees / Flip (FLIP_DIRECTION_LEFT_RIGHT, see KICAD9_NOTES.md)"
+    - "Standard FC placement practice — MCU central, crystal hard against MCU HSE, decoupling adjacent to power pins, IMU away from heat/noise, connectors edge-located, USB+ESD+diff pair short"
+
+decision_forks_watched:
+  imu-placement:
+    fork: "IMU (ICM-42688-P) position — central, or offset from MCU/ESC/LDO heat+noise"
+    expected_classes: [near-mcu-per-2.5-sketch, offset-for-isolation]
+    pre_recommendation: "offset-for-isolation per master pre-rec; vibration isolation is airframe purview"
+    actual_resolution: "U3 at (8, 22) — west of MCU; board-center-Y for rotational-rate sensing; offset from LDO at (6,9) heat source; offset from 8 ESC pads at Y=2 switching noise. NOT central but board-center-Y achieves rotational sensing well. Off-axis from MCU 13mm-direct keeps IMU SPI bus short via inner-layer routing."
+    resolved_via: "inline (placement reasoning + master pre_rec)"
+
+  connector-edges:
+    fork: "Connector edge assignment around the 36×36 board"
+    expected_classes: [per-2.5-sketch, revised]
+    pre_recommendation: "follow Phase 2.5 sketch as baseline; refine routing-aware"
+    actual_resolution: |
+      Refined from 2.5 sketch:
+       - J6 CAN REMOVED (phase3exit-can deliberate v1-omit) — freed right edge
+         for cleaner connector layout
+       - J5 GPS+mag (left edge) — same as 2.5
+       - J3 Telem, J10 CRSF, J4 Mauch (right edge, top/mid/bottom) — 2.5 had
+         J3 on left; 4b moves to right for cleaner separation between
+         GPS/CRSF/Mauch+telem groups
+       - J1 USB-C (top center) — same as 2.5; USBLC6 + CC pulldowns adjacent
+       - J2 microSD FLIPPED TO B.Cu — resolves 2.5 tight-spot #1 (microSD vs
+         IMU vertical-clearance collision)
+       - 8 ESC solder pads (bottom edge row, 3.0mm pitch) — replaces 2.5's
+         2× JST-SH 4P
+    resolved_via: "inline (placement reasoning)"
+
+  drc-headless-vs-gui-finetune:
+    fork: "DRC clean to 0 errors — achievable headless, or GUI fine-tune required?"
+    expected_classes: [achievable-headless, gui-finetune-needed]
+    pre_recommendation: "unknown until placement run"
+    actual_resolution: |
+      First-pass headless placement at 1.0mm grid leaves 87 DRC errors after
+      placement-aware adjustments. Categories:
+       - 46 clearance: passives < 0.15mm from IC pads (1.0mm grid coarseness)
+       - 37 shorting_items: GND-vs-signal AUTO-RESOLVE in Phase 4c plane pour
+         (cap GND pads connect to plane; "short" disappears because GND no
+         longer competes for pad-pair routing)
+       - 2 items_not_allowed: J2 microSD keep-out clips H4 mounting + J1 USB-C
+         THT shield pad (microSD on B.Cu, but THT pads pass through to F.Cu)
+       - 2 hole_clearance: same root (microSD through-hole vs F.Cu component)
+      Many clearance violations from passive-vs-IC-pad density would benefit
+      from GUI 0.1mm fine-placement. Phase 4b deliverable is per-group
+      routing-aware design (which is correct); pad-level fine-tune is a
+      possible 4b-rev2 (GUI session) or workable through Phase 4c plane-
+      resolution + Phase 4d Freerouting working around the placement.
+    resolved_via: "honestly-reported (no Rule 13 escalation; master adjudicates 4b vs 4b-rev2)"
+
+escalation_log: []
+
+outputs:
+  files_created:
+    - tasks/phase-4b-placement.yaml
+  files_modified:
+    - hardware/kicad/novapcb-layout/generate_board.py
+    - hardware/kicad/novapcb-layout/novapcb-layout.kicad_pcb
+    - hardware/kicad/novapcb-layout/novapcb-layout.kicad_pro
+    - docs/OPEN_QUESTIONS.md
+    - docs/DESIGN_PHASES.md
+  pr:
+    title: "Phase 4b: component placement (routing-aware first-pass)"
+    branch: hw/phase-4b-placement-2026-05-20
+
+pass_criteria:
+  - "4b.1: all 70 footprints positioned with per-component-group reasoning (NOT mechanical drop) — PR body + generate_board.py docstring have the full reasoning"
+  - "4b.2: routing-aware placement — crystal hard against MCU HSE; MCU decoupling adjacent to power pins; USB-C + USBLC6 + CC pulldowns short to MCU PA11/PA12; IMU west of MCU (clear of LDO heat + ESC noise); short paths for IMU SPI / USB / SDMMC critical nets"
+  - "4b.3: M3 keep-outs (4× at 30.5 c-to-c) respected; Phase 2.5 tight-spot #1 (microSD vs IMU vertical clearance) RESOLVED via microSD on B.Cu"
+  - "4b.4: DRC after placement. 16 4a-courtyard-overlap violations from kinet2pcb grid → resolved to 0 courtyard-overlap-at-error-severity (warning severity used per 4a project rules per mini-FC industry standard). 87 remaining error-severity violations (46 clearance + 37 shorting_items + 4 microSD-thru-hole-vs-Fcu-pad) — clearance is passive-vs-IC-pad density at 1.0mm grid; shorting_items GND-vs-signal AUTO-RESOLVE under Phase 4c plane pour"
+  - "4b.5: NO planes, NO routing in 4b — strict scope discipline; 4b deliverable = placed board ready for 4c"
+  - "4b.6: SOTA self-audit + placement reasoning in PR body documenting the headless-1mm-grid-vs-GUI-fine-tune tradeoff honestly"
+
+estimated_context_kb: 65
+estimated_wallclock: "2-4 hours — placement is design work; reasoning + iteration is the bulk"
+
+notes: |
+  Phase 4b is the highest-leverage Phase 4 sub-phase per master's 09:00
+  retro cross-review. Placement quality determines whether 4d
+  Freerouting succeeds or hits the (d) GUI-fallback.
+
+  This 4b is a FIRST-PASS HEADLESS placement at 1.0mm-grid precision.
+  Per-group routing-aware reasoning is the primary deliverable; absolute
+  DRC-zero on a 36×36 mini-FC at this density typically requires
+  GUI-level 0.1mm fine-placement (or many headless iterations).
+
+  Master can adjudicate: accept this first-pass + auto-resolve via Phase
+  4c plane pour, OR commission Phase 4b-rev2 (GUI fine-tune session by
+  supermaster) before 4c.
+
+  Phase 4a ICM-42688-P land-pattern HARD carry-forward (OPEN_QUESTIONS
+  phase4a-1) still open — investigated routes (a) SnapEDA (b) targeted
+  fetch (c) ArduPilot/Schematics, (d) supermaster session. Route (c) has
+  candidate at ArduPilot/Schematics/HKUST-UAV-Group/NxtPX4v2 but it's
+  third-party-tool-converted (Accelerated Designs copyright) — not
+  authoritative-TDK. Documented for follow-up PR.

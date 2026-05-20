@@ -71,6 +71,33 @@ Raised 2026-05-20 (Phase 3a Rule-13 stop — escalation #1 on `tasks/phase-3a-mc
 
 **Owner / when:** dedicated task scheduled within the Phase 3.5–6 window. Not blocking Phase 3 sub-phase advance (netlist-only mode is the agreed Phase 3 deliverable; see `tasks/phase-3a-mcu.yaml` escalation_log entry #1).
 
+## phase4a-1. ICM-42688-P land pattern — HARD must-resolve-before-Phase-6m
+
+Raised 2026-05-20 (Phase 4a — master adjudication of the `icm42688p-footprint` decision fork).
+
+**Status:** Phase 4a-4d **accept** the KiCad-generic `Package_LGA:LGA-14_3x2.5mm_P0.5mm_LayoutBorder3x4y` footprint. Body, pitch, and pad-count/arrangement are TDK-spec-matched per Phase 2.5 P0.4. Pad sizes are IPC-7351 nominal. Placement (4b) and routing topology (4c/4d) depend on pad LOCATIONS which the generic gets right — so Phase 4 does NOT stall on this.
+
+**Must-resolve before Phase 6m (manufacturability / DFM check):** verify pad dimensions against the TDK ds-000347 recommended land pattern. The ICM-42688-P is the **primary IMU** — the most flight-critical sensor on the board. A leadless-IC land pattern with wrong pad dimensions = poor or failed solder joints on a part that can't be hand-inspected. IPC-7351-generic is production-grade and probably fine, but "probably fine" is not the bar for the primary IMU on a board going to fab.
+
+**Same re-verification applies to all leadless-IC footprints (LGA/QFN — IMU + DPS310) before fab; leaded packages (LQFP-100 + SOT-23) are lower-risk and Phase 2.5 P0.4 already cited KiCad-standard exact matches for those.**
+
+**Resolution path (worker action — attempt near-term, ideally before Phase 4e so IMU SPI critical-net hand-routing uses final pads):**
+
+- **(a) SnapEDA / UltraLibrarian vendor-verified footprint** — known sources for ICM-42688-P, free download. If verifiable + KiCad-9-compatible, swap the footprint in a small follow-up PR.
+- **(b) Targeted single-page fetch of the datasheet's land-pattern figure** — narrower than the full 60-page PDF that timed out in Phase 4a WebFetch.
+- **(c) An open-source FC project's datasheet-derived ICM-42688-P KiCad footprint** — well-traveled chip used on many FCs; somebody's likely committed a quality footprint.
+- **(d) SUPERMASTER session with PDF tooling** — extract dimensions directly from ds-000347; SUPERMASTER REVIEW flag if none of (a)/(b)/(c) work headlessly.
+
+**This is HARD carry-forward, not a soft "confirm at 6.5."** A leadless IMU footprint must not reach fab on a generic stand-in. Track it through Phase 4 sub-phases until resolved.
+
+**Why HARD:**
+
+- IMU is flight-critical (vibration sensing → attitude control → flight stability)
+- Leadless package = no visual solder inspection on assembled board
+- IPC-7351-generic ≠ TDK-recommended — generic may be wider (more tolerant) or narrower (potentially insufficient solder joint) than the part designer recommended
+
+**Raised by:** Phase 4a `decision_forks_watched.icm42688p-footprint` resolution + master 2026-05-20 adjudication.
+
 ---
 
 # Closed decisions (recorded here for traceability)
