@@ -29164,5 +29164,105 @@
 		(layer "Edge.Cuts")
 		(uuid "817c0eb1-404f-4cc7-9e2e-125773e162a4")
 	)
+	(zone
+		(net 29)
+		(net_name "GND")
+		(layer "F.Cu")
+		(uuid "c557af56-03e6-4df1-9b0d-28075a553b38")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0.3)
+		)
+		(min_thickness 0.20)
+		(filled_areas_thickness no)
+		(fill yes
+			(thermal_gap 0.3)
+			(thermal_bridge_width 0.3)
+		)
+		(polygon
+			(pts
+				(xy 0.3000 0.3000) (xy 89.7000 0.3000) (xy 89.7000 69.7000) (xy 0.3000 69.7000)
+			)
+		)
+	)
+	(zone
+		(net 29)
+		(net_name "GND")
+		(layer "B.Cu")
+		(uuid "7e29bc9e-9b2e-4cff-8d64-db3db85cf679")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0.3)
+		)
+		(min_thickness 0.20)
+		(filled_areas_thickness no)
+		(fill yes
+			(thermal_gap 0.3)
+			(thermal_bridge_width 0.3)
+		)
+		(polygon
+			(pts
+				(xy 0.3000 0.3000) (xy 89.7000 0.3000) (xy 89.7000 69.7000) (xy 0.3000 69.7000)
+			)
+		)
+	)
+	(zone
+		(net 0)
+		(net_name "")
+		(layer "F.Cu")
+		(uuid "fbfab2ec-de9a-4621-9e0a-9b4890a67399")
+		(name "USB_keepout")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0.0)
+		)
+		(min_thickness 0.20)
+		(filled_areas_thickness no)
+		(keepout
+			(tracks allowed)
+			(vias allowed)
+			(pads allowed)
+			(copperpour not_allowed)
+			(footprints allowed)
+		)
+		(fill
+			(thermal_gap 0.5)
+			(thermal_bridge_width 0.5)
+		)
+		(polygon
+			(pts
+				(xy 36.5000 28.0000) (xy 43.0000 28.0000) (xy 43.0000 63.0000) (xy 36.5000 63.0000)
+			)
+		)
+	)
+	(zone
+		(net 0)
+		(net_name "")
+		(layer "B.Cu")
+		(uuid "878c89e0-c3b7-4fd5-815f-e0c8c41c8501")
+		(name "USB_keepout")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0.0)
+		)
+		(min_thickness 0.20)
+		(filled_areas_thickness no)
+		(keepout
+			(tracks allowed)
+			(vias allowed)
+			(pads allowed)
+			(copperpour not_allowed)
+			(footprints allowed)
+		)
+		(fill
+			(thermal_gap 0.5)
+			(thermal_bridge_width 0.5)
+		)
+		(polygon
+			(pts
+				(xy 36.5000 28.0000) (xy 43.0000 28.0000) (xy 43.0000 63.0000) (xy 36.5000 63.0000)
+			)
+		)
+	)
 	(embedded_fonts no)
 )
