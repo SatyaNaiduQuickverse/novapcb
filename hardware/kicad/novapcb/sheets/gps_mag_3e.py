@@ -183,3 +183,31 @@ r_scl = Part("Device", "R", value="4.7k", footprint=FP_R_0402)
 r_scl.ref = "R22"
 P3V3     += r_scl[1]
 I2C1_SCL += r_scl[2]
+
+
+# ---- ESD on GPS+I2C+BUZZER external lines (v1.1 redundancy re-spin) ----
+# Per docs/RESPIN_SCOPE.md + RESPIN_PARTS_REVIEW.md §3:
+# Bidirectional TVS to GND on the long-cable signal lines (GPS connector
+# = up to 1m external cable, highest ESD exposure on the board).
+#
+# Lines protected: GPS_TX, GPS_RX, I2C1_SCL, I2C1_SDA, BUZZER (and the
+# v1.1 also has LPS22HB on I2C1 internally — the ESD here protects both
+# the external bus consumers and U7 from cable surges).
+#
+# SAFETY_SW + SAFETY_LED are testpoint-only (hwdef-unassigned per docstring)
+# — ESD on them at this revision is not required since no MCU pin is wired.
+#
+# Part: ESD7L5.0DT5G (onsemi). 5V standoff > 3.3V signal, ~0.5pF cap acceptable
+# at 400 kHz I2C + 115200 baud GPS UART.
+
+for ref, net_obj in (("D5", GPS1_TX),
+                     ("D6", GPS1_RX),
+                     ("D7", I2C1_SCL),
+                     ("D8", I2C1_SDA),
+                     ("D9", BUZZER)):
+    esd = Part("Device", "D_TVS",
+               value="ESD7L5.0DT5G",
+               footprint="Diode_SMD:D_SOD-723")
+    esd.ref = ref
+    net_obj += esd[1]
+    GND     += esd[2]

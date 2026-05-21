@@ -1,18 +1,18 @@
 ERC WARNING: Only one pin (PASSIVE pin 7/Pin_7 of Conn_01x10/J5) attached to net SAFETY_LED_TP.
-ERC WARNING: Insufficient drive current on net +3V3_IMU_PRE for pin POWER-IN pin 1/IN of LP5907MFX-3.3/U13.
-ERC WARNING: Only one pin (OUTPUT pin 7/INT_DRDY of LPS22HB/U7) attached to net LPS22HB_INT_TP.
-ERC WARNING: Only one pin (PASSIVE pin 19/Pin_19 of Conn_01x20/U6) attached to net EFUSE_IMON.
-ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 3/VSS of SD_Card_Device/J2.
+ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 3/GND of Conn_ARM_JTAG_SWD_10/J9.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 2/GND of LP5907MFX-3.3/U13.
+ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 3/VSS of SD_Card_Device/J2.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 2/GND of AP2112K-3.3/U2.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 10/VSS of STM32H743VITx/U1.
-ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 3/GND of Conn_ARM_JTAG_SWD_10/J9.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 8/GND of LPS22HB/U7.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 19/VSSA of STM32H743VITx/U1.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 1/GND of BMP280/U4.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 7/GND of BMP280/U4.
 ERC WARNING: Only one pin (PASSIVE pin 1/INT1 of Conn_01x14/U3) attached to net IMU_INT1_TP.
+ERC WARNING: Only one pin (PASSIVE pin 19/Pin_19 of Conn_01x20/U6) attached to net EFUSE_IMON.
 ERC WARNING: Only one pin (PASSIVE pin 6/Pin_6 of Conn_01x10/J5) attached to net SAFETY_SW_TP.
+ERC WARNING: Only one pin (OUTPUT pin 7/INT_DRDY of LPS22HB/U7) attached to net LPS22HB_INT_TP.
+ERC WARNING: Insufficient drive current on net +3V3_IMU_PRE for pin POWER-IN pin 1/IN of LP5907MFX-3.3/U13.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 97/PE0 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 98/PE1 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 1/PE2 of STM32H743VITx/U1.

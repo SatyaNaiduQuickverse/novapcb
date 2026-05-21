@@ -166,6 +166,25 @@ USART6_RX += crsf_conn[3]   # RX channel-data → FC
 GND       += crsf_conn[4]
 
 
+# ---- ESD on CRSF TX/RX (v1.1 redundancy re-spin) ----
+# Per docs/RESPIN_SCOPE.md + RESPIN_PARTS_REVIEW.md §3: bidirectional TVS
+# to GND on each external CRSF UART line. CRSF runs at 420 kbaud — well
+# within ESD7L5.0DT5G's ~0.5pF / 5V-standoff envelope.
+esd_crsf_tx = Part("Device", "D_TVS",
+                   value="ESD7L5.0DT5G",
+                   footprint="Diode_SMD:D_SOD-723")
+esd_crsf_tx.ref = "D13"
+USART6_TX += esd_crsf_tx[1]
+GND       += esd_crsf_tx[2]
+
+esd_crsf_rx = Part("Device", "D_TVS",
+                   value="ESD7L5.0DT5G",
+                   footprint="Diode_SMD:D_SOD-723")
+esd_crsf_rx.ref = "D14"
+USART6_RX += esd_crsf_rx[1]
+GND       += esd_crsf_rx[2]
+
+
 # ====================================================================
 # USB-C block — USB 2.0 receptacle + CC pulldowns + ESD protection
 # ====================================================================

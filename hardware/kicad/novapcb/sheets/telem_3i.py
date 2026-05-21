@@ -95,3 +95,30 @@ USART1_RX += telem_conn[3]   # peripheral TX → FC RX
 # Pin 4 CTS: NC (USART1 CTS not assigned in hwdef.dat — software flow control)
 # Pin 5 RTS: NC (USART1 RTS not assigned in hwdef.dat)
 GND       += telem_conn[6]   # GND
+
+
+# ---- ESD on telem TX/RX (v1.1 redundancy re-spin) ----
+# Per docs/RESPIN_SCOPE.md + RESPIN_PARTS_REVIEW.md §3:
+# Bidirectional TVS to GND on each external signal line. Placement
+# (Phase 4 layout): immediately adjacent to the connector body so the
+# clamp fires before the surge reaches MCU GPIO.
+#
+# Part: ESD7L5.0DT5G (onsemi, SOT-723) — 5V standoff (>3.3V signal),
+# ~0.5pF capacitance (negligible at telem rates ≤ 921600 baud), bidirectional.
+# JLC library status verified at R2 footprint phase per scope §7 q8.
+#
+# Symbol: Device:D_TVS (bidirectional generic), pin 1 = signal, pin 2 = GND.
+
+esd_tx = Part("Device", "D_TVS",
+              value="ESD7L5.0DT5G",
+              footprint="Diode_SMD:D_SOD-723")
+esd_tx.ref = "D11"
+USART1_TX += esd_tx[1]
+GND       += esd_tx[2]
+
+esd_rx = Part("Device", "D_TVS",
+              value="ESD7L5.0DT5G",
+              footprint="Diode_SMD:D_SOD-723")
+esd_rx.ref = "D12"
+USART1_RX += esd_rx[1]
+GND       += esd_rx[2]
