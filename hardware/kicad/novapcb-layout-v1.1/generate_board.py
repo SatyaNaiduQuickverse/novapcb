@@ -398,11 +398,17 @@ PLACEMENT = {
 
     # USB-C J1 (N edge mid-mount) — body ~10mm wide. Place N edge near board top.
     # USB-C body extends ~10mm wide centered at X=38 — Y=58.5 → body Y=55.5..61.5
-    # ESD U5 + CC pulldowns well clear (≥3mm from USB-C body)
-    "J1":  (38.0, 58.5,    0),
-    "U5":  (30.0, 50.0,    0),
-    "R31": (33.5, 48.0,    0),
-    "R32": (36.5, 48.0,    0),
+    # USB-C J1 — AT THE NORTH BOARD EDGE so the cable receptacle opening is
+    # pluggable from outside the board (master Rule-17 catch 2026-05-21).
+    # HRO_TYPE-C-31-M-12 footprint has cable opening at footprint Y=+4.15
+    # (opposite the SMD pads at Y=-4.045). For opening AT board edge Y=70:
+    #   J1 center Y = 70 - 4.15 = 65.85
+    # Body extent: Y=60.58..70 (cable side AT edge), X=34.18..44.82.
+    # J5 GPS moved east to X=55 to free the X=34-44 lane for USB-C.
+    "J1":  (39.5, 65.85,   0),
+    "U5":  (32.0, 55.0,    0),     # USB ESD south of J1 pads (J1 pads end Y=62.53)
+    "R31": (26.5, 55.0,    0),     # CC pulldowns ≥3mm W of U5
+    "R32": (28.5, 55.0,    0),
 
     # microSD J2 on B.Cu, centered on MCU
     "J2":  (41.0, 35.0,    0, "B"),
@@ -477,29 +483,29 @@ PLACEMENT = {
     "R45": (82.5, 42.0,    0),       # 120Ω termination
     "R46": (87.0, 42.0,    0),       # 0Ω jumper
 
-    # N-edge connectors: spread for ESD diode placement clearance
-    # J3 telem (W), J5 GPS+mag (center), J10 CRSF (E)
-    "J3":  (28.0, 66.5,    0),       # Telem JST-GH 6P
-    "J5":  (50.0, 66.5,    0),       # GPS+mag JST-GH 10P (10pin body ~16mm)
-    "J10": (68.0, 66.5,    0),       # CRSF solder pads (custom)
+    # N-edge connectors: J3 (W) — USB-C J1 (X=34-45) — J5 GPS (X=47-63) — J10 CRSF (E)
+    # J5 moved east from X=50 to X=55 to free up the X=34-44 lane for USB-C J1.
+    "J3":  (24.0, 66.5,    0),       # Telem JST-GH 6P — moved W to free space
+    "J5":  (55.0, 66.5,    0),       # GPS+mag JST-GH 10P — moved E (was X=50)
+    "J10": (74.0, 66.5,    0),       # CRSF solder pads — moved E (was X=68)
 
-    # ESD diodes — placed in the clean lane Y=62 between J1 (south-moved,
-    # pads now end at Y=59.75) and N-edge connector bodies (Y≥64.9).
-    # All diodes at Y=62, lane Y=61..63 — clean band.
-    "D11": (21.5, 62.0,    0),       # telem TX (W of J3)
-    "D12": (31.0, 62.0,    0),       # telem RX (E of J3, ≥2mm clear of J1 W edge X=33.5)
-    # GPS+I2C diodes east of J1 keepaway (X≥44)
-    "D5":  (44.0, 62.0,    0),       # GPS TX
-    "D6":  (46.0, 62.0,    0),       # GPS RX
-    "D7":  (48.0, 62.0,    0),       # I2C SCL
-    "D8":  (50.0, 62.0,    0),       # I2C SDA
-    "D9":  (52.0, 62.0,    0),       # BUZZER
-    "D13": (74.5, 62.0,    0),       # CRSF TX (E of J10)
-    "D14": (76.5, 62.0,    0),       # CRSF RX
+    # ESD diodes — placed S of N-edge connectors at Y=62. J1 USB-C now at
+    # N edge (Y=65.85), body Y=60.58..70 + pads Y=61.8..62.53. So Y=62 lane
+    # collides with J1 pads at X=34..44.5. ESD diodes must AVOID X=34..44.5.
+    "D11": (20.0, 62.0,    0),       # telem TX (W of J3 X=24)
+    "D12": (28.0, 62.0,    0),       # telem RX (E of J3, W of J1 X=34.18)
+    # GPS+I2C diodes east of J1 keepaway (X>=46)
+    "D5":  (46.0, 62.0,    0),       # GPS TX
+    "D6":  (48.0, 62.0,    0),       # GPS RX
+    "D7":  (50.0, 62.0,    0),       # I2C SCL
+    "D8":  (52.0, 62.0,    0),       # I2C SDA
+    "D9":  (54.0, 62.0,    0),       # BUZZER
+    "D13": (70.0, 62.0,    0),       # CRSF TX (W of J10 X=74)
+    "D14": (78.0, 62.0,    0),       # CRSF RX (E of J10)
 
     # GPS I2C pullups
-    "R21": (56.0, 62.0,    0),
-    "R22": (58.0, 62.0,    0),
+    "R21": (60.0, 62.0,    0),
+    "R22": (62.0, 62.0,    0),
 
     # Baro1 (DPS310) I2C2 pullups (carry-forward from v1.0)
     "R11": (75.0, 24.0,    0),
