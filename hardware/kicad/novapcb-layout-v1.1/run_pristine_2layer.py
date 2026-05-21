@@ -36,7 +36,7 @@ JAVA = os.path.expanduser("~/local/jre/jdk-25.0.3+9-jre/bin/java")
 FR_JAR = os.path.expanduser("~/local/freerouting/freerouting.jar")
 
 PLANE_NETS = ["GND", "+3V3", "+3V3A", "+5V"]
-FREEROUTING_TIMEOUT = 900  # 15 min hard cap per master
+FREEROUTING_TIMEOUT = 1500  # 25 min hard cap — allows -mp 10 to complete
 
 
 def strip_everything(brd):
@@ -107,9 +107,14 @@ def patch_pristine(dsn_path):
         n_net += n
     print(f"      pristine patch: -{n_layer} layers, -{n_plane} planes, "
           f"-{n_dropped} plane nets from class, -{n_net} (net ...) blocks")
-    if n_layer != 4 or n_plane != 4 or n_dropped != 4 or n_net != 4:
-        print(f"      !! expected 4 each; got {n_layer}/{n_plane}/{n_dropped}/{n_net}")
+    # v1.1: n_plane may be 0 if inner-layer plane fills haven't been added yet
+    # (the In1..In4 layer declarations are removed, so the absent plane fills
+    # don't reach Freerouting either way — 0 plane removals is OK in v1.1).
+    if n_layer != 4 or n_dropped != 4 or n_net != 4:
+        print(f"      !! expected 4 each (layers/dropped/net); got {n_layer}/{n_dropped}/{n_net}")
         return 0
+    if n_plane != 4:
+        print(f"      note: {n_plane} plane fills removed (v1.1 has empty inner layers — OK)")
     with open(dsn_path, "w") as f:
         f.write(text)
     return 1
@@ -141,8 +146,11 @@ def main():
     print(f"[4] run Freerouting -mt 4 -mp 100 (hard timeout {FREEROUTING_TIMEOUT}s)")
     if os.path.exists(SES): os.remove(SES)
     t0 = time.time()
-    cmd = [JAVA, "-Dgui.enabled=false", "-jar", FR_JAR,
-           "-de", DSN, "-do", SES, "-mt", "4", "-mp", "100"]
+    # -Xmx6g bounds Java heap. -mp 10 = 10 passes (~14 min based on
+    # ~80s/pass). Earlier -mp 100 OOM'd; -mp 3 produced 61 unrouted;
+    # -mp 10 should converge to <20 unrouted (then hand-finish the rest).
+    cmd = [JAVA, "-Xmx6g", "-Dgui.enabled=false", "-jar", FR_JAR,
+           "-de", DSN, "-do", SES, "-mt", "4", "-mp", "10"]
     timed_out = False
     with open(LOG, "w") as logf:
         try:
