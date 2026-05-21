@@ -207,7 +207,7 @@ for ref, net_obj in (("D5", GPS1_TX),
                      ("D9", BUZZER)):
     esd = Part("Device", "D_TVS",
                value="ESD7L5.0DT5G",
-               footprint="Diode_SMD:D_SOD-723")
+               footprint="esd7l50:SOT-723_L1.2-W0.8-P0.40-LS1.2-BR")
     esd.ref = ref
     net_obj += esd[1]
     GND     += esd[2]

@@ -127,12 +127,14 @@ CAN1_TX          += mcu["PD1"]
 GPIO_CAN1_SILENT += mcu["PD3"]
 
 
-# ---- TJA1051TK/3 transceiver (U14) ----
-# KiCad standard libs lack a TJA1051 symbol; use Conn_01x08 generic with
-# value override per the pattern used for TPS25940A + LM74700 in 3b.
+# ---- TJA1051TK/3,118 transceiver (U14) ----
+# Symbol+footprint pulled via easyeda2kicad from LCSC C124020 — HVSON-8
+# (3.0×3.0mm with EXPOSED PAD), NOT TSSOP-8 (master correction 2026-05-21:
+# NXP naming -T = SO8, -TK = HVSON8). Pin 9 EP must be soldered to GND for
+# thermal performance per NXP DS rev 6 §11.
 u14 = Part(
-    "Connector_Generic", "Conn_01x08",
-    footprint="Package_SO:TSSOP-8_3x3mm_P0.65mm",
+    "tja1051", "TJA1051TK_3,118",   # easyeda2kicad sanitizes "/" → "_" in symbol names
+    footprint="tja1051:HVSON-8_L3.0-W3.0-P0.65-BL-EP",
     value="TJA1051TK/3",
 )
 u14.ref = "U14"
@@ -149,6 +151,7 @@ P3V3              += u14[5]   # pin 5: VIO = +3V3
 CANL_NET          += u14[6]   # pin 6: CANL
 CANH_NET          += u14[7]   # pin 7: CANH
 GPIO_CAN1_SILENT  += u14[8]   # pin 8: S = standby/silent control
+GND               += u14[9]   # pin 9: EP (exposed pad) — tie to GND for thermal + ESD
 
 
 # ---- TJA1051 decoupling (per NXP DS table 17 'Application information') ----
@@ -164,23 +167,25 @@ P3V3 += c_u14_vio[1]
 GND  += c_u14_vio[2]
 
 
-# ---- PESD2CAN ESD protection (U15) ----
-# NXP PESD2CAN — 2-channel CAN-rated TVS, SOT-143-3. KiCad library has
-# no PESD2CAN symbol; using Conn_01x03 generic per the symbol-substitute
-# pattern. Pin map per NXP PESD2CAN datasheet §3:
-#   pin 1 = CANH (channel 1)
-#   pin 2 = GND  (common cathode)
-#   pin 3 = CANL (channel 2)
+# ---- PESD2CAN,215 ESD protection (U15) ----
+# Symbol+footprint pulled via easyeda2kicad from LCSC C75176 — SOT-23-3
+# (NOT SOT-143; master correction 2026-05-21: Nexperia PESD2CAN,215 ships
+# in 3-pin SOT-23). Per Nexperia PESD2CAN datasheet (DS rev 7) §6 pin
+# config (standard 3-pin SOT-23 TVS array layout):
+#   pin 1 = I/O1 (one bidirectional CAN bus line)
+#   pin 2 = I/O2 (other bidirectional CAN bus line)
+#   pin 3 = GND (common cathode of TVS pair)
+# CAN_H vs CAN_L assignment to I/O1 vs I/O2 is symmetric (bidirectional TVS).
 u15 = Part(
-    "Connector_Generic", "Conn_01x03",
-    footprint="Package_TO_SOT_SMD:SOT-143",
+    "pesd2can", "PESD2CAN,215",
+    footprint="pesd2can:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
     value="PESD2CAN",
 )
 u15.ref = "U15"
 
-CANH_NET += u15[1]   # pin 1: CANH
-GND      += u15[2]   # pin 2: common GND
-CANL_NET += u15[3]   # pin 3: CANL
+CANH_NET += u15[1]   # pin 1: I/O1 = CANH
+CANL_NET += u15[2]   # pin 2: I/O2 = CANL
+GND      += u15[3]   # pin 3: GND (common cathode)
 
 
 # ---- Termination: 120Ω 0603 with jumper-selectable disconnect ----

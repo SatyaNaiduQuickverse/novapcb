@@ -111,14 +111,14 @@ GND       += telem_conn[6]   # GND
 
 esd_tx = Part("Device", "D_TVS",
               value="ESD7L5.0DT5G",
-              footprint="Diode_SMD:D_SOD-723")
+              footprint="esd7l50:SOT-723_L1.2-W0.8-P0.40-LS1.2-BR")
 esd_tx.ref = "D11"
 USART1_TX += esd_tx[1]
 GND       += esd_tx[2]
 
 esd_rx = Part("Device", "D_TVS",
               value="ESD7L5.0DT5G",
-              footprint="Diode_SMD:D_SOD-723")
+              footprint="esd7l50:SOT-723_L1.2-W0.8-P0.40-LS1.2-BR")
 esd_rx.ref = "D12"
 USART1_RX += esd_rx[1]
 GND       += esd_rx[2]

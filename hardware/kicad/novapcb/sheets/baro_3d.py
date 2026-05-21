@@ -230,8 +230,8 @@ I2C1_SCL = n("I2C1_SCL")
 I2C1_SDA = n("I2C1_SDA")
 
 baro2 = Part(
-    "Sensor_Pressure", "LPS22HB",
-    footprint="Package_LGA:ST_HLGA-10_2x2mm_P0.5mm_LayoutBorder3x2y",
+    "lps22hbtr", "LPS22HBTR",
+    footprint="lps22hbtr:HLGA-10L_LPS22HBTR",
     value="LPS22HB",
 )
 baro2.ref = "U7"   # U6 = eFuse (power_3b); U7 next free in U-series
@@ -243,13 +243,18 @@ GND  += baro2[3]    # GND
 GND  += baro2[8]    # GND
 GND  += baro2[9]    # GND
 
-# I²C lines.
+# I²C lines (LCSC C94049 LPS22HBTR symbol pin names: SCL/SPC, SDA/SDI/SDO).
 I2C1_SCL += baro2[2]   # SCL
 I2C1_SDA += baro2[4]   # SDA
 
 # Mode + address selects.
-GND  += baro2[5]    # SA0 = GND → I²C address 0x5C
-P3V3 += baro2[6]    # ~CS high → I²C mode (NOT SPI)
+GND  += baro2[5]    # SDO/SA0 tied LOW → I²C address 0x5C
+P3V3 += baro2[6]    # CS tied HIGH → I²C mode (NOT SPI)
+
+# Pin 3 RES (reserved per ST DS11211 Table 5) — ST permits NC or tied
+# to GND. KiCad std LPS25HB symbol mislabels this as GND; the LCSC-
+# pulled LPS22HBTR symbol correctly labels it RES. Wiring to GND per
+# the previous v1.0 baro footprint convention (electrically identical).
 
 # DRDY interrupt — testpoint only (no MCU pin assigned in hwdef v1.0;
 # future hwdef revision can route to a free GPIO for hardware DRDY).

@@ -406,66 +406,69 @@ P5V_BEC_A = n("+5V_BEC_A")  # post-J4, pre-OR-ing FET Q3 (declared here so
 P5V_BEC_B = n("+5V_BEC_B")  # post-J19, pre-OR-ing FET Q4
 
 # ---- LM74700-Q1 U11: ideal-diode controller for input A (J4 path) ----
-# KiCad library has no LM74700-Q1 symbol; use Conn_01x08 (MSOP-8 pin count)
-# with value override per the pattern already used for TPS25940A in this sheet.
-# Pin map per TI SLUSEZ8 LM74700-Q1 datasheet §6.1:
-#   pin 1 = GATE, pin 2 = VS (input supply), pin 3 = VCAP (charge-pump),
-#   pin 4 = GND, pin 5 = EN/UVLO, pin 6 = ANODE (input sense),
-#   pin 7 = CATHODE (output sense), pin 8 = NC (or DEVSLP — tie GND)
+# Symbol+footprint pulled via easyeda2kicad from LCSC C2653623
+# (LM74700QDBVTQ1 — SOT-23-6 DBV variant). Cross-checked against TI
+# SLLSEZ8 LM74700-Q1 datasheet §6 (Pinning, page 4) — DBV variant pin map:
+#   pin 1 = VCAP (charge-pump cap to GND)
+#   pin 2 = GND
+#   pin 3 = EN (enable; tie to ANODE for always-on)
+#   pin 4 = CATHODE (output side; downstream rail sense)
+#   pin 5 = GATE (drives external N-FET gate)
+#   pin 6 = ANODE (input side; chip supply + input voltage sense)
+# Note this is the SOT-23-6 DBV variant — does NOT have a separate VS
+# supply pin like the 8-pin DDF variant. ANODE serves as the chip's
+# power input AND the input-voltage sense.
 u11 = Part(
-    "Connector_Generic", "Conn_01x08",
-    footprint="Package_SO:MSOP-8_3x3mm_P0.65mm",
+    "lm74700", "LM74700QDBVTQ1",
+    footprint="lm74700:SOT-23-6_L2.9-W1.6-P0.95-LS2.8-TL",
     value="LM74700-Q1",
 )
 u11.ref = "U11"
 
-# Net for U11→Q3 gate drive.
 ORING_A_GATE = Net("ORING_A_GATE")
 ORING_A_VCAP = Net("ORING_A_VCAP")
 
-ORING_A_GATE += u11[1]   # GATE → Q3 gate
-P5V_BEC_A    += u11[2]   # VS = input supply
-ORING_A_VCAP += u11[3]   # VCAP charge-pump cap
-GND          += u11[4]   # GND
-P5V_BEC_A    += u11[5]   # EN tied to VS → always-on
-P5V_BEC_A    += u11[6]   # ANODE = input sense
-P5V_BEC      += u11[7]   # CATHODE = output sense (downstream shared rail)
-GND          += u11[8]   # NC / DEVSLP tied GND
+ORING_A_VCAP += u11[1]   # VCAP — 1µF cap to GND for charge pump
+GND          += u11[2]   # GND
+P5V_BEC_A    += u11[3]   # EN tied to ANODE → always-on
+P5V_BEC      += u11[4]   # CATHODE = output side (downstream shared rail)
+ORING_A_GATE += u11[5]   # GATE → external N-FET (Q3) gate
+P5V_BEC_A    += u11[6]   # ANODE = input side (chip supply + V-sense)
 
-# U11 VCAP cap (1µF X5R per TI datasheet table 7-1).
+# U11 VCAP cap (1µF X7R per TI datasheet — charge-pump reservoir).
 c_u11_vcap = Part("Device", "C", value="1uF", footprint=FP_C_0402)
 c_u11_vcap.ref = "C73"
 ORING_A_VCAP += c_u11_vcap[1]
 GND          += c_u11_vcap[2]
 
-# U11 VS bypass (100nF X7R close to pin 2).
+# U11 ANODE-side bypass (100nF X7R close to pin 6 ANODE — supply decoupling).
 c_u11_vs = Part("Device", "C", value="100nF", footprint=FP_C_0402)
 c_u11_vs.ref = "C74"
 P5V_BEC_A += c_u11_vs[1]
 GND       += c_u11_vs[2]
 
-# Q3: N-FET for input-A OR-ing path. Placeholder value "AO4407A" — final
-# part picked at R2 footprint phase from JLC-stocked SO-8 single N-FETs
-# with V_DSS ≥ 30V, R_DS(on) ≤ 10mΩ @ V_GS=10V, I_D ≥ 5A. AO4407A is a
-# commonly-stocked example; alternatives include AO4422, SiR826ADP.
+# Q3: AO4262E SOIC-8 N-FET for input-A OR-ing path. Master's
+# recommendation 2026-05-21 (LCSC C431178): 60V / 16.5A / 6.5mΩ / SOIC-8.
+# Pin map per AOS datasheet via easyeda2kicad pull:
+#   pins 1, 2, 3 = S (source — paralleled for current capacity)
+#   pin 4        = G (gate)
+#   pins 5, 6, 7, 8 = D (drain — paralleled for current capacity)
 q3 = Part(
-    "Transistor_FET", "AO3400A",   # symbol from KiCad; package overridden
-    footprint="Package_SO:SO-8_3.9x4.9mm_P1.27mm",
-    value="N_MOSFET_OR_A",
+    "ao4262e", "AO4262E",
+    footprint="ao4262e:SOIC-8_L4.9-W3.9-P1.27-LS6.0-BL",
+    value="AO4262E",
 )
 q3.ref = "Q3"
-# AO3400 symbol has G/D/S pins. The real OR-ing FET is in SO-8 with
-# multiple G/D/S — R2 swaps the symbol to the actual SO-8 N-FET when
-# the JLC-stocked part is finalized. Wiring topology stays the same.
-P5V_BEC_A    += q3["S"]   # source = input A
-P5V_BEC      += q3["D"]   # drain = shared output BEC node
-ORING_A_GATE += q3["G"]   # gate driven by U11
+# Source pins (1, 2, 3) → input A; drain pins (5, 6, 7, 8) → shared BEC.
+for sp in (1, 2, 3):  P5V_BEC_A += q3[sp]
+ORING_A_GATE += q3[4]   # gate
+for dp in (5, 6, 7, 8): P5V_BEC += q3[dp]
 
 
 # ---- LM74700-Q1 U12: ideal-diode controller for input B (J19 path) ----
 u12 = Part(
-    "Connector_Generic", "Conn_01x08",
-    footprint="Package_SO:MSOP-8_3x3mm_P0.65mm",
+    "lm74700", "LM74700QDBVTQ1",
+    footprint="lm74700:SOT-23-6_L2.9-W1.6-P0.95-LS2.8-TL",
     value="LM74700-Q1",
 )
 u12.ref = "U12"
@@ -473,14 +476,12 @@ u12.ref = "U12"
 ORING_B_GATE = Net("ORING_B_GATE")
 ORING_B_VCAP = Net("ORING_B_VCAP")
 
-ORING_B_GATE += u12[1]
-P5V_BEC_B    += u12[2]
-ORING_B_VCAP += u12[3]
-GND          += u12[4]
-P5V_BEC_B    += u12[5]
-P5V_BEC_B    += u12[6]
-P5V_BEC      += u12[7]
-GND          += u12[8]
+ORING_B_VCAP += u12[1]
+GND          += u12[2]
+P5V_BEC_B    += u12[3]   # EN tied to ANODE → always-on
+P5V_BEC      += u12[4]   # CATHODE
+ORING_B_GATE += u12[5]   # GATE
+P5V_BEC_B    += u12[6]   # ANODE
 
 c_u12_vcap = Part("Device", "C", value="1uF", footprint=FP_C_0402)
 c_u12_vcap.ref = "C75"
@@ -493,14 +494,14 @@ P5V_BEC_B += c_u12_vs[1]
 GND       += c_u12_vs[2]
 
 q4 = Part(
-    "Transistor_FET", "AO3400A",
-    footprint="Package_SO:SO-8_3.9x4.9mm_P1.27mm",
-    value="N_MOSFET_OR_B",
+    "ao4262e", "AO4262E",
+    footprint="ao4262e:SOIC-8_L4.9-W3.9-P1.27-LS6.0-BL",
+    value="AO4262E",
 )
 q4.ref = "Q4"
-P5V_BEC_B    += q4["S"]
-P5V_BEC      += q4["D"]
-ORING_B_GATE += q4["G"]
+for sp in (1, 2, 3):  P5V_BEC_B += q4[sp]
+ORING_B_GATE += q4[4]
+for dp in (5, 6, 7, 8): P5V_BEC += q4[dp]
 
 
 # ---- LP5907MFX-3.3 (U13): ultra-low-noise LDO for IMU rail ----
@@ -519,17 +520,17 @@ P3V3         += fb_imu_in[1]
 P3V3_IMU_PRE += fb_imu_in[2]
 
 u13 = Part(
-    "Regulator_Linear", "LP5907MFX-3.3",
-    footprint="Package_TO_SOT_SMD:SOT-23-5",
+    "lp5907", "LP5907MFX-3.3_NOPB",
+    footprint="lp5907:SOT-23-5_L3.0-W1.7-P0.95-LS2.8-BR",
     value="LP5907MFX-3.3",
 )
 u13.ref = "U13"
-# LP5907 pin map (per KiCad symbol pin names): 1=IN, 2=GND, 3=EN, 4=NC, 5=OUT
-P3V3_IMU_PRE += u13["IN"]
-GND          += u13["GND"]
-P3V3_IMU_PRE += u13["EN"]    # EN tied to IN → always-on
-# NC pin 4: unconnected per datasheet
-P3V3_IMU     += u13["OUT"]
+# LP5907 pin map (LCSC C80670 LP5907MFX-3.3/NOPB): pin 1=IN, 2=GND, 3=EN, 4=N/C, 5=OUT
+P3V3_IMU_PRE += u13[1]   # IN
+GND          += u13[2]   # GND
+P3V3_IMU_PRE += u13[3]   # EN tied to IN → always-on
+# pin 4 N/C — unconnected per datasheet
+P3V3_IMU     += u13[5]   # OUT
 
 # LP5907 caps per TI datasheet table 9-1: 1µF X7R input + 1µF X7R output
 # (both ceramic for low-noise performance — datasheet explicitly calls
