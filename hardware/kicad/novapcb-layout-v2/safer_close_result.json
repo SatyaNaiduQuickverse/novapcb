@@ -1,0 +1,182 @@
+{
+  "closed": [
+    {
+      "ref": "C20",
+      "pad": "1",
+      "net": "+3V3A",
+      "method": "('pad', 3.38420226936866, 'L1')"
+    },
+    {
+      "ref": "R52",
+      "pad": "1",
+      "net": "+3V3",
+      "method": "('via', 3.075010907519031, 'straight')"
+    },
+    {
+      "ref": "U1",
+      "pad": "10",
+      "net": "GND",
+      "method": "('pour_edge', 0.8381016848628778, 'straight')"
+    },
+    {
+      "ref": "U1",
+      "pad": "21",
+      "net": "+3V3A",
+      "method": "('trk_end', 2.6849999999999987, 'straight')"
+    },
+    {
+      "ref": "U1",
+      "pad": "99",
+      "net": "GND",
+      "method": "('pour_edge', 0.8381217579862736, 'straight')"
+    }
+  ],
+  "flagged": [
+    {
+      "ref": "C11",
+      "pad": "1",
+      "net": "+3V3",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "C12",
+      "pad": "1",
+      "net": "+3V3",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "C15",
+      "pad": "1",
+      "net": "+3V3",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "C19",
+      "pad": "1",
+      "net": "+3V3A",
+      "reason": "no candidates within 5mm"
+    },
+    {
+      "ref": "C43",
+      "pad": "2",
+      "net": "GND",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "FB1",
+      "pad": "2",
+      "net": "+3V3A",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "J1",
+      "pad": "A4",
+      "net": "+5V",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "J1",
+      "pad": "A9",
+      "net": "+5V",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "J2",
+      "pad": "4",
+      "net": "+3V3",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "R1",
+      "pad": "1",
+      "net": "+3V3A",
+      "reason": "no candidates within 5mm"
+    },
+    {
+      "ref": "R51",
+      "pad": "1",
+      "net": "+3V3",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "R53",
+      "pad": "1",
+      "net": "+3V3",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "R54",
+      "pad": "1",
+      "net": "+3V3",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "R55",
+      "pad": "1",
+      "net": "+3V3",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "U1",
+      "pad": "100",
+      "net": "+3V3",
+      "reason": "no candidates within 5mm"
+    },
+    {
+      "ref": "U1",
+      "pad": "11",
+      "net": "+3V3",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "U1",
+      "pad": "19",
+      "net": "GND",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "U1",
+      "pad": "27",
+      "net": "+3V3",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "U1",
+      "pad": "49",
+      "net": "GND",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "U1",
+      "pad": "50",
+      "net": "+3V3",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "U1",
+      "pad": "75",
+      "net": "+3V3",
+      "reason": "no candidates within 5mm"
+    },
+    {
+      "ref": "U3",
+      "pad": "8",
+      "net": "+3V3",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "U5",
+      "pad": "5",
+      "net": "+5V",
+      "reason": "all attempts caused new errors"
+    },
+    {
+      "ref": "Y1",
+      "pad": "2",
+      "net": "GND",
+      "reason": "all attempts caused new errors"
+    }
+  ],
+  "final_drc_err": 10,
+  "final_drc_unc": 34
+}
