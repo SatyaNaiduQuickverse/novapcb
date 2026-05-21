@@ -42,7 +42,7 @@ Triple-IMU dissimilar, each on its own SPI bus.
 | Why chosen | Pixhawk-class standard 2nd IMU; genuinely dissimilar vendor + dissimilar architecture (separate accel + gyro dies → fault-tolerance vs single-die 6-axis); MEMS structure differs from Invensense. |
 | **ArduPilot driver** | **CONFIRMED** — `libraries/AP_InertialSensor/AP_InertialSensor_BMI088.cpp`. Active hwdef use: `Pixhawk6X/hwdef.dat` lines `SPIDEV bmi088_g SPI3 DEVID1 SP3_CS2 MODE3 10*MHZ 10*MHZ` + `SPIDEV bmi088_a SPI3 DEVID2 SP3_CS1 MODE3 10*MHZ 10*MHZ`. |
 | **TWO chip-selects needed** | gyro CS + accel CS — accounted for in pin budget (5 free SPI + 45 free GPIO has room) |
-| JLC PCBA library | LCSC C476030 (gyro) + C476029 (accel) — both Extended (verify-at-R2 footprint phase, may have shifted tier) |
+| JLC PCBA library | **LCSC C194919** — single MPN for the dual-die-single-package BMI088 (master correction 2026-05-21: not two separate dies in two packages; one LGA-16 4.5×3.0mm 0.5mm pitch holding accel + gyro internally with two chip selects). Confirmed via easyeda2kicad pull → `hardware/kicad/novapcb/lib/bmi088.kicad_sym` + footprint `LGA-16_L4.5-W3.0-P0.50-BL`. JLC stock status verified-at-R2-checkout. |
 | Voltage | 2.4–3.6V (compatible with 3.3V) |
 | Interface | SPI mode 0/3 (both dies), up to 10 MHz |
 | Operating temp | −40 to +85°C |
@@ -59,7 +59,7 @@ Triple-IMU dissimilar, each on its own SPI bus.
 | Why chosen | Preserves 3-vendor dissimilarity (TDK + Bosch + STM). LSM6DSV is the variant **ArduPilot has a driver for** — LSM6DSO does NOT have a driver (verified). DSV adds HAODR mode for high-accuracy 8 kHz ODR + dedicated FIFO compression. |
 | **ArduPilot driver** | **CONFIRMED 2026-05-21** — `libraries/AP_InertialSensor/AP_InertialSensor_LSM6DSV.cpp` + `.h`. Header declares `enum class LSM6DSV_Type { LSM6DSV16X }`. Active hwdef use: `Pixhawk6C/hwdef.dat`. Driver banner comment: *"driver for ST LSM6DSV16X IMU. Uses HAODR mode-1 for high-accuracy ODR (1000-8000 Hz) and continuous FIFO for burst reads."* |
 | **LSM6DSO rejection evidence** | `grep -rln "LSM6DSO\|lsm6dso" ~/ardupilot/libraries/` returns ZERO matches. Hard-fail on Sai's #1 rule. Master adjudication: do not force LSM6DSO. |
-| JLC PCBA library | LCSC — needs verify-at-R2. STM LSM6DSV16XTR is commonly stocked; if Extended-tier confirmed, lock; if not stocked, fallback chain: **IIM-42652** (TDK industrial-grade, same Invensensev3 driver — gives 2-vendor IMUs but each IMU is still a distinct die/die-batch; master-approved fallback). |
+| JLC PCBA library | **LCSC C5267406** (LSM6DSV16XTR, tape-and-reel standard orderable) — confirmed via easyeda2kicad pull → `hardware/kicad/novapcb/lib/lsm6dsv16x.kicad_sym` + footprint `LGA-14_L3.0-W2.5-P0.50-BR`. JLCPCB also lists this die under **C42388605** (separate JLC-PCBA assembly part number) — R2 reconciles which C-number is the actual JLCPCB assembly tier. Both refer to the same LSM6DSV16X silicon per master 2026-05-21. Fallback: IIM-42652 (TDK, same Invensensev3 driver, 2-vendor outcome). |
 | Voltage | 1.71–3.6V (compatible with 3.3V) |
 | Interface | SPI mode 0/3, MIPI I3C-compatible, up to 10 MHz |
 | Operating temp | −40 to +85°C |

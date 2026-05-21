@@ -34,6 +34,12 @@ def setup():
     syms = "/usr/share/kicad/symbols"
     if syms not in skidl.lib_search_paths["kicad9"]:
         skidl.lib_search_paths["kicad9"].append(syms)
+    # Local project library (easyeda2kicad-pulled parts: BMI088 C194919,
+    # LSM6DSV16XTR C5267406). Added v1.1 redundancy re-spin 2026-05-21
+    # per master directive — verified-symbol path over training-data guesses.
+    local_lib = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib")
+    if local_lib not in skidl.lib_search_paths["kicad9"]:
+        skidl.lib_search_paths["kicad9"].append(local_lib)
     # Suppress the KICAD*_SYMBOL_DIR env warnings — we set the path explicitly.
     os.environ.setdefault("KICAD9_SYMBOL_DIR", syms)
     # Override SKiDL's empty-footprint handler so PWR_FLAGs don't error.
