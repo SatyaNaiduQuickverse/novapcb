@@ -35,7 +35,7 @@ End
 
 Material 1
   Density = 2500
-  Heat Conductivity = 22.9
+  Heat Conductivity(3) = 33.5 33.5 0.316
   Heat Capacity = 800
 End
 

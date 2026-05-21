@@ -201,25 +201,36 @@ Inputs for Elmer-FEM thermal sim (Step 3 P1+):
 | Copper | 401 | 8960 | 385 | NIST |
 | Solder mask (LPI) | 0.25 | 1500 | 1200 | typical epoxy LPI |
 
-### 3.2 Layer stackup (target 6-layer — see PLACEMENT_STRATEGY §3 for the case)
+### 3.2 Layer stackup (CORRECTED 2026-05-21 — real JLC06161H-7628)
 
-JLCPCB JLC06161H standard 6-layer 4-oz inner / 1-oz outer, 1.6 mm total:
+**Earlier draft incorrectly assumed "4 oz inner / 1 oz outer". That is NOT a JLC standard offering** — JLCPCB heavy copper (≥ 2 oz) is 2-layer only per their published capability matrix (https://jlcpcb.com/help/article/jlcpcb-copper-weight). The real orderable JLC06161H 6-layer is **1 oz outer / 0.5 oz inner**. Corrected per master directive 2026-05-21.
+
+Pre-fab fab-order spec: **JLC06161H-7628** (the impedance-control prepreg variant — picked for USB diff-pair Z geometry per CONTROLLED_IMPEDANCE.md).
 
 | Layer | Material | Thickness (mm) | Purpose | Thermal role |
 |---|---|---|---|---|
 | L1 (top) | 1 oz Cu (35 µm) | 0.035 | Components + signal | Initial heat injection from U2/U1 die pads |
-| Prepreg 7628 | FR-4 | 0.18 | Dielectric | Through-plane heat conduction (low) |
-| L2 | 4 oz Cu (140 µm) | 0.14 | GND plane | Lateral heat-spreading (HIGH due to 4 oz) |
-| Core | FR-4 | 0.71 | Dielectric | Through-plane heat conduction |
-| L3 | 4 oz Cu (140 µm) | 0.14 | +3V3 power plane | Lateral heat-spreading |
-| Prepreg 7628 | FR-4 | 0.18 | Dielectric | — |
-| L4 | 4 oz Cu (140 µm) | 0.14 | +5V power plane | Lateral heat-spreading + LDO via-anchor |
-| Core | FR-4 | 0.71 | Dielectric | — |
-| L5 | 4 oz Cu (140 µm) | 0.14 | GND plane | Lateral heat-spreading |
-| Prepreg 7628 | FR-4 | 0.18 | Dielectric | — |
+| Prepreg 7628 | FR-4 (εr 4.3) | **0.21** | Dielectric | Through-plane heat conduction (low — bottleneck) |
+| L2 | 0.5 oz Cu (15.2 µm) | 0.0152 | GND plane | Lateral heat-spreading |
+| Core | FR-4 | 0.55 | Dielectric | Through-plane heat conduction |
+| L3 | 0.5 oz Cu (15.2 µm) | 0.0152 | +3V3 power plane | Lateral heat-spreading |
+| Prepreg 2116 | FR-4 | 0.1088 | Dielectric | — |
+| L4 | 0.5 oz Cu (15.2 µm) | 0.0152 | +5V power plane | Lateral heat-spreading + LDO via-anchor |
+| Core | FR-4 | 0.55 | Dielectric | — |
+| L5 | 0.5 oz Cu (15.2 µm) | 0.0152 | GND plane | Lateral heat-spreading |
+| Prepreg 7628 | FR-4 | 0.21 | Dielectric | — |
 | L6 (bot) | 1 oz Cu (35 µm) | 0.035 | Signal (sensors B.Cu) | Heat exit via bottom-side convection |
 
-Total inner copper: 4 × 140 µm = 560 µm = **0.56 mm of inner Cu** for lateral heat spreading. The LDO's drain pad vias to L4 (+5V plane) for heat injection into the inner-copper sink.
+**Total Cu thickness: 2 × 35 µm (outer) + 4 × 15.2 µm (inner) = 0.131 mm** (much less than the erroneous "0.56 mm" earlier draft assumed — 4.3× less). Total board ≈ 1.6 mm (Cu + FR-4 + prepreg).
+
+**Thermal-spreading note (the reason this correction does NOT break the design)**: Step 4 FEA was originally run with isotropic k_eff = 22.9 W/m·K. The corrected real anisotropic conductivities are k_xy = 33.5 W/m·K (in-plane, from the real 0.131 mm Cu / 1.469 mm FR-4 parallel-rule) and k_z = 0.316 W/m·K (through-plane series-rule). Re-running the Step 4 Elmer FEA with anisotropic `Heat Conductivity(3) = 33.5 33.5 0.316` on the 80×60 mm board confirms:
+
+- LDO Tj = 69.8 °C (vs 80 °C target) ✓
+- MCU Tj = 74.2 °C (vs 80 °C target with 5.8 °C margin) ✓
+
+The result is essentially identical to the original isotropic k = 22.9 run (LDO 69, MCU 75.2). The design is **convection-limited, not heat-spreading-limited** — the board-average temperature is set by P_total / (h × 2 A_board) regardless of internal heat-spreading. Inner Cu weight matters at sub-millimeter local hotspot scale but not at the board level.
+
+The k_eff = 22.9 isotropic choice from the original Step 4 model was an arbitrary geometric-mean-ish value that happened to give a similar T_max to the proper anisotropic model. The 80×60 thermal conclusion stands either way.
 
 ### 3.3 Thermal-via parameters for the LDO heat-spreading pour
 

@@ -1,0 +1,94 @@
+id: phase-pivot-step5-routing
+phase: pivot
+subphase: "step-5"
+title: "Step 5 — route the 80×60 6-layer board (Freerouting + residual hand-route)"
+status: in_progress
+depends_on:
+  - phase-pivot-step3-p1   # placement (merged PR #58)
+  - phase-pivot-step4      # thermal validation (merged PR #59 superseded → PR #61)
+  - phase-pivot-step3-4-rev # Sai Path B grown board (merged PR #61)
+  - phase-pivot-imu-footprint # ICM-42688-P custom footprint (merged PR #60)
+
+inputs:
+  files:
+    - hardware/kicad/novapcb-layout-v2/novapcb-layout-v2.kicad_pcb  # the 80×60 placement to route
+    - hardware/kicad/novapcb-layout-v2/PLACEMENT_REPORT.md
+    - docs/PLACEMENT_STRATEGY.md
+    - hardware/kicad/novapcb-layout/run_freeroute.py                  # Phase 4d toolchain reference
+  refs:
+    - "Master 2026-05-21 directive (post-#61 merge): route the 80×60 6-layer board via Freerouting + residual hand-route. The conditions are completely different from the Phase 4d 36×36/4-layer attempt that failed badly: 80×60 mm (generous space), 6 layers (more routing layers). Expect this to go FAR more completely."
+    - "Recompute controlled-impedance geometry for the 6-LAYER stackup. The old USB 90Ω diff-pair geometry (W=0.25/S=0.10) was computed for the 4-layer stackup — the L1↔L2 dielectric height is different. Recompute analytically + document."
+    - "Power nets are plane-served (6-layer dedicated power planes L2 GND / L3 +3V3 / L4 +5V / L5 GND); confirm they're excluded from the route list."
+    - "Sai away ~9-10h — autonomous mode. Discipline: honest escalation, tripwire, falsifiable predictions."
+
+prediction:
+  worker_pre_run_prediction: |
+    Workflow:
+      1. Recompute USB diff-pair Z0 geometry analytically for the 6-layer
+         JLC06161H stackup (L1↔L2 prepreg 0.118 mm vs the 4-layer 0.234 mm).
+         Expected: narrower traces (~0.18 mm) for the same 90Ω target
+         because the smaller dielectric height means a wider trace would
+         drop Z too low. Update net-class accordingly.
+      2. Add power-plane zones on inner layers: L2/L5 = GND, L3 = +3V3,
+         L4 = +5V. Plane fills owned by the script; refilled in DRC.
+      3. Set net classes in .kicad_pro JSON: USB_diffpair (recomputed),
+         Default (0.15mm/0.15mm), Power_* (1mm minimum trace; but these
+         are plane-served).
+      4. Export DSN via pcbnew.ExportSpecctraDSN().
+      5. Run Freerouting headless: java -jar freerouting.jar -de in.dsn
+         -do out.ses -mt 4 -mp 100 (more passes than Phase 4d's 50 since
+         we expect this to actually converge).
+      6. Import SES via pcbnew.ImportSpecctraSES().
+      7. Run kicad-cli pcb drc → report violations.
+      8. If residuals: hand-route net-by-net via pcbnew API following the
+         Phase 4d residual-handling approach.
+
+    PRED-1 (Freerouting completion %): on 80×60 6-layer with all power
+      plane-served, ~70 signal nets to route, expect ≥ 95% completion
+      from Freerouting alone. Phase 4d on 36×36/4-layer achieved 0%
+      completion (-mp 50 timed out / hung at Pass #1) due to crammed
+      placement + power-as-traces. Conditions completely different now.
+
+    PRED-2 (Total residuals): ≤ 5 nets needing hand-route, all in
+      Zone 2 (MCU + USB + SDMMC tight cluster) if any.
+
+    PRED-3 (Final DRC): 0 errors, ≤ 5 unconnected after residual hand-
+      route. The unconnected residuals will be honestly flagged (not
+      hidden).
+
+    PRED-4 (USB diff-pair Z0): recomputed 90Ω geometry will be
+      W ≈ 0.18 mm, S ≈ 0.10 mm for L1 microstrip referenced to L2 GND
+      with prepreg h = 0.118 mm and εr = 4.3. Documented in
+      PLACEMENT_STRATEGY (or a new ROUTING_NOTES.md).
+
+    PRED-5 (wall time): Freerouting headless ~15-45 minutes on the
+      80×60 board with -mp 100. Hand-route residuals (if any) negligible.
+
+acceptance:
+  - "USB diff-pair Z0 recomputed for 6-layer stackup; W/S documented; geometry committed to a .md doc."
+  - "Power planes (L2 GND, L3 +3V3, L4 +5V, L5 GND) instantiated as zone fills on the board."
+  - "Net classes set in project JSON; USB_diffpair uses the recomputed geometry."
+  - "Freerouting runs to completion (or master-flagged timeout); SES imported; tracks + vias present on the board."
+  - "Final board DRC clean (0 errors); unconnected count documented (target ≤ 5)."
+  - "If any nets remain unrouted, they're enumerated honestly in the PR (not silently dropped)."
+
+deliverables:
+  - tasks/phase-pivot-step5-routing.yaml                # this contract
+  - hardware/kicad/novapcb-layout-v2/run_freeroute.py   # routing pipeline
+  - hardware/kicad/novapcb-layout-v2/run_planes.py      # power-plane fill
+  - hardware/kicad/novapcb-layout-v2/novapcb-layout-v2.kicad_pcb # routed board
+  - hardware/kicad/novapcb-layout-v2/novapcb-layout-v2.dsn      # Freerouting input
+  - hardware/kicad/novapcb-layout-v2/novapcb-layout-v2.ses      # Freerouting output
+  - hardware/kicad/novapcb-layout-v2/freerouting.log            # routing log
+  - hardware/kicad/novapcb-layout-v2/ROUTING_REPORT.md          # results + residual analysis
+  - docs/CONTROLLED_IMPEDANCE.md OR addendum                    # 6-layer Z0 geometry doc
+
+gates:
+  master_review:
+    description: |
+      Master reviews routing completion + DRC outcome + Z0 recomputation.
+      If fully routed + 0 DRC: Step 5 closes. If small honest residuals:
+      master adjudicates whether they're acceptable or need iteration.
+
+retrospective:
+  hourly_cadence: "Capture deviations from PRED-1..5 hourly during the run."
