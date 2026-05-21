@@ -29,10 +29,10 @@
 **Dual barometer dissimilar:**
 | slot | proposed part | vendor | AP driver | bus |
 |---|---|---|---|---|
-| Baro1 (existing) | **DPS310** (LGA-8) | **Infineon** (Rule-17 vendor correction — not Bosch) | `AP_Baro_DPS280` (covers DPS3xx) | I2C2 |
-| Baro2 | **LPS22HB** (HCLGA-10) | STMicroelectronics | `AP_Baro_LPS2XH` (WHOAMI 0xB1 explicit) | I2C3 |
+| Baro1 (existing) | **DPS310** (LGA-8) | **Infineon** (Rule-17 vendor correction — not Bosch) | `AP_Baro_DPS280` (covers DPS3xx) | I2C2 (PB10/PB11) |
+| Baro2 | **LPS22HB** (HCLGA-10) | STMicroelectronics | `AP_Baro_LPS2XH` (WHOAMI 0xB1 explicit) | **I2C1** (PB6/PB7) — adjudicated 2026-05-21 |
 
-2 vendors. Independent I2C buses. Different sensing principle (capacitive vs piezoresistive).
+2 vendors. Independent I2C buses (I2C1 + I2C2). Different sensing principle (capacitive vs piezoresistive). **Pin-budget reality**: I2C3_SDA = PC9 = SDMMC1_D1 (locked Phase 2h); I2C4 alternates blocked by PWM/non-LQFP-100 pins. On LQFP-100 only I2C1 + I2C2 are physically available. Master adjudication 2026-05-21: LPS22HB on I2C1 preserves the dissimilar-bus + dissimilar-vendor goal. Address 0x5C (SDO low) non-colliding with GPS-port compass IDs (HMC5883 0x1E, IST8310 0x0E).
 
 **ESD on all external connectors:**
 - USB-C: existing USBLC6-2P6 (U5) unchanged
@@ -61,12 +61,13 @@
 - Auto-switchover: whichever input is higher takes over without brownout
 - Validated by Tier-1-sim (a) — power-failover transient
 
-**CAN bus (2 ports — both FDCAN free per pin-budget):**
-- STM32H743 has FDCAN1 + FDCAN2 — both available (currently unused per pin-budget analysis)
-- Transceiver: **TJA1051TK/3** (NXP, TSSOP-8) — 5V supply, 3.3V-compatible I/O, JLC library. Locked 2026-05-21.
-- 2 ports × 1 transceiver each + 1 JST-GH 4P connector each (CAN_H, CAN_L, +5V, GND)
-- **Bus termination 120Ω per port — solder-jumper-selectable** (Pixhawk-class practice — whether FC terminates depends on its bus position; jumper closed = terminate, open = not terminate). Two pads + 120Ω 0603 + cuttable trace.
-- Pixhawk-standard UAVCAN/DroneCAN compatibility
+**CAN bus (1 port on FDCAN1 — adjudicated 2026-05-21):**
+- **STM32H743VIT6 LQFP-100 pin reality**: FDCAN1 free (PD0/PD1 already in hwdef.dat), FDCAN2 alternates ALL conflict — PB6/PB13 (TX) collide with I2C1_SCL (now LPS22HB) and SPI2_SCK (IMU2); PB5/PB12 (RX) collide with SPI3_MOSI (IMU3) and the SPI2 CS line. Cannot route FDCAN2 with the 3-IMU plan on LQFP-100.
+- Master adjudication 2026-05-21: **1 CAN port on FDCAN1 in v1.1**; 2nd CAN port deferred to **v2 with LQFP-144 (STM32H743ZG) repackage**. Reasoning: CAN is future-proofing (Nova drone uses zero CAN today); 1 port already provides that headroom; MatekH743 (same LQFP-100 package) ships 1 CAN as the natural limit; 6X has 2 only because it's LQFP-144. "Surely-working over SOTA."
+- Transceiver: **1× TJA1051TK/3** (NXP, TSSOP-8) — 5V supply, 3.3V-compatible I/O, JLC library. Locked 2026-05-21.
+- 1× JST-GH 4P connector (CAN_H, CAN_L, +5V, GND).
+- **Bus termination 120Ω — solder-jumper-selectable** (Pixhawk-class practice — whether FC terminates depends on its bus position; jumper closed = terminate, open = not terminate). Two pads + 120Ω 0603 + cuttable trace.
+- Pixhawk-standard UAVCAN/DroneCAN compatibility.
 
 ### Unchanged
 

@@ -89,7 +89,7 @@ Dual baro dissimilar; vendor-corrected per master Rule-17.
 | Operating temp | −40 to +85°C |
 | Dissimilarity | Vendor: Infineon; sensing tech: dual-MEMS pressure cell |
 
-### Baro2 — LPS22HB (NEW)
+### Baro2 — LPS22HB (NEW; bus: I2C1, adjudicated 2026-05-21)
 
 | Field | Value |
 |---|---|
@@ -100,7 +100,7 @@ Dual baro dissimilar; vendor-corrected per master Rule-17.
 | **ArduPilot driver** | **CONFIRMED 2026-05-21** — `libraries/AP_Baro/AP_Baro_LPS2XH.cpp` line `#define LPS22HB_WHOAMI 0xB1` + explicit case `case LPS22HB_WHOAMI: _lps2xh_type = BARO_LPS22H;`. Header declares `BARO_LPS22H = 0` in enum. |
 | JLC PCBA library | LCSC C247196 (verify-at-R2 — Extended tier expected) |
 | Voltage | 1.7–3.6V |
-| Interface | I2C / SPI (we use I2C @ 400 kHz) |
+| Interface | I2C / SPI (we use I2C @ 400 kHz on **I2C1 PB6/PB7** — I2C3_SDA=PC9 conflicts with SDMMC1_D1 on LQFP-100; only I2C1+I2C2 physically available; master adjudication 2026-05-21 preserves bus+vendor dissimilarity). Address 0x5C (SDO low). |
 | Operating temp | −40 to +85°C |
 | Dissimilarity | Vendor: STM (distinct from Infineon); sensing tech: piezoresistive Wheatstone bridge (vs DPS310's capacitive dual-cell — genuine architectural difference) |
 
@@ -200,7 +200,7 @@ Pending verify-at-R2 on standoff/capacitance/JLC stock per master.
 | Operating temp | −40 to +150°C (AEC-Q100 grade option) |
 | JLC PCBA library | verify-at-R2 (commonly stocked; expected Extended tier) |
 | Per-port termination | **120Ω 0603 jumper-selectable** (master directive 2026-05-21): two solder pads with a 120Ω chip resistor in series with a cuttable trace. Default closed = terminate; cut = no terminate. Independent per port. |
-| Quantity | 2 transceivers (one per FDCAN port) |
+| Quantity | **1 transceiver** (FDCAN1 only) — adjudicated 2026-05-21. FDCAN2 alternates on LQFP-100 all conflict with SPI2/SPI3/I2C1 once IMUs claim them (PB5/PB6/PB12/PB13). Pin-budget claim of "2 free FDCAN" was optimistic; LQFP-100 physical reality = 1 CAN. **2nd CAN port deferred to v2 (LQFP-144 H743ZG repackage)**. CAN is future-proofing — Nova drone uses zero CAN today, so 1 port already provides headroom. Same package decision as MatekH743 (1 CAN, LQFP-100). |
 
 ---
 
