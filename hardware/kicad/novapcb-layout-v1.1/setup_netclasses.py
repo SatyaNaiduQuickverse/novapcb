@@ -70,12 +70,17 @@ CLASSES = [
     },
     {
         "name": "USB_diffpair",
-        "track_width": 0.18,
+        # Controlled-impedance geometry per docs/CONTROLLED_IMPEDANCE.md §2.4
+        # JLC06161H-7628 stackup, h=0.21mm L1↔L2 prepreg, εr=4.3, t=35µm:
+        #   W = 0.30 mm (each trace)
+        #   S = 0.10 mm (gap between pair)
+        #   → Z_se = 67.8 Ω, Z_diff = 94.4 Ω (USB 2.0 spec; 9 Ω margin to upper)
+        "track_width": 0.30,
         "via_diameter": 0.46,
         "via_drill": 0.20,
         "clearance": 0.20,
-        "diff_pair_gap": 0.15,
-        "diff_pair_width": 0.18,
+        "diff_pair_gap": 0.10,
+        "diff_pair_width": 0.30,
         "diff_pair_via_gap": 0.20,
         "microvia_diameter": 0.30,
         "microvia_drill": 0.10,
