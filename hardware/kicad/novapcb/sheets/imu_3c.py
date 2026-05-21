@@ -280,22 +280,27 @@ IMU3_INT1     += mcu["PE11"]
 # Symbol: bmi088:BMI088 (easyeda2kicad C194919). Pin map verified at
 # 2026-05-21 against ST .kicad_sym output — see comment block below.
 #
-# BMI088 LGA-16 pinout (easyeda2kicad C194919):
+# BMI088 LGA-16 pinout — AUTHORITATIVE per Bosch DS001 §7.1 Table 14 (page 52)
+# cross-checked against the easyeda2kicad-pulled bmi088.kicad_sym symbol (C194919).
+# Datasheet also confirms via Figure 8 SPI connection diagram (page 53):
+#   CSB_ACCEL → pin 14 (CSB1) ; CSB_GYRO → pin 5 (CSB2)
+# This corrects an earlier (uncommitted) swap: pin 5 is GYRO CS, pin 14 is ACCEL CS.
+#
 #   pin 1: INT2  — accel INT2 (testpoint)
 #   pin 2: NC    — leave unconnected per datasheet
-#   pin 3: VDD   — accel VDD → +3V3_IMU
-#   pin 4: GNDA  — accel GND → GND
-#   pin 5: CSB2  — accel chip select (active low) → IMU2_ACC_CS
+#   pin 3: VDD   — analog+digital supply → +3V3_IMU
+#   pin 4: GNDA  — analog ground → GND
+#   pin 5: CSB2  — **GYRO** chip select (active low) → IMU2_GYR_CS
 #   pin 6: GNDIO — digital ground → GND
 #   pin 7: PS    — protocol select; LOW = SPI, HIGH = I2C → GND (SPI mode)
 #   pin 8: SCL/SCK — SPI clock shared → SPI2_SCK
 #   pin 9: SDA/SDI — SPI MOSI shared → SPI2_MOSI
-#   pin 10: SDO2 — accel SPI MISO → SPI2_MISO (tied with SDO1 — CS multiplex)
+#   pin 10: SDO2 — **GYRO** SPI MISO → SPI2_MISO (tied with SDO1 — CS multiplex)
 #   pin 11: VDDIO — digital I/O supply → +3V3_IMU
 #   pin 12: INT3 — gyro INT3 → IMU2_GYR_INT3
 #   pin 13: INT4 — gyro INT4 (testpoint; DRDY candidate)
-#   pin 14: CSB1 — gyro chip select (active low) → IMU2_GYR_CS
-#   pin 15: SDO1 — gyro SPI MISO → SPI2_MISO (tied with SDO2)
+#   pin 14: CSB1 — **ACCEL** chip select (active low) → IMU2_ACC_CS
+#   pin 15: SDO1 — **ACCEL** SPI MISO → SPI2_MISO (tied with SDO2)
 #   pin 16: INT1 — accel INT1 → IMU2_ACC_INT1
 
 imu2 = Part(
@@ -322,9 +327,14 @@ SPI2_MOSI += imu2[9]    # SDA/SDI
 SPI2_MISO += imu2[10]   # SDO2 (accel MISO)
 SPI2_MISO += imu2[15]   # SDO1 (gyro MISO) — tied with pin 10
 
-# Chip selects.
-IMU2_ACC_CS += imu2[5]    # CSB2 = accel CS
-IMU2_GYR_CS += imu2[14]   # CSB1 = gyro CS
+# Chip selects — per Bosch DS001 Table 14 + Figure 8:
+#   pin 5  = CSB2 = GYRO chip select
+#   pin 14 = CSB1 = ACCEL chip select
+# (Names CSB1/CSB2 follow the same numeric ordering as SDO1/SDO2 — both
+# tagged "1" belong to the ACCEL die, both tagged "2" belong to the GYRO die.
+# Confirmed via datasheet Figure 8 SPI connection diagram.)
+IMU2_GYR_CS += imu2[5]    # CSB2 = gyro CS
+IMU2_ACC_CS += imu2[14]   # CSB1 = accel CS
 
 # Interrupts.
 IMU2_ACC_INT1 += imu2[16]   # accel INT1
