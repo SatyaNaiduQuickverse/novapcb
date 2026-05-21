@@ -253,3 +253,25 @@ The discrete-MOSFET path explored in iters 1-3 was abandoned at iter 4 because S
 | **4 (current)** | **eFuse (U6) + reverse-polarity P-FET (Q2) + TVS (D1)** | — | **Current design.** Output ramp 50 ms @ dV/dt = 100 V/s (C7=100nF). Cap-charge inrush 0.67 mA + LDO/board load-dominated peak ≈ 360 mA at end-of-ramp. OC ceiling 2.08 A (eFuse I_LIM, fault-only). OVP 6.04 V. UVLO 4.00 V. TVS V_BR_min 6.67V. Reverse-polarity blocked by Q2. |
 
 Lesson: the "deterministic over heuristic" §10 principle required current-limit-by-construction (eFuse), not RC-shape heuristics that depend on upstream ramp profile. The iter-3 Miller design was a working *dV/dt-shaping* device but not a current limiter; iter 4 is both.
+
+## 12. Freeze-at-fab-ready + post-freeze shrink optimization (Sai 2026-05-21)
+
+Two-phase strategy for getting to a fab order from a position of safety. Persisted here durable, conversation-only is not enough.
+
+### Sai's verbatim intent
+
+1. **FREEZE-AT-FAB-READY**: when the design reaches the Phase 7 gate (fab-ready — Steps 5+6 done, gerbers exportable, design validated), FREEZE and SAVE that design — a git tag on the fab-ready commit (e.g. `v1.0-fab-ready-frozen`). This is the validated, generously-margined 80×60 baseline — the surely-works fallback. The actual fab ORDER remains Sai's hard-stop sign-off (the freeze is at fab-READY, not order-placed).
+
+2. **POST-FREEZE SHRINK-OPTIMIZATION** (a new phase — Sai's wording: "call it Phase 8: Optimization"; recorded in DESIGN_PHASES as Phase 7.5 to keep Assembly = 8 and Bring-up = 9 unchanged): AFTER the freeze, begin incrementally shrinking the board as small as it can go. Step by step, sim-driven — re-run the relevant sims (thermal especially: shrinking re-tightens the convection-limited regime; also SI, DRC) at each shrink step, discovering constraints as you go. KEEP FACTOR OF SAFETY and avoid conflicts — the shrink stops where margins (thermal, clearance) or DRC would be compromised. Not shrink-to-the-edge; shrink-while-still-safe. The frozen baseline is the fallback, so the shrink can be pursued from a position of safety.
+
+### How this binds future decisions
+
+- Phase 7a freeze must produce a git tag; the tag is immutable. Phase 7.5 shrink work MAY NOT delete or rewrite it.
+- Phase 7b fab-order is bounded by Sai sign-off; master cannot place an order.
+- The shrink stops at first margin-or-DRC violation; the doc-trail must show which margin was the binding constraint (so the chosen final dimension is defensible).
+- If the shrink fails to improve materially, the frozen baseline ships. That is an acceptable outcome — the freeze exists precisely to make this safe.
+
+### Cross-refs
+
+- DESIGN_PHASES.md §Phase 7 (split 7a freeze / 7b order) and §Phase 7.5 (shrink optimization).
+- The thermal sim regime that gates each shrink step is defined in SIMULATION_PLAN.md; shrink-step sims re-use that protocol.

@@ -229,13 +229,38 @@ Post schematic + sim results to ArduPilot Hardware forum and RC Groups Custom FC
 
 Adds ~1 week. Costs zero dollars. Strong signal multiplier on LOW-confidence subsystems (currently: reverse-polarity protection, EMC, plus whatever else moves to LOW between now and Phase 6 close).
 
-## Phase 7 — Fab order (NOT STARTED)
+## Phase 7 — Fab-ready freeze + Fab order (NOT STARTED)
+
+Split per Sai directive 2026-05-21 (recorded in DECISIONS §12): the design is FROZEN at fab-ready BEFORE the order, so the validated generously-margined 80×60 baseline is preserved as a surely-works fallback that Phase 7.5 shrink optimization can be pursued from in safety. The actual fab ORDER remains Sai's hard-stop sign-off.
+
+### Phase 7a — Fab-ready freeze (NOT STARTED)
 
 - Generate gerbers, drill, pick-and-place files.
-- Place PCB order (default JLCPCB 4-layer, ~$20-50 for 5 boards).
+- Verify all Phase 5 + Phase 6 closures hold against the final gerbers.
+- Git tag the fab-ready commit (e.g. `v1.0-fab-ready-frozen`).
+- Acceptance: gerbers exportable + design fully validated + tag pushed.
+- This is the SAVED fallback baseline. Phase 7.5 may NOT delete or rewrite this tag.
+
+### Phase 7b — Fab order (Sai sign-off, NOT STARTED)
+
+- Hard-stop gate: Sai must explicitly authorize the order. Master cannot.
+- Order the design from either the frozen baseline (Phase 7a) OR the post-shrink optimum (Phase 7.5), whichever Sai picks.
+- Place PCB order (default JLCPCB 6-layer for the v2 stackup per pivot; ~$50-100 for 5 boards).
 - Place stencil order (~$20).
 - Execute BOM (parts ordered).
 - Acceptance: orders placed, tracking recorded, ETA on calendar.
+
+## Phase 7.5 — Shrink optimization (NEW, NOT STARTED)
+
+Per Sai directive 2026-05-21 (recorded in DECISIONS §12). Begins ONLY after Phase 7a freeze + tag is pushed. Master had originally proposed "Phase 8: Optimization"; renumbered to 7.5 here to keep Phase 8 = Assembly and Phase 9 = Bring-up unchanged (existing 0.5 / 2.5 / 3.5 / 6.5 convention for inserts).
+
+- Incrementally shrink the board step-by-step from the frozen 80×60 baseline.
+- Sim-driven: re-run the relevant sims (thermal especially — shrinking re-tightens the convection-limited regime; also SI, DRC) at each shrink step.
+- Discover constraints as you go; do NOT predict the floor in advance.
+- KEEP factor of safety. Stop where margins (thermal, clearance, SI) or DRC would be compromised.
+- Not shrink-to-the-edge; shrink-while-still-safe. The frozen baseline is the fallback, so the shrink can be pursued from a position of safety.
+- Each shrink-step gets its own PR; each PR records: new dimensions, re-sim results vs baseline, which margin is now closest to its limit.
+- Acceptance for the phase as a whole: the post-shrink optimum is identified, documented, and either (a) accepted as the new candidate for Phase 7b, or (b) rejected in favor of the frozen baseline if margins did not hold.
 
 ## Phase 8 — Assembly (NOT STARTED)
 
