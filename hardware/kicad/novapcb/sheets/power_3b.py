@@ -80,7 +80,7 @@ import skidl
 from skidl import Part, Net
 
 from sheets.common import (
-    setup, n, FP_R_0402, FP_C_0402, FP_C_0805,
+    setup, n, FP_R_0402, FP_C_0402, FP_C_0805, FP_FB_0402,
 )
 
 setup()
@@ -345,6 +345,253 @@ for ref, target_net in (("#FLG_5V_BEC", P5V_BEC),
                         ("#FLG_5V", P5V),
                         ("#FLG_3V3A", P3V3A),
                         ("#FLG_VBAT", VBAT)):
+    flag = Part("power", "PWR_FLAG")
+    flag.ref = ref
+    target_net += flag[1]
+
+
+# ====================================================================
+# v1.1 redundancy re-spin — power-input OR-ing + IMU clean rail + heater
+# ====================================================================
+# Per docs/RESPIN_SCOPE.md (Sai/master adjudicated 2026-05-21):
+#
+#   1. POWER-INPUT REDUNDANCY: 2nd power input (J19, JST-GH 6P, mirror of J4)
+#      feeds +5V_BEC_B; the existing J4 connection (in power_sd_swd_3h.py)
+#      is rerouted to feed +5V_BEC_A. Two LM74700-Q1 ideal-diode controllers
+#      (one per input) drive external N-channel MOSFETs to OR the two
+#      sources into the shared +5V_BEC node (which then feeds the existing
+#      Q2/D1/U6 eFuse front-end unchanged).
+#
+#   2. IMU CLEAN RAIL: LP5907MFX-3.3 ultra-low-noise LDO (250mA, 6.5µVRMS
+#      output noise, JLC C57769 Extended) takes +3V3 input through a ferrite
+#      bead and outputs +3V3_IMU. The 3 IMUs + heater control electronics
+#      run off +3V3_IMU; everything else stays on +3V3. Isolates IMU power
+#      from digital coupling on the main rail.
+#
+#   3. IMU HEATER CONTROL: AO3400 N-channel low-Vth MOSFET (JLC Basic) gated
+#      by an MCU PWM line (PA7 = TIM14_CH1 — free per hwdef.dat pin survey,
+#      hwdef revision adds it as HEATER_PWM). Drain pulls a heater resistor
+#      (value + package TBD — output of Tier-1 sim (b) IMU-heater thermal
+#      model). Source to GND.
+#
+# Pin-budget reality (per `firmware/hwdef-novapcb/hwdef.dat` 2026-05-21):
+#   - PA7 (TIM14_CH1, ADC2_IN7) — free for HEATER_PWM
+#   - 2nd Mauch ADC sense lines (BATT2_V on PC2, BATT2_I on PC3) — free
+#     in hwdef; assigned in power_sd_swd_3h.py for J19 alongside the
+#     existing PC0/PC1 sense for J4.
+#
+# OR-ing topology (per LM74700-Q1 datasheet SLUSEZ8 typical application):
+#
+#     +5V_BEC_A ──┬── N-FET Q3 source ── drain ──┐
+#                 │           │                   ├── +5V_BEC (shared, into eFuse)
+#                 ▼           │                   │
+#                LM74700 U11  │                   │
+#                  GATE ──────┘                   │
+#                  VS=anode=VBEC_A, CATHODE=VBEC ─┘
+#                  VCAP charge-pump cap to GND
+#                  EN tied to VS (always-on)
+#                  decoupling: 100nF on VS, 1µF on VCAP
+#
+#     +5V_BEC_B ──┬── N-FET Q4 source ── drain ──┐
+#                 │           │                   │
+#                 ▼           │                   │
+#                LM74700 U12  │                   │
+#                  GATE ──────┘                   │
+#                  ...same topology, anode=VBEC_B,
+#                  cathode=VBEC...
+
+P5V_BEC_A = n("+5V_BEC_A")  # post-J4, pre-OR-ing FET Q3 (declared here so
+                             # power_sd_swd_3h.py's J4 wire-up can reroute
+                             # to this name)
+P5V_BEC_B = n("+5V_BEC_B")  # post-J19, pre-OR-ing FET Q4
+
+# ---- LM74700-Q1 U11: ideal-diode controller for input A (J4 path) ----
+# KiCad library has no LM74700-Q1 symbol; use Conn_01x08 (MSOP-8 pin count)
+# with value override per the pattern already used for TPS25940A in this sheet.
+# Pin map per TI SLUSEZ8 LM74700-Q1 datasheet §6.1:
+#   pin 1 = GATE, pin 2 = VS (input supply), pin 3 = VCAP (charge-pump),
+#   pin 4 = GND, pin 5 = EN/UVLO, pin 6 = ANODE (input sense),
+#   pin 7 = CATHODE (output sense), pin 8 = NC (or DEVSLP — tie GND)
+u11 = Part(
+    "Connector_Generic", "Conn_01x08",
+    footprint="Package_SO:MSOP-8_3x3mm_P0.65mm",
+    value="LM74700-Q1",
+)
+u11.ref = "U11"
+
+# Net for U11→Q3 gate drive.
+ORING_A_GATE = Net("ORING_A_GATE")
+ORING_A_VCAP = Net("ORING_A_VCAP")
+
+ORING_A_GATE += u11[1]   # GATE → Q3 gate
+P5V_BEC_A    += u11[2]   # VS = input supply
+ORING_A_VCAP += u11[3]   # VCAP charge-pump cap
+GND          += u11[4]   # GND
+P5V_BEC_A    += u11[5]   # EN tied to VS → always-on
+P5V_BEC_A    += u11[6]   # ANODE = input sense
+P5V_BEC      += u11[7]   # CATHODE = output sense (downstream shared rail)
+GND          += u11[8]   # NC / DEVSLP tied GND
+
+# U11 VCAP cap (1µF X5R per TI datasheet table 7-1).
+c_u11_vcap = Part("Device", "C", value="1uF", footprint=FP_C_0402)
+c_u11_vcap.ref = "C73"
+ORING_A_VCAP += c_u11_vcap[1]
+GND          += c_u11_vcap[2]
+
+# U11 VS bypass (100nF X7R close to pin 2).
+c_u11_vs = Part("Device", "C", value="100nF", footprint=FP_C_0402)
+c_u11_vs.ref = "C74"
+P5V_BEC_A += c_u11_vs[1]
+GND       += c_u11_vs[2]
+
+# Q3: N-FET for input-A OR-ing path. Placeholder value "AO4407A" — final
+# part picked at R2 footprint phase from JLC-stocked SO-8 single N-FETs
+# with V_DSS ≥ 30V, R_DS(on) ≤ 10mΩ @ V_GS=10V, I_D ≥ 5A. AO4407A is a
+# commonly-stocked example; alternatives include AO4422, SiR826ADP.
+q3 = Part(
+    "Transistor_FET", "AO3400A",   # symbol from KiCad; package overridden
+    footprint="Package_SO:SO-8_3.9x4.9mm_P1.27mm",
+    value="N_MOSFET_OR_A",
+)
+q3.ref = "Q3"
+# AO3400 symbol has G/D/S pins. The real OR-ing FET is in SO-8 with
+# multiple G/D/S — R2 swaps the symbol to the actual SO-8 N-FET when
+# the JLC-stocked part is finalized. Wiring topology stays the same.
+P5V_BEC_A    += q3["S"]   # source = input A
+P5V_BEC      += q3["D"]   # drain = shared output BEC node
+ORING_A_GATE += q3["G"]   # gate driven by U11
+
+
+# ---- LM74700-Q1 U12: ideal-diode controller for input B (J19 path) ----
+u12 = Part(
+    "Connector_Generic", "Conn_01x08",
+    footprint="Package_SO:MSOP-8_3x3mm_P0.65mm",
+    value="LM74700-Q1",
+)
+u12.ref = "U12"
+
+ORING_B_GATE = Net("ORING_B_GATE")
+ORING_B_VCAP = Net("ORING_B_VCAP")
+
+ORING_B_GATE += u12[1]
+P5V_BEC_B    += u12[2]
+ORING_B_VCAP += u12[3]
+GND          += u12[4]
+P5V_BEC_B    += u12[5]
+P5V_BEC_B    += u12[6]
+P5V_BEC      += u12[7]
+GND          += u12[8]
+
+c_u12_vcap = Part("Device", "C", value="1uF", footprint=FP_C_0402)
+c_u12_vcap.ref = "C75"
+ORING_B_VCAP += c_u12_vcap[1]
+GND          += c_u12_vcap[2]
+
+c_u12_vs = Part("Device", "C", value="100nF", footprint=FP_C_0402)
+c_u12_vs.ref = "C76"
+P5V_BEC_B += c_u12_vs[1]
+GND       += c_u12_vs[2]
+
+q4 = Part(
+    "Transistor_FET", "AO3400A",
+    footprint="Package_SO:SO-8_3.9x4.9mm_P1.27mm",
+    value="N_MOSFET_OR_B",
+)
+q4.ref = "Q4"
+P5V_BEC_B    += q4["S"]
+P5V_BEC      += q4["D"]
+ORING_B_GATE += q4["G"]
+
+
+# ---- LP5907MFX-3.3 (U13): ultra-low-noise LDO for IMU rail ----
+# JLC C57769 Extended. 250mA, 6.5µVRMS noise (10Hz-100kHz), 82dB PSRR @
+# 1kHz. SOT-23-5 package.
+# KiCad library: Regulator_Linear:LP5907MFX-3.3 — exact match.
+P3V3_IMU = n("+3V3_IMU")
+
+# Ferrite bead from +3V3 to LP5907 input — isolates the LDO input from
+# main +3V3 rail high-frequency noise. Standard 600Ω @ 100MHz bead.
+fb_imu_in = Part("Device", "FerriteBead", value="600R@100MHz",
+                 footprint=FP_FB_0402)
+fb_imu_in.ref = "FB2"
+P3V3_IMU_PRE = Net("+3V3_IMU_PRE")   # pre-LDO, post-ferrite
+P3V3         += fb_imu_in[1]
+P3V3_IMU_PRE += fb_imu_in[2]
+
+u13 = Part(
+    "Regulator_Linear", "LP5907MFX-3.3",
+    footprint="Package_TO_SOT_SMD:SOT-23-5",
+    value="LP5907MFX-3.3",
+)
+u13.ref = "U13"
+# LP5907 pin map (per KiCad symbol pin names): 1=IN, 2=GND, 3=EN, 4=NC, 5=OUT
+P3V3_IMU_PRE += u13["IN"]
+GND          += u13["GND"]
+P3V3_IMU_PRE += u13["EN"]    # EN tied to IN → always-on
+# NC pin 4: unconnected per datasheet
+P3V3_IMU     += u13["OUT"]
+
+# LP5907 caps per TI datasheet table 9-1: 1µF X7R input + 1µF X7R output
+# (both ceramic for low-noise performance — datasheet explicitly calls
+# this out as a requirement for the 6.5µVRMS spec).
+c_u13_in = Part("Device", "C", value="1uF", footprint=FP_C_0402)
+c_u13_in.ref = "C77"
+P3V3_IMU_PRE += c_u13_in[1]
+GND          += c_u13_in[2]
+
+c_u13_out = Part("Device", "C", value="1uF", footprint=FP_C_0402)
+c_u13_out.ref = "C78"
+P3V3_IMU += c_u13_out[1]
+GND      += c_u13_out[2]
+
+
+# ---- IMU heater control: AO3400 (Q5) + heater resistor (TBD-from-sim) ----
+# PWM gate: HEATER_PWM net (MCU PA7 = TIM14_CH1; hwdef revision adds it).
+# Heater resistor R_HEATER value + package = output of Tier-1 sim (b)
+# IMU-heater active-thermal model per RESPIN_PARTS_REVIEW.md §4. The
+# schematic captures the topology; value="TBD" and footprint set to
+# "Resistor_SMD:R_2512_6332Metric" as a SIZE PLACEHOLDER for the larger
+# 1W-class package expected (revisit after sim). Master flag 2026-05-21:
+# 100R 0805 on 5V → 0.25W exceeds 0.125W 0805 rating; 2512 ~1W is the
+# expected sized package.
+HEATER_PWM   = n("HEATER_PWM")
+HEATER_DRAIN = Net("HEATER_DRAIN")
+
+# Wire PWM control net to MCU PA7 (TIM14_CH1). hwdef revision adds the
+# PA7 HEATER_PWM line; for the netlist topology this is correct now.
+from sheets.mcu_3a import mcu as _mcu_ref
+HEATER_PWM += _mcu_ref["PA7"]
+
+q5 = Part(
+    "Transistor_FET", "AO3400A",
+    footprint="Package_TO_SOT_SMD:SOT-23",
+    value="AO3400A",
+)
+q5.ref = "Q5"
+HEATER_PWM   += q5["G"]
+HEATER_DRAIN += q5["D"]
+GND          += q5["S"]
+
+# Heater resistor — placeholder. R2 picks final value + package post-sim.
+r_heater = Part(
+    "Device", "R",
+    value="TBD_SIM_OUT",
+    footprint="Resistor_SMD:R_2512_6332Metric",   # SIZE PLACEHOLDER (1W class)
+)
+r_heater.ref = "R51"
+# Heater pulls from +5V (sourced post-OR-ing, post-eFuse) through Q5 to GND.
+# Wiring: +5V → R_HEATER → Q5_DRAIN → Q5_SOURCE → GND. PWM modulates the
+# current path. Resistor sized by sim, but +5V is the heater supply rail.
+P5V          += r_heater[1]
+HEATER_DRAIN += r_heater[2]
+
+
+# ---- PWR_FLAGs for new rails ----
+# Note: NO PWR_FLAG on +3V3_IMU — the LP5907's OUT pin is POWER-OUT itself
+# (same rule as +3V3 with AP2112's VOUT — would create POWER-OUT-to-POWER-OUT
+# conflict in ERC).
+for ref, target_net in (("#FLG_5V_BEC_A", P5V_BEC_A),
+                        ("#FLG_5V_BEC_B", P5V_BEC_B)):
     flag = Part("power", "PWR_FLAG")
     flag.ref = ref
     target_net += flag[1]

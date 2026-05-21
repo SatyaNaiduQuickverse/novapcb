@@ -1,16 +1,18 @@
-ERC WARNING: Only one pin (PASSIVE pin 1/INT1 of Conn_01x14/U3) attached to net IMU_INT1_TP.
+ERC WARNING: Only one pin (OUTPUT pin 7/INT_DRDY of LPS22HB/U7) attached to net LPS22HB_INT_TP.
 ERC WARNING: Only one pin (PASSIVE pin 6/Pin_6 of Conn_01x10/J5) attached to net SAFETY_SW_TP.
-ERC WARNING: Only one pin (PASSIVE pin 7/Pin_7 of Conn_01x10/J5) attached to net SAFETY_LED_TP.
 ERC WARNING: Only one pin (PASSIVE pin 19/Pin_19 of Conn_01x20/U6) attached to net EFUSE_IMON.
-ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 3/GND of Conn_ARM_JTAG_SWD_10/J9.
-ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 2/GND of AP2112K-3.3/U2.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 3/VSS of SD_Card_Device/J2.
-ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 8/GND of LPS22HB/U7.
+ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 2/GND of LP5907MFX-3.3/U13.
+ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 2/GND of AP2112K-3.3/U2.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 10/VSS of STM32H743VITx/U1.
+ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 3/GND of Conn_ARM_JTAG_SWD_10/J9.
+ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 8/GND of LPS22HB/U7.
+ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 19/VSSA of STM32H743VITx/U1.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 1/GND of BMP280/U4.
 ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 7/GND of BMP280/U4.
-ERC WARNING: Insufficient drive current on net GND for pin POWER-IN pin 19/VSSA of STM32H743VITx/U1.
-ERC WARNING: Only one pin (OUTPUT pin 7/INT_DRDY of LPS22HB/U7) attached to net LPS22HB_INT_TP.
+ERC WARNING: Only one pin (PASSIVE pin 7/Pin_7 of Conn_01x10/J5) attached to net SAFETY_LED_TP.
+ERC WARNING: Insufficient drive current on net +3V3_IMU_PRE for pin POWER-IN pin 1/IN of LP5907MFX-3.3/U13.
+ERC WARNING: Only one pin (PASSIVE pin 1/INT1 of Conn_01x14/U3) attached to net IMU_INT1_TP.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 97/PE0 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 98/PE1 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 1/PE2 of STM32H743VITx/U1.
@@ -38,7 +40,6 @@ ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 58/PD11 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 61/PD14 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 62/PD15 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 28/PA4 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 31/PA7 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 67/PA8 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 36/PB2 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 89/PB3 of STM32H743VITx/U1.
@@ -50,8 +51,6 @@ ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 51/PB12 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 52/PB13 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 53/PB14 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 54/PB15 of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 17/PC2_C of STM32H743VITx/U1.
-ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 18/PC3_C of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 32/PC4 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 33/PC5 of STM32H743VITx/U1.
 ERC WARNING: Unconnected pin: BIDIRECTIONAL pin 7/PC13 of STM32H743VITx/U1.
@@ -68,6 +67,6 @@ ERC WARNING: Unconnected pin: INPUT pin 6/SWO/TDO of Conn_ARM_JTAG_SWD_10/J9.
 ERC WARNING: Unconnected pin: OUTPUT pin 8/NC/TDI of Conn_ARM_JTAG_SWD_10/J9.
 ERC WARNING: Unconnected pin: PASSIVE pin 4/Pin_4 of Conn_01x06/J3.
 ERC WARNING: Unconnected pin: PASSIVE pin 5/Pin_5 of Conn_01x06/J3.
-ERC INFO: 70 warnings found while running ERC.
+ERC INFO: 69 warnings found while running ERC.
 ERC INFO: 0 errors found while running ERC.
 
