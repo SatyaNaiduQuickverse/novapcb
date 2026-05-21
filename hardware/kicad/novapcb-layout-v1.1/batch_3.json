@@ -1,0 +1,12 @@
+{
+  "_comment": "Batch 3 — SPI3 + IMU CS (6 nets, MCU east ↔ U3/U8/U9 IMU bank).",
+  "stitch_fails": [],
+  "nets": [
+    "SPI3_SCK",
+    "SPI3_MISO",
+    "SPI3_MOSI",
+    "IMU1_CS",
+    "IMU2_GYR_CS",
+    "IMU3_CS"
+  ]
+}

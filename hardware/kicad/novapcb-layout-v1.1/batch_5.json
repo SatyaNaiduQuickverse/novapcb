@@ -1,0 +1,11 @@
+{
+  "_comment": "Batch 5 — Motors + heater + VCAP1 (5 nets, south edge + MCU).",
+  "stitch_fails": [],
+  "nets": [
+    "MOT1",
+    "MOT2",
+    "MOT5",
+    "HEATER_PWM",
+    "VCAP1"
+  ]
+}

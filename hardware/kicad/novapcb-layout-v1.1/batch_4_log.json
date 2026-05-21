@@ -1,0 +1,79 @@
+{
+  "baseline": {
+    "err": 62,
+    "unc": 44
+  },
+  "final": {
+    "err": 61,
+    "unc": 44
+  },
+  "delta": -1,
+  "stats": {
+    "stitch_ok": 0,
+    "stitch_stuck": 0,
+    "net_ok": 0,
+    "net_stuck": 5
+  },
+  "results": [
+    {
+      "kind": "net",
+      "net": "CAN1_RX",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.81->U14.4",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "CAN1_TX",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.82->U14.1",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "GPIO_CAN1_SILENT",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.84->U14.8",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "IMU2_GYR_INT3",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.5->U8.12",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "IMU3_INT1",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.41->U9.4",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    }
+  ]
+}

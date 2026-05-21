@@ -1,0 +1,14 @@
+{
+  "_comment": "Batch 1b — +3V3A trace network. No plane to stitch; route as star from FB1.2 to each consumer.",
+  "trace_nets": [
+    {
+      "net": "+3V3A",
+      "source": {"ref": "FB1", "pad": "2"},
+      "targets": [
+        {"ref": "C19", "pad": "1"},
+        {"ref": "C20", "pad": "1"},
+        {"ref": "R1",  "pad": "1"}
+      ]
+    }
+  ]
+}

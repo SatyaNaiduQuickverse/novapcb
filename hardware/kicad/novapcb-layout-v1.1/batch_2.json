@@ -1,0 +1,12 @@
+{
+  "_comment": "Batch 2 — SDMMC + SPI1 (6 nets, MCU west edge region).",
+  "stitch_fails": [],
+  "nets": [
+    "SDMMC1_CMD",
+    "SDMMC1_D0",
+    "SDMMC1_D3",
+    "SPI1_SCK",
+    "SPI1_MISO",
+    "SPI1_MOSI"
+  ]
+}

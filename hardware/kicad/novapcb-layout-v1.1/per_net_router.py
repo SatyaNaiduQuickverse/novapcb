@@ -96,7 +96,7 @@ def drc_counts():
                    capture_output=True, text=True)
     with open(DRC_TMP) as f: t = f.read()
     e = re.search(r"Found (\d+) DRC violation", t)
-    u = re.search(r"Found (\d+) unconnected item", t)
+    u = re.search(r"Found (\d+) unconnected pad", t)
     return (int(e.group(1)) if e else 0, int(u.group(1)) if u else 0)
 
 
@@ -192,6 +192,16 @@ def route_leg(brd, p1, p2, net_name, net_obj, baseline_err):
     return False, "stuck", baseline_err
 
 
+def pad_label(pad):
+    """Safe ref.pad string even if GetParent() returns a base container."""
+    fp = pad.GetParentFootprint() if hasattr(pad, 'GetParentFootprint') else pad.GetParent()
+    try:
+        ref = fp.GetReference()
+    except Exception:
+        ref = "?"
+    return f"{ref}.{pad.GetNumber()}"
+
+
 def route_net(brd, net_name, pads, baseline_err):
     """Star-route from pad[0] to all others. Returns dict of legs."""
     nets = {str(k): v for k, v in brd.GetNetsByName().asdict().items()}
@@ -202,15 +212,12 @@ def route_net(brd, net_name, pads, baseline_err):
         return [("solo", "skipped-1pad", cur_err)]
     if len(pads) == 2:
         ok, strat, ne = route_leg(brd, pads[0], pads[1], net_name, net_obj, cur_err)
-        results.append((f"{pads[0].GetParent().GetReference()}.{pads[0].GetNumber()}->"
-                        f"{pads[1].GetParent().GetReference()}.{pads[1].GetNumber()}",
-                        strat, ne))
+        results.append((f"{pad_label(pads[0])}->{pad_label(pads[1])}", strat, ne))
         return results
     # Star: pad[0] → each other
     for p in pads[1:]:
         ok, strat, ne = route_leg(brd, pads[0], p, net_name, net_obj, cur_err)
-        results.append((f"star->{p.GetParent().GetReference()}.{p.GetNumber()}",
-                        strat, ne))
+        results.append((f"star->{pad_label(p)}", strat, ne))
         cur_err = ne  # accept the new baseline if it didn't go up
     return results
 
@@ -227,10 +234,13 @@ def route_plane_stitch(brd, ref, pn, net_name, ox, oy, baseline_err):
     w = net_width(net_name)
     layer = pad_layer(pad)
 
-    # Try the master-suggested offset first, then 7 fallback offsets
+    # Try master-suggested offset first, then progressively-larger fallback offsets.
+    # Each scale tier in 8 cardinal/diagonal directions = 17 total candidates.
     candidates = [(ox, oy)]
-    for o in [(+1,0),(-1,0),(0,+1),(0,-1),(+0.7,+0.7),(-0.7,-0.7),(+0.7,-0.7),(-0.7,+0.7)]:
-        if o != (ox,oy): candidates.append(o)
+    for scale in [1.5, 2.0, 2.5, 3.0]:
+        for dx, dy in [(1,0),(-1,0),(0,1),(0,-1),(1,1),(-1,-1),(1,-1),(-1,1)]:
+            o = (dx*scale, dy*scale)
+            if o != (ox,oy): candidates.append(o)
 
     for cx_off, cy_off in candidates:
         added = strat_via_stub(brd, px, py, cx_off, cy_off, net_obj, w, layer)
@@ -258,8 +268,14 @@ def main(batch_file):
     current_err = err0
     log = []
 
-    # Stitch fails first
+    # Stitch fails first. NOTE: +3V3A has NO plane — those pads are routed
+    # as a trace net in the 'nets' section, not stitched here.
     for ref, pn, net_name, ox, oy in batch['stitch_fails']:
+        if net_name == "+3V3A":
+            print(f"  STITCH {ref}.{pn} ({net_name}): +3V3A has no plane — defer to trace-route")
+            log.append({"kind":"stitch","ref":ref,"pad":pn,"net":net_name,
+                        "ok":False,"strategy":"deferred-to-trace","err_after":current_err})
+            continue
         print(f"  STITCH {ref}.{pn} ({net_name})...")
         ok, why, ne = route_plane_stitch(brd, ref, pn, net_name, ox, oy, current_err)
         log.append({"kind":"stitch","ref":ref,"pad":pn,"net":net_name,
@@ -269,6 +285,8 @@ def main(batch_file):
             current_err = ne
         else:
             print(f"    STUCK  {why}")
+        # Reload board between attempts to refresh net objs (avoids stale handles)
+        brd = pcbnew.LoadBoard(PCB)
 
     # Signal nets — pad list from residual JSON
     residuals = json.load(open(os.path.join(HERE, "vision_residuals_mp30.json")))
