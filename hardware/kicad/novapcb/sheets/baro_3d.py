@@ -1,5 +1,5 @@
 """
-novapcb Phase 3d — barometer sheet (DPS310 on I²C2 at 0x76).
+novapcb Phase 3d — barometer sheet (dual: DPS310 on I²C2 @ 0x76, LPS22HB on I²C1 @ 0x5C).
 
 ## Authority for this sheet
 
@@ -175,3 +175,94 @@ r_scl = Part("Device", "R", value="4.7k", footprint=FP_R_0402)
 r_scl.ref = "R12"
 P3V3     += r_scl[1]
 I2C2_SCL += r_scl[2]
+
+
+# ====================================================================
+# v1.1 redundancy re-spin — IMU dual-baro: 2nd barometer on I²C1.
+# ====================================================================
+# Per docs/RESPIN_SCOPE.md + RESPIN_PARTS_REVIEW.md (Sai/master adjudicated
+# 2026-05-21): a second, vendor-dissimilar barometer on an independent I²C
+# bus for redundancy.
+#
+#   - Baro2: LPS22HB (STMicroelectronics, HCLGA-10 2×2mm 0.5mm pitch)
+#   - Bus: I²C1 (PB6/PB7) — physical-package fact: I²C3_SDA = PC9 is locked
+#     to SDMMC1_D1 (Phase 2h, INTERFACE_CONTRACT.md microSD section);
+#     I²C4 alternates blocked by PWM/non-LQFP-100 pins. On LQFP-100 only
+#     I²C1 + I²C2 are physically available. Master 2026-05-21 adjudication.
+#   - Address: 0x5C (SA0 tied LOW per datasheet)
+#   - ArduPilot driver: AP_Baro_LPS2XH.cpp — WHOAMI 0xB1 case explicit
+#     (libraries/AP_Baro/AP_Baro_LPS2XH.cpp line for LPS22HB_WHOAMI).
+#
+# Pull-ups for I²C1 already land in gps_mag_3e.py (R21/R22) — DO NOT add
+# more pull-ups here (doubling halves effective resistance and over-drives
+# the bus, exactly the rationale 3d's docstring already warns about).
+#
+# ## LPS22HB pinout (per ST DS11211 + KiCad Sensor_Pressure:LPS22HB symbol,
+#    which extends LPS25HB with identical pinout):
+#
+# | Pin | Name | Function | Wiring |
+# |---|---|---|---|
+# | 1 | Vdd_IO | Digital I/O supply | +3V3 (tied to VDD per datasheet typical I²C circuit) |
+# | 2 | SCL | I²C clock | I2C1_SCL |
+# | 3 | GND | Ground | GND |
+# | 4 | SDA | I²C data | I2C1_SDA |
+# | 5 | SA0 | I²C address select (low=0x5C, high=0x5D) | GND (selects 0x5C) |
+# | 6 | ~CS | Chip select (high=I²C, low=SPI) | +3V3 (selects I²C mode) |
+# | 7 | INT_DRDY | Data-ready interrupt output | testpoint (DRDY not assigned in hwdef v1.0; future hwdef revision can wire) |
+# | 8 | GND | Ground | GND |
+# | 9 | GND | Ground | GND |
+# | 10 | VDD | Main supply | +3V3 |
+#
+# Decoupling per ST datasheet typical operating circuit:
+#   - 100 nF X7R on VDD pin (pin 10)
+#   - 100 nF X7R on Vdd_IO pin (pin 1)
+#
+# Footprint: HLGA-10 2×2mm 0.5mm pitch (override of LPS25HB's default
+# 2.5×2.5 0.6mm footprint — LPS22HB is the smaller variant).
+
+# Wire I²C1 nets on the MCU side IF NOT ALREADY DONE by another sheet.
+# gps_mag_3e.py already wires PB6/PB7 to I2C1_SCL/I2C1_SDA — but the n()
+# singleton fetcher means we just need the same net names here and the
+# electrical connection holds; do NOT re-bind PB6/PB7 to mcu (Part-side
+# pins can be net-bound from only one place; SKiDL handles multi-bind but
+# best practice is single-bind per pin).
+I2C1_SCL = n("I2C1_SCL")
+I2C1_SDA = n("I2C1_SDA")
+
+baro2 = Part(
+    "Sensor_Pressure", "LPS22HB",
+    footprint="Package_LGA:ST_HLGA-10_2x2mm_P0.5mm_LayoutBorder3x2y",
+    value="LPS22HB",
+)
+baro2.ref = "U7"   # U6 = eFuse (power_3b); U7 next free in U-series
+
+# Power + ground.
+P3V3 += baro2[10]   # VDD
+P3V3 += baro2[1]    # Vdd_IO (tied to VDD per ST typical I²C circuit)
+GND  += baro2[3]    # GND
+GND  += baro2[8]    # GND
+GND  += baro2[9]    # GND
+
+# I²C lines.
+I2C1_SCL += baro2[2]   # SCL
+I2C1_SDA += baro2[4]   # SDA
+
+# Mode + address selects.
+GND  += baro2[5]    # SA0 = GND → I²C address 0x5C
+P3V3 += baro2[6]    # ~CS high → I²C mode (NOT SPI)
+
+# DRDY interrupt — testpoint only (no MCU pin assigned in hwdef v1.0;
+# future hwdef revision can route to a free GPIO for hardware DRDY).
+LPS22HB_INT_TP = Net("LPS22HB_INT_TP")
+LPS22HB_INT_TP += baro2[7]
+
+# Decoupling caps per ST DS11211 typical operating circuit.
+c_vdd_b2 = Part("Device", "C", value="100nF", footprint=FP_C_0402)
+c_vdd_b2.ref = "C71"
+P3V3 += c_vdd_b2[1]
+GND  += c_vdd_b2[2]
+
+c_vddio_b2 = Part("Device", "C", value="100nF", footprint=FP_C_0402)
+c_vddio_b2.ref = "C72"
+P3V3 += c_vddio_b2[1]
+GND  += c_vddio_b2[2]
