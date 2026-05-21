@@ -344,26 +344,26 @@ PLACEMENT = {
     "R10": ( 5.0, 30.5,    0),
     "R13": ( 5.0, 40.5,    0),
 
-    # +5V bulks + LDO U2 — wider centers for clean clearance.
-    # U2 SOT-23-5 = 3x2.7mm. Need ≥4mm centers to 0805 neighbors.
-    "C31": (10.0, 17.5,    0),
-    "C32": (13.0, 17.5,    0),
-    "U2":  (17.0, 17.5,    0),     # 4mm clear of C32
-    "C33": (10.0, 14.5,    0),
-    "C34": (13.0, 14.5,    0),
-    "C16": (17.0, 14.5,    0),     # 4mm clear of C34
+    # South power components RELOCATED to X=24/28 column, Y=20..31.
+    # J2 body Y_max=16.7, J2 mount-pad Y_max=17.33 → all relocated parts
+    # at Y>=20 give >2mm clearance. East column (X=28) clear of MCU C18
+    # (X=32) by 4mm. West column (X=24) clear of J2 body east (X=27.82) by ~3mm.
+    "C61": (24.0, 20.5,    0),    # J4 ADC sense V filter cap
+    "C62": (28.0, 20.5,    0),    # J4 ADC sense I filter cap
+    "R41": (24.0, 22.5,    0),    # J4 ADC sense V resistor
+    "R42": (28.0, 22.5,    0),    # J4 ADC sense I resistor
+    "C31": (24.0, 24.5,    0),    # LDO IN bypass
+    "C32": (28.0, 24.5,    0),    # LDO IN bulk
+    "U2":  (24.0, 27.5,    0),    # AP2112K LDO — 3mm S of C34 cluster
+    "C33": (28.0, 27.5,    0),    # LDO OUT bypass
+    "C34": (22.0, 30.5,    0),    # +3V3 bulk — pulled west to clear R3 + MCU pads
+    "C16": (26.0, 30.5,    0),    # +3V3 bulk — pulled west to clear R3 (X=30.5)
 
-    # 2nd power input ADC sense (J19 side) — well NORTH of J19 body, X clear
+    # 2nd power input ADC sense (J19 side) — unchanged
     "R43": (11.0, 57.0,    0),
     "R44": (14.0, 57.0,    0),
     "C81": (11.0, 59.5,    0),
     "C82": (14.0, 59.5,    0),
-
-    # 1st power input ADC sense (J4 side) — south of J4 vertical body
-    "R41": (11.0, 11.5,    0),
-    "R42": (14.0, 11.5,    0),
-    "C61": (11.0,  9.0,    0),
-    "C62": (14.0,  9.0,    0),
 
     # ============ Zone MCU (X = 22 → 60 mm) ============
     # U1 STM32H743VITx LQFP-100 centered at (41, 35); body 14×14
@@ -391,8 +391,8 @@ PLACEMENT = {
     "C43": (52.0, 41.5,    0),
     "FB1": (30.5, 39.5,   90),
 
-    # NRST pull-up + BOOT0 pull-down (BOOT0 has no refdes-only placement; R3 is BOOT0)
-    "R3":  (30.5, 29.0,    0),
+    # NRST pull-up — back to original position (west of MCU, between C20/C22)
+    "R3":  (30.5, 29.5,    0),
     "R1":  (52.0, 28.5,    0),   # VREF 0R tie
     "R2":  (52.0, 25.5,    0),   # VBAT 0R tie
 
@@ -410,8 +410,16 @@ PLACEMENT = {
     "R31": (26.5, 55.0,    0),     # CC pulldowns ≥3mm W of U5
     "R32": (28.5, 55.0,    0),
 
-    # microSD J2 on B.Cu, centered on MCU
-    "J2":  (41.0, 35.0,    0, "B"),
+    # microSD J2 — MOVED to SW corner south edge per Sai 2026-05-21:
+    # card must be insertable/removable with FC mounted (log retrieval).
+    # DM3AT body 15.7x17.7mm. With 180° rotation, card slot mouth opens
+    # SOUTH at footprint Y=+8.88 → board Y=0 (south edge). On F.Cu (top
+    # side) so card slides in from below the board to the south.
+    # J2 center (20, 8.88). Body: X=12.18..27.82, Y=0..16.7.
+    # Power-zone south components (C31/C32/U2/C33/C34/C16, R41/R42/C61/C62)
+    # relocated north of J2 body (Y>=19) to clear this zone.
+    # J11 ESC pad nudged east (X=30→32) for 4mm clearance to J2 east edge.
+    "J2":  (20.0,  8.88, 180),    # F.Cu (no "B" flag — top-side card access)
     # SDMMC pullups on B.Cu (R51-R55) — OUTSIDE J2 body keepout
     "R51": (30.0, 33.0,    0, "B"),
     "R52": (30.0, 35.0,    0, "B"),
@@ -511,15 +519,16 @@ PLACEMENT = {
     "R11": (75.0, 24.0,    0),
     "R12": (75.0, 22.0,    0),
 
-    # ============ ESC pads on S edge (X = 28-78, Y = 3) ============
-    "J11": (30.0, 3.0,    0),
-    "J12": (35.0, 3.0,    0),
-    "J13": (40.0, 3.0,    0),
-    "J14": (45.0, 3.0,    0),
-    "J15": (50.0, 3.0,    0),
-    "J16": (55.0, 3.0,    0),
-    "J17": (60.0, 3.0,    0),
-    "J18": (65.0, 3.0,    0),
+    # ============ ESC pads on S edge — shifted EAST to clear J2 microSD ============
+    # J2 body east edge at X=27.82; J11 moved east to X=32 for 4mm clearance.
+    "J11": (32.0, 3.0,    0),
+    "J12": (37.0, 3.0,    0),
+    "J13": (42.0, 3.0,    0),
+    "J14": (47.0, 3.0,    0),
+    "J15": (52.0, 3.0,    0),
+    "J16": (57.0, 3.0,    0),
+    "J17": (62.0, 3.0,    0),
+    "J18": (67.0, 3.0,    0),
 }
 
 
