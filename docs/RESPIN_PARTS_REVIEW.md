@@ -98,7 +98,7 @@ Dual baro dissimilar; vendor-corrected per master Rule-17.
 | Package | HCLGA-10, 2.0 × 2.0 mm |
 | Why chosen | 2nd vendor for redundancy; ArduPilot-supported via LPS2XH driver; common, low cost, low noise (0.75 Pa RMS); independent I2C bus from Baro1. |
 | **ArduPilot driver** | **CONFIRMED 2026-05-21** — `libraries/AP_Baro/AP_Baro_LPS2XH.cpp` line `#define LPS22HB_WHOAMI 0xB1` + explicit case `case LPS22HB_WHOAMI: _lps2xh_type = BARO_LPS22H;`. Header declares `BARO_LPS22H = 0` in enum. |
-| JLC PCBA library | LCSC C247196 (verify-at-R2 — Extended tier expected) |
+| JLC PCBA library | **LCSC C94049** (LPS22HBTR tape-and-reel) — confirmed via easyeda2kicad pull → `hardware/kicad/novapcb/lib/lps22hbtr.kicad_sym` + `HLGA-10L_LPS22HBTR.kicad_mod`. JLC PCBA tier reconcile at BOM-finalize. |
 | Voltage | 1.7–3.6V |
 | Interface | I2C / SPI (we use I2C @ 400 kHz on **I2C1 PB6/PB7** — I2C3_SDA=PC9 conflicts with SDMMC1_D1 on LQFP-100; only I2C1+I2C2 physically available; master adjudication 2026-05-21 preserves bus+vendor dissimilarity). Address 0x5C (SDO low). |
 | Operating temp | −40 to +85°C |
@@ -118,7 +118,7 @@ Pending verify-at-R2 on standoff/capacitance/JLC stock per master.
 |---|---|
 | MPN | ESD7L5.0DT5G |
 | Vendor | onsemi |
-| Package | SOD-723 (single-line bidirectional TVS — multiple footprints used to cover all lines) |
+| Package | **SOT-723** 1.2 × 0.8 mm, 0.40 mm pitch (3 pads — single-line bidirectional TVS). LCSC C605398, easyeda-pulled `esd7l50:SOT-723_L1.2-W0.8-P0.40-LS1.2-BR.kicad_mod`. (Note: KiCad std-lib `Diode_SMD:D_SOD-723` does NOT exist — the previous R1 ping mistakenly assumed it did. Corrected at R2 via LCSC-matched pull.) |
 | Standoff voltage (V_RWM) | **5.0V** — above 3.3V signal level (will NOT clamp normal signals) ✓ |
 | Capacitance | typ 0.5 pF (datasheet) — negligible at 420 kbaud CRSF and 400 kHz I2C ✓ |
 | Clamping voltage @ 1A | ~12V — below MCU GPIO absolute max (4.0V) is the concern; needs series limit. R2 verifies typical via clamp curve vs MCU ABS_MAX. |
@@ -130,9 +130,9 @@ Pending verify-at-R2 on standoff/capacitance/JLC stock per master.
 
 | Field | Value |
 |---|---|
-| MPN | PESD2CAN |
-| Vendor | NXP / Nexperia |
-| Package | SOT-143 (3 pins, 2 lines + GND) |
+| MPN | PESD2CAN,215 |
+| Vendor | Nexperia |
+| Package | **SOT-23-3** 2.9 × 1.3 mm 0.95 mm pitch (NOT SOT-143 — R2 fix 2026-05-21 caught by master). LCSC C75176, easyeda-pulled `pesd2can:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR.kicad_mod`. Pin map: pin 1 = I/O1 (CANH), pin 2 = I/O2 (CANL), pin 3 = GND (common cathode). Previous R1 wiring had GND on pin 2 — would have shorted CANL to GND. Fixed in commit 6be83fa. |
 | Why chosen | CAN-bus-specific TVS designed for ISO 11898-2 differential clamp; CAN_H/CAN_L threshold balanced for dominant/recessive. Pixhawk-standard. |
 | Standoff voltage | 24V (above CAN signal range) |
 | Capacitance | typ 25 pF (acceptable up to 1 Mbps CAN; FD-CAN 5 Mbps verify SI in CAN-bus extension sim at R6) |
@@ -190,15 +190,15 @@ Pending verify-at-R2 on standoff/capacitance/JLC stock per master.
 
 | Field | Value |
 |---|---|
-| MPN | TJA1051TK/3 |
+| MPN | TJA1051TK/3,118 |
 | Vendor | NXP Semiconductors |
-| Package | TSSOP-8 |
+| Package | **HVSON-8** 3.0 × 3.0 mm 0.65 mm pitch WITH EXPOSED PAD (NOT TSSOP-8 — R2 fix 2026-05-21 caught by master; NXP naming convention "-T" = SO-8, "-TK" = HVSON-8). Pin 9 EP must connect to GND for thermal performance. LCSC C124020, easyeda-pulled `tja1051:HVSON-8_L3.0-W3.0-P0.65-BL-EP.kicad_mod`. |
 | Why chosen | Robust 5V-supply CAN transceiver with 3.3V-compatible logic (the `/3` variant explicitly). Pixhawk-standard; better noise immunity than 3.3V-only parts; sleep + standby modes. |
 | Supply | 5V (V_CC) — derived from main +5V rail |
 | Logic level | 3.3V or 5V (V_IO pin) — wired to 3.3V for our MCU |
 | Bus rate | 1 Mbps classical CAN, 5 Mbps FD-CAN ✓ (matches STM32H743 FDCAN1/2 capability) |
 | Operating temp | −40 to +150°C (AEC-Q100 grade option) |
-| JLC PCBA library | verify-at-R2 (commonly stocked; expected Extended tier) |
+| JLC PCBA library | **LCSC C124020** confirmed. JLC PCBA tier reconcile at BOM-finalize. |
 | Per-port termination | **120Ω 0603 jumper-selectable** (master directive 2026-05-21): two solder pads with a 120Ω chip resistor in series with a cuttable trace. Default closed = terminate; cut = no terminate. Independent per port. |
 | Quantity | **1 transceiver** (FDCAN1 only) — adjudicated 2026-05-21. FDCAN2 alternates on LQFP-100 all conflict with SPI2/SPI3/I2C1 once IMUs claim them (PB5/PB6/PB12/PB13). Pin-budget claim of "2 free FDCAN" was optimistic; LQFP-100 physical reality = 1 CAN. **2nd CAN port deferred to v2 (LQFP-144 H743ZG repackage)**. CAN is future-proofing — Nova drone uses zero CAN today, so 1 port already provides headroom. Same package decision as MatekH743 (1 CAN, LQFP-100). |
 
@@ -210,16 +210,17 @@ Pending verify-at-R2 on standoff/capacitance/JLC stock per master.
 
 | Field | Value |
 |---|---|
-| MPN | LM74700-Q1 (or LM74700, automotive vs commercial grade) |
+| MPN | LM74700QDBVTQ1 |
 | Vendor | Texas Instruments |
-| Package | SOT-23-6 (or MSOP-8 variant — datasheet has both) |
-| Function | Drives an external N-channel back-to-back MOSFET pair as a near-zero-drop diode (forward drop ~20 mV at typical currents) |
+| Package | **SOT-23-6 DBV** 2.9 × 1.6 mm 0.95 mm pitch (NOT MSOP-8 — R2 fix 2026-05-21 caught by master; the QDBVTQ1 part code is DBV = SOT-23-6, only 6 pins). LCSC C2653623, easyeda-pulled `lm74700:SOT-23-6_L2.9-W1.6-P0.95-LS2.8-TL.kicad_mod`. |
+| Pin map (DBV variant — RE-WIRED in R2) | pin 1=VCAP (cap to GND), pin 2=GND, pin 3=EN (tied to ANODE for always-on), pin 4=CATHODE (output side), pin 5=GATE (drives external N-FET), pin 6=ANODE (input side, also chip supply — no separate VS pin on DBV variant). |
+| Function | Drives an external N-channel pass MOSFET as a near-zero-drop diode (forward drop ~20 mV at typical currents) |
 | Supply range | 3.2 – 65V (covers 4S–6S LiPo VBAT) |
 | Reverse-bias blocking | 65V max |
-| JLC PCBA library | verify-at-R2 (TI auto parts usually JLC Extended) |
+| JLC PCBA library | **LCSC C2653623** confirmed (master 2026-05-21). Alternate C3236229 = 8-pin DDF variant. Tier reconcile at BOM-finalize. |
 | Why chosen | Lossless diode-OR-ing of two BEC inputs; no Schottky losses; auto-switchover when one input falls. Validated by Tier-1-sim (a) power-failover transient. |
-| Companion FET | external dual N-FET (one per controller, two per board). Part TBD at schematic phase — common-drain Vth-compatible part, e.g., FDS6680A or similar. R2 footprint phase picks final FET MPN. |
-| Quantity | 2 (one per power input) |
+| Companion FET | **AO4262E SOIC-8** (master pick, LCSC C431178): 60V / 16.5A / 6.5mΩ. Pins 1-3=Source (paralleled), pin 4=Gate, pins 5-8=Drain (paralleled). |
+| Quantity | 2 controllers (one per power input) + 2 N-FETs |
 
 ### 2nd JST-GH 6P connector
 
