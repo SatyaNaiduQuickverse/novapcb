@@ -33,10 +33,10 @@ DSN = os.path.join(HERE, "novapcb-layout-v1.1.dsn")
 SES = os.path.join(HERE, "novapcb-layout-v1.1.ses")
 LOG = os.path.join(HERE, "freerouting.log")
 JAVA = os.path.expanduser("~/local/jre/jdk-25.0.3+9-jre/bin/java")
-FR_JAR = os.path.expanduser("~/local/freerouting/freerouting.jar")
+FR_JAR = os.path.expanduser("~/local/freerouting/versions/freerouting-2.2.3.jar")  # one version older than v2.2.4
 
 PLANE_NETS = ["GND", "+3V3", "+3V3A", "+5V"]
-FREEROUTING_TIMEOUT = 1500  # 25 min hard cap — allows -mp 10 to complete
+FREEROUTING_TIMEOUT = 3300  # 55 min — let -mp 30 complete (44 min expected + margin) per master 2026-05-22
 
 
 def strip_everything(brd):
@@ -146,11 +146,10 @@ def main():
     print(f"[4] run Freerouting -mt 4 -mp 100 (hard timeout {FREEROUTING_TIMEOUT}s)")
     if os.path.exists(SES): os.remove(SES)
     t0 = time.time()
-    # -Xmx6g bounds Java heap. -mp 10 = 10 passes (~14 min based on
-    # ~80s/pass). Earlier -mp 100 OOM'd; -mp 3 produced 61 unrouted;
-    # -mp 10 should converge to <20 unrouted (then hand-finish the rest).
+    # Master 2026-05-22 decisive run: -mp 30 v2.2.3 to COMPLETION.
+    # SES only written on completion; do NOT time-kill (only RAM-kill).
     cmd = [JAVA, "-Xmx6g", "-Dgui.enabled=false", "-jar", FR_JAR,
-           "-de", DSN, "-do", SES, "-mt", "4", "-mp", "10"]
+           "-de", DSN, "-do", SES, "-mt", "4", "-mp", "30"]
     timed_out = False
     with open(LOG, "w") as logf:
         try:
