@@ -579,7 +579,7 @@ r_heater = Part(
     value="TBD_SIM_OUT",
     footprint="Resistor_SMD:R_2512_6332Metric",   # SIZE PLACEHOLDER (1W class)
 )
-r_heater.ref = "R51"
+r_heater.ref = "R61"   # NOT R51 — collides with SDMMC pullup R51 in power_sd_swd_3h.py
 # Heater pulls from +5V (sourced post-OR-ing, post-eFuse) through Q5 to GND.
 # Wiring: +5V → R_HEATER → Q5_DRAIN → Q5_SOURCE → GND. PWM modulates the
 # current path. Resistor sized by sim, but +5V is the heater supply rail.
