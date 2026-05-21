@@ -66,38 +66,42 @@ Corrected in this PR:
 - docs/CONTROLLED_IMPEDANCE.md (new) — USB diff-pair recompute for real h=0.21 mm L1↔L2 prepreg
 - Step 4 thermal FEA re-run with anisotropic k (k_xy=33.5 W/m·K, k_z=0.316 W/m·K from real stackup) — confirms LDO Tj=69.8°C, MCU Tj=74.2°C; Path B sizing conclusion stands.
 
-## 5. Residuals (4 unconnected items, all on +3V3 net)
+## 5. Residuals — 3 unconnected items, all on +3V3 net (flagged)
 
-Note on non-determinism: Freerouting with `-mt 4` (4 threads) is not strictly deterministic — different thread interleaving produces different routing outcomes. An earlier run had 3 SDMMC + 1 +3V3 = 4 residuals; the current run (committed) has 4 +3V3 residuals. Both runs converged on the same ~94.7% completion; the specific 4 residuals differ.
+Note on non-determinism: Freerouting with `-mt 4` (4 threads) is not strictly deterministic — different thread interleaving produces different routing outcomes. Per master 2026-05-21 PR #62 audit directive ("do NOT re-roll Freerouting — chasing its non-determinism isn't the fix"), this PR is locked on the final auto-routing run + a focused, type-aware residual-closing attempt + honest flag of the irreducible remainder.
 
-This run's 4 unconnected items:
+### 5.1 Final run's residuals
 
 | # | Endpoint A | Endpoint B | Cause |
 |---|---|---|---|
-| 1 | F.Cu Track (34.39, 29.00) | B.Cu Track (30.08, 26.97) | Short cross-layer +3V3 gap near MCU SW; needs 1 stitching via |
-| 2 | In2.Cu Zone (+3V3 plane) | In2.Cu Zone (+3V3 plane) | **Plane-island fragmentation**: the +3V3 zone on L3 is split into two disconnected islands by a row of through-vias. Needs 1+ +3V3 stitching vias between the islands. |
-| 3 | F.Cu Track (69.15, 28.80) | F.Cu Track (71.11, 30.75) | Short ~2.5 mm same-layer gap, Zone 3 east area; needs 1 track segment |
-| 4 | F.Cu Track (65.87, 30.00) | F.Cu Track (69.15, 28.80) | Short ~3.5 mm same-layer gap, Zone 3 area; needs 1 track segment |
+| 1 | F.Cu Track (71.11, 31.32) | F.Cu Via (69.20, 29.82) | Short ~2.4 mm cross-pad gap in Zone 3 IMU area |
+| 2 | In2.Cu Zone (+3V3 plane) | In2.Cu Zone (+3V3 plane) | **Plane-island fragmentation**: the +3V3 zone on L3 is split into 3 outlines (1 main + 2 small orphans verified via `GetFilledPolysList`). Bridge requires both a stitching via AND a clearance-aware short trace on F.Cu/B.Cu to a clear point in the main island. |
+| 3 | F.Cu Track (69.15, 28.80) | F.Cu Track (64.54, 30.00) | Short ~4.8 mm same-layer gap in Zone 3 W area (between IMU and crystal) |
 
-### 5.1 Hand-route attempt (in earlier run, reverted)
+### 5.2 Residual-closing attempts (type-aware, per master directive)
 
-An earlier hand-route attempt added segments + vias to close the residuals via the pcbnew API. Result: **residuals cleared but 59 NEW DRC violations introduced** (segments crossing MCU/J2 pads, solder mask bridges). Routing density around MCU + microSD means safe hand-routing requires either:
-- KiCad GUI with visual routing assistance (fits Sai's tooling)
-- More sophisticated pcbnew-API code with pad-collision avoidance
+Per master ("close them, do not punt all 4 to Sai", with type-aware approach):
 
-The hand-route was reverted; current state reflects the cleaner Freerouting auto-route + zone fill output.
+**Attempt 1 (segment-routing for residuals #1, #3, #4 of the prior run)**: Added 2 F.Cu segments at endpoints I'd reasoned to be clear (X=29-30 corridor, X=47.96 corridor). Result: **segments landed cleanly (DRC stayed 0)** but did NOT reduce unconnected count — the endpoints connected into +3V3 plane *islands* rather than bridging across islands. The plane-fragmentation is the underlying obstruction, not the track endpoints.
 
-### 5.2 Plane fragmentation (residual #2) — structural diagnosis
+**Attempt 2 (bridge-via for plane fragmentation, residual #2 of the prior run)**: Added 2 stitching vias at locations chosen via the `GetFilledPolysList` island geometry — outside the orphan boundaries to drop into the main island, with B.Cu segments from the orphan-area existing vias to the new main-island vias. Result: **14 new DRC errors** from via-to-pad collisions (R51/R52/R54 +3V3 pads + GND-via at (28.90, 27.11) within via-clearance distance of my chosen bridge points). Reverted.
 
-The +3V3 plane on In2.Cu is fragmented into 2 islands because:
-- Many SDMMC + signal vias drop through the +3V3 layer (avoidance zones around each)
-- Combined avoidance zones span the full board width at some Y range, partitioning the plane
+**Attempt 3 (zone min_thickness reduction, 0.25 → 0.10 mm)**: Looser fill rules to encourage broader plane coverage. Result: **no change in island count** — fragmentation is geometric (via clearance zones partition the L3 plane), not fill-thickness-limited. Kept the reduced min_thickness for slightly more robust fill but doesn't close residuals.
 
-This is a **placement-strategy item** not a routing failure per se. Mitigations Sai can apply at follow-up:
-- Add 1-2 +3V3 stitching vias placed where the +3V3 plane islands are closest (via from one island to L3 +3V3, then to the other island — actually a SHORT TRACE on a different layer like F.Cu connecting two +3V3 plane vias)
-- Or relax via-keepout on the +3V3 zone so adjacent vias coalesce
+### 5.3 Why these 3 residuals are the irreducible remainder
 
-Trivial in KiCad GUI (5 minutes). Not silently fixed here because picking via locations requires visual inspection of the +3V3 plane's island geometry.
+The +3V3 plane fragmentation on In2.Cu is the structural cause of ALL 3 residuals (the track endpoints that DRC flags are the visible symptom; the underlying issue is that the plane has 3 outlines, and stranded track endpoints land in islands isolated from the main +3V3 network).
+
+Closing this without GUI assistance requires:
+- Hand-picking 2-3 stitching-via locations that are simultaneously (a) inside one orphan island's L3 footprint, (b) clear of all pads/vias within via-outer + clearance distance on F.Cu and B.Cu, (c) reachable by a clearance-passing F.Cu or B.Cu trace from another via in the main island
+- KiCad's GUI gives visual island geometry + pad clearance overlay, making this a ~10-minute job for Sai
+- The pcbnew Python API's collision-aware via placement would require re-implementing parts of Freerouting's pad-keepout logic — out of scope for this PR
+
+**Functional impact of leaving the 3 residuals**: The 2 orphan islands trap a small number of +3V3 pads (R51.1 SDMMC pull-up confirmed in orphan #1; possibly 1-2 others). These pads have +3V3 net topology but NO connection to the main +3V3 rail = the pull-up wouldn't pull up. **Must be closed before fab.** Per master allowance (flagged residual), filed for Sai GUI session as a HARD-must-close-before-fab item; the rest of routing is complete (931 tracks + 201 vias, 0 DRC errors).
+
+### 5.4 Note on the earlier multi-run residual variance
+
+The committed routing represents the latest Freerouting run + zone fill. Prior runs gave different residual sets (1st: 3 SDMMC + 1 +3V3; 2nd: 4 +3V3; 3rd: 2 +3V3; 4th/final committed: 3 +3V3). All runs converged at the same ~94.7% completion; the specific 3-5 residuals differ by run due to `-mt 4` non-determinism. Per master directive, this PR locks the final run rather than chasing different residual sets.
 
 ## 6. Net classes + clearance
 
