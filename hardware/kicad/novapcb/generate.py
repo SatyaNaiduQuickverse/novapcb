@@ -45,6 +45,7 @@ from sheets import esc_3f    # noqa: F401  (3f — 8 DShot motor outputs to sold
 from sheets import crsf_usb_3g  # noqa: F401  (3g — CRSF JST-GH 4P + USB-C w/ ESD)
 from sheets import power_sd_swd_3h  # noqa: F401  (3h — Mauch ADC + microSD + SWD + mounting)
 from sheets import telem_3i         # noqa: F401  (3i — Telem USART1 JST-GH 6P, breakdown-omission fix)
+from sheets import can_3j           # noqa: F401  (3j — v1.1 CAN: TJA1051TK/3 + PESD2CAN + 120R jumper + JST-GH 4P, FDCAN1 only)
 
 # ---- pipeline (netlist-only; see module docstring + OPEN_QUESTIONS phase3-render-1) ----
 import skidl
