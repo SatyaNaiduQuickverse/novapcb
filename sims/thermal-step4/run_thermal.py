@@ -70,7 +70,8 @@ BOARD_H = 0.0016  # Z thickness (1.6 mm)
 # This understates lateral spreading (real k_xy = 158 is much higher) but
 # also undestates through-plane impedance. Acceptable for first-pass model;
 # Phase 6.5 forum review or a more detailed model can refine.
-K_EFF = 22.9
+K_XY = 33.5  # in-plane (real JLC06161H: 0.131mm Cu / 1.469mm FR4 parallel)
+K_Z = 0.316  # through-plane (series rule)
 RHO = 2500          # kg/m³ (board avg)
 CP = 800            # J/kg·K (board avg)
 
@@ -192,7 +193,7 @@ End
 
 Material 1
   Density = {RHO}
-  Heat Conductivity = {K_EFF}
+  Heat Conductivity(3) = {K_XY} {K_XY} {K_Z}
   Heat Capacity = {CP}
 End
 
@@ -371,7 +372,7 @@ def main():
     print("="*64)
     print("Step 4 thermal FEA — Elmer 3D heat-conduction")
     print(f"  Board:     {BOARD_L*1000}×{BOARD_W*1000}×{BOARD_H*1000} mm 6-layer")
-    print(f"  k_eff:     {K_EFF} W/m·K (geom mean of in-plane + through-plane)")
+    print(f"  k_eff:     {K_XY} W/m·K (geom mean of in-plane + through-plane)")
     print(f"  h_conv:    {H_CONV} W/m²K per surface (top + bot)")
     print(f"  T_ambient: {T_AMBIENT} °C")
     print(f"  Heat sources:")

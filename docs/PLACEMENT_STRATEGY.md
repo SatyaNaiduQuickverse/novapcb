@@ -275,17 +275,32 @@ If any of these falsifies on the actual layout, we escalate honestly.
 
 ### 3.5 Recommended stackup
 
-JLCPCB JLC06161H 6-layer 4 oz inner / 1 oz outer / 1.6 mm — see
-THERMAL_BUDGET §3.2 for the per-layer thickness + thermal role table.
+JLCPCB **JLC06161H** 6-layer / 1.6 mm — outer 1 oz, inner 0.5 oz (the
+real JLC standard; **earlier draft incorrectly said "4 oz inner" which
+is NOT a JLC standard offering** — heavy copper is 2-layer only).
+
+Layer assignment + dielectric details: see THERMAL_BUDGET §3.2 (real
+JLC table) and CONTROLLED_IMPEDANCE.md (impedance-control prepreg
+variant `JLC06161H-7628` for USB diff-pair Z ~ 90 Ω).
 
 | Layer | Net | Reason |
 |---|---|---|
-| L1 (top) | Components + signal | F.Cu user layer |
-| L2 | GND plane | Reference for L1 high-speed signals |
-| L3 | +3V3 plane | Dedicated low-impedance MCU + sensor rail |
-| L4 | +5V plane | Dedicated rail; LDO thermal-pad fan-out target |
-| L5 | GND plane | Reference for L6 high-speed signals |
-| L6 (bot) | Signal (sensors + low-speed) | B.Cu user layer; baro U4 lives here |
+| L1 (top, 1 oz) | Components + signal | F.Cu user layer |
+| L2 (inner, 0.5 oz) | GND plane | Reference for L1 high-speed signals |
+| L3 (inner, 0.5 oz) | +3V3 plane | Dedicated low-impedance MCU + sensor rail |
+| L4 (inner, 0.5 oz) | +5V plane | Dedicated rail; LDO thermal-pad fan-out target |
+| L5 (inner, 0.5 oz) | GND plane | Reference for L6 high-speed signals |
+| L6 (bot, 1 oz) | Signal (sensors + low-speed) | B.Cu user layer; baro U4 lives here |
+
+**Thermal-spreading note**: the corrected stackup (0.5 oz inner vs the
+erroneous "4 oz" assumption) does NOT reduce thermal margin. Step 4
+FEA re-run with the real anisotropic conductivities (k_xy = 33.5
+W/m·K from the 0.131 mm total Cu, k_z = 0.316 W/m·K through-plane)
+confirms LDO Tj = 69.8 °C, MCU Tj = 74.2 °C at 80×60 mm / h=5 /
+50 °C — both PASS the 80 °C target. The design is convection-limited
+(not heat-spreading-limited), so inner Cu weight doesn't change the
+conclusion — see THERMAL_BUDGET §2 + Step 4 STEP4_REPORT for the
+verification.
 
 ---
 
