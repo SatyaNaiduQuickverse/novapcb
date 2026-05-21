@@ -470,6 +470,10 @@ This is a special case of Rule 4 but worth its own line because Claude has a ten
 
 The auto-memory may contain personal notes (preferences, profile). When generating a CLAUDE.md or any committed doc, do not blindly paste personal memory content. Personal preferences belong in memory; project rules belong in committed docs. This file is the line between the two.
 
+### Rule 17 — No loose threads
+
+Every loose end gets pulled and resolved before the design is called done — never deferred without explicit tracking, never waved off as "probably fine" or "the fab handles it", never compromised to hit a schedule. This is a real PCB going to real fabrication; a loose thread is a real defect on real hardware that flies. The verification steps (DRC, ERC, sims, DFM) exist to surface loose threads — every one found is fixed properly, however long it takes. Time flexes to the quality bar, not the reverse. When tempted to wave something off, verify it and document the verification instead. (Sai, 2026-05-21.)
+
 ---
 
 ## 8. User profile — how to work with this user
