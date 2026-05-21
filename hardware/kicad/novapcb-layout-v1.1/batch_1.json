@@ -1,0 +1,16 @@
+{
+  "_comment": "Batch 1 — methodology proof. 7 plane-stitch via fails + 2 small isolated signal nets. Master 2026-05-22 directive: per-net DRC-aware, layer-aware, route AROUND not THROUGH, list stuck.",
+  "stitch_fails": [
+    ["C19", "1", "+3V3A", -1.0, 0.0],
+    ["C20", "1", "+3V3A",  0.0, 1.0],
+    ["FB1", "2", "+3V3A", -1.0, 0.0],
+    ["R1",  "1", "+3V3A",  1.0, 0.0],
+    ["R53", "1", "+3V3",   0.0, 1.0],
+    ["R54", "1", "+3V3",   0.0, 1.0],
+    ["U1",  "100", "+3V3", -1.5, 0.0]
+  ],
+  "nets": [
+    "HSE_IN",
+    "HSE_OUT"
+  ]
+}
