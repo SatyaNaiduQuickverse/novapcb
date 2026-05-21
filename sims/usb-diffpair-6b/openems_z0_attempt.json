@@ -1,0 +1,18 @@
+{
+  "tool": "OpenEMS v0.0.36 FDTD via Python (CSXCAD + openEMS)",
+  "approach": "bounded attempt per master 2026-05-21",
+  "target_analytical": {
+    "Z_se_ohm": 68.7,
+    "Z_diff_ohm": 94.4,
+    "geometry": "W=0.30/S=0.10/h=0.21/eps_r=4.3 (JLC06161H-7628)",
+    "method": "Hammerstad-Jensen + IPC-2141 edge-coupled"
+  },
+  "openems_attempt": {
+    "status": "sim_diverged",
+    "fdtd_outcome": "ran 220k timesteps in ~16s but energy diverged to inf \u2014 mesh too coarse / PML insufficient / excitation tuning needed for this geometry",
+    "z_ref_value": 50.0,
+    "note": "z_ref is the scalar reference impedance we passed to CalcPort (50\u03a9), not the extracted line Z0. Proper Z0 extraction requires post-processing the swept S-params via ABCD-matrix or NRW method, not the bare Z_ref field."
+  },
+  "verdict": "UNAVAILABLE-DIVERGED",
+  "disposition": "OpenEMS Python bindings load + FDTD engine runs, BUT the first-pass MSL Z0 sim diverged after ~16s wall-time / 220k timesteps (energy \u2192 \u221e, indicates numerical instability). Stabilizing the FDTD for this small-geometry microstrip would require: (a) finer mesh near the strip (lambda/100 or finer in the dielectric), (b) more PML cells / better-tuned absorbing boundaries, (c) shorter timestep, (d) post-processing the S-params via ABCD-matrix extraction. Each of those is a real bench-tuning task \u2014 multi-hour FDTD-engineering work, not a quick fix.\n\nPer master 2026-05-21 directive: 'If after a bounded honest attempt it still cannot be made to work \u2192 the validated analytical Hammerstad-Jensen + Phase 9 bench remain the impedance floor; document that honestly. Do not fake it; do not loosen.' This IS that honest documentation. Bounded attempt was made; deeper FDTD tuning was not in scope. Analytical + bench is the floor."
+}

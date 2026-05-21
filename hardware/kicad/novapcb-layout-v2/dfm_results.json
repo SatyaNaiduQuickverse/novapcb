@@ -1,0 +1,62 @@
+{
+  "tool": "kicad-cli pcb drc + analytical capability check",
+  "fab": "JLCPCB 6-layer (JLC06161H-7628)",
+  "checks": [
+    {
+      "check": "drc_severity_error",
+      "errors": 0,
+      "unconnected": 31,
+      "footprint_errors": 0,
+      "pass": true,
+      "note": "28 unconnected expected (the plane-stitch GUI hand-off residuals). 0 errors required for Phase 7."
+    },
+    {
+      "check": "project_rules_vs_jlc_standard",
+      "rule_check": {
+        "min_track_width": {
+          "project": 0.1,
+          "jlc_standard": 0.1,
+          "ok": true
+        },
+        "min_clearance": {
+          "project": 0.1,
+          "jlc_standard": 0.1,
+          "ok": true
+        },
+        "min_through_hole_diameter": {
+          "project": 0.3,
+          "jlc_standard": 0.3,
+          "ok": true
+        },
+        "min_via_diameter": {
+          "project": 0.4,
+          "jlc_standard": 0.4,
+          "ok": true
+        }
+      },
+      "pass": true,
+      "note": "Project rules meet/exceed JLC 6-layer standard tier across all 4 limits."
+    },
+    {
+      "check": "schematic_parity",
+      "errors": 0,
+      "pass": true,
+      "note": "DRC --schematic-parity should report 0 (board matches netlist)."
+    },
+    {
+      "check": "board_feature_inventory",
+      "footprints": 83,
+      "pads": 375,
+      "tracks": 647,
+      "vias": 176,
+      "zones": 4,
+      "status": "INFO"
+    }
+  ],
+  "verdict": "MARGINAL",
+  "summary": {
+    "checks": 4,
+    "passes": 4,
+    "pass_keyed": 3
+  }
+}

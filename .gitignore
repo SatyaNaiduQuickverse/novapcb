@@ -48,3 +48,4 @@ skidl_REPL.*
 
 # SKiDL symbol-library cache (regenerated each run; not source-of-truth)
 hardware/kicad/novapcb/generate_sklib.py
+hardware/kicad/novapcb-layout-v2/exports/
