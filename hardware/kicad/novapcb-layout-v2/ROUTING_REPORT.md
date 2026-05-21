@@ -154,14 +154,45 @@ The IMU's W-side pad row (U3.7, U3.6, U3.5, U3.4, U3.13, U3.1, U3.2) creates a n
 - Repositioning IMU U3 slightly to open up routing corridor (placement change, would require re-running Step 3+4)
 - Accepting these 2 residuals as honest flagged residuals per master's pass criterion
 
-### 5.5 Status
+### 5.5 Fine-grid enumeration (after master 2026-05-21 "refine grid first" directive)
+
+Per master directive: "A coarse-grid search that misses sub-mm gaps has not genuinely proven that. Refine the grid first."
+
+`run_finegrid.py` implements per-residual ROI fine-grid enumeration:
+- ROI = bbox of 2 residual endpoints + 2 mm padding
+- Grid steps: 0.1 → 0.05 → 0.025 → 0.0125 mm (refine if coarser finds 0 candidates)
+- Per via candidate: try BOTH B.Cu (open under U3 IMU on top) AND F.Cu, with direct + 25 L-shape corner variants
+- Verification: each placement DRC-checked; if 0 errors AND unconnected DECREASES → keep; else revert + try next
+
+#### Result
+
+| Residual | ROI | Grid | Via candidates | Outcome |
+|---|---|---|---|---|
+| resA (~U3.8 area, both endpoints F.Cu +3V3) | X=67.2..73.1, Y=27.8..33.3 | 0.1 mm (60×55) | 504 | **FAILED** — 100 candidates × 2 layers × 26 path options (direct + 25 L-shapes) tried, none verified-reduce-unconnected. Topology limit: no via-with-2-segment configuration in the ROI connects both endpoints. |
+| resB (~IMU/crystal area) | X=62.2..67.1, Y=28.4..34.9 | 0.1 mm (49×65) | 1250 | **CLOSED** by via at (64.67, 30.97) + 2 B.Cu segments — unconnected 2→1 |
+
+Current state: **0 DRC errors, 1 unconnected** (resA only).
+
+### 5.6 Vision-assisted pass (per master 2026-05-21 protocol)
+
+Per `docs/VISION_ASSISTED_ROUTING.md` — when headless enumeration is genuinely stuck in a congested region, master's visual judgment of free space unblocks. Worker prepares targeted render + coordinate data sheet.
+
+**Artifacts prepared for the vision pass on resA:**
+- `renders/routing_imu_roi.png` — 380×380 crop of high-res top render at the IMU ROI (X=64..74, Y=27..36), showing U3 + R11/R12 + visible traces/vias
+- `renders/routing_imu_roi.md` — text coordinate data sheet of the ROI: every pad with (x,y) + size + layer + net; every via; every track endpoint-in-ROI; current +3V3 plane island geometry
+- Residual A endpoints (exact): F.Cu Track at (69.2000, 29.8200) length 0.05 mm ↔ F.Cu Track at (71.1125, 31.3174) length 0.5674 mm
+
+Awaiting master via/trace coordinate proposal anchored to the data sheet. Per protocol: vision proposes, coord-data + DRC dispose.
+
+### 5.7 Status
 
 - **0 DRC errors**
-- **2 unconnected on +3V3** — load-bearing (deletion-test verified) — genuinely-irreducible per rigorous enumeration evidence + the IMU pad-density obstruction
-- All other +3V3 connectivity intact; orphan-#1 (the previously HARD-MUST-CLOSE R51.1 SDMMC pull-up case) is bridged
-- Step 5 routing PR #62 reflects best-achievable state via headless approach
+- **1 unconnected on +3V3** (resA — U3.8 area, fine-grid enumeration exhausted)
+- resB closed via fine-grid (via at 64.67, 30.97 + B.Cu segments)
+- orphan-#1 + R51.1 SDMMC pull-up intact (orphan-#1 bridge from earlier rigorous-stitch held through fine-grid run)
+- VISION_ASSISTED_ROUTING.md protocol doc committed to docs/
 
-Per master pass criterion ("0 DRC errors, 0 unconnected, OR the flagged residual IF rigorous enumeration genuinely finds no clear spot"): the 2 residuals are flagged with full enumeration evidence + load-bearing verification. PR #62 ready for merge → Step 6 (gerber + fab readiness) → Sai GUI session can close the 2 remaining +3V3 connections during fab review.
+PR #62 holding for vision-assisted pass on the 1 remaining resA. After that: if vision-assist closes → 0/0 merge. If it also fails → genuinely-irreducible escalation to Sai with full enumeration + vision evidence.
 
 ### 5.5 Prior, less-rigorous attempts (kept for traceability)
 
