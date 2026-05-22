@@ -2,6 +2,26 @@
 
 All v1 scoping decisions are in `DECISIONS.md`. Add new open questions here as they arise.
 
+## phase4-dfm-usb-fan. JLCPCB DFM gate (#11) — USB pair fan-region thin clearance
+
+**Raised 2026-05-23** (master flag at C↔F lock review).
+
+The USB post-ESD diff pair coupled section uses W=0.20/S=0.13 (openEMS-validated 87.4 Ω, see `docs/CONTROLLED_IMPEDANCE.md`). The custom DRU rule `usb-diff-pair-in-pair` allows 0.10mm in-pair clearance for this pair only. At the fan region where the pair diverges around U5's pin 2 (GND, Y=31 on corridor), the fan trace edge gap to the other pair member computes to ≈0.106mm — only 6 µm over the 0.10mm rule.
+
+Passes KiCad DRC. But **razor-thin vs the rule** AND must be inside JLCPCB's actual manufacturing capability for trace-to-trace.
+
+**Action (DFM gate #11):** before fab order, explicitly confirm JLCPCB's published process capability supports:
+- 0.10mm (4mil) trace-to-trace clearance on 6-layer 1oz outer copper
+- AND the actual 0.106mm fan-region gap with manufacturing tolerance band
+
+JLC's published 6-layer 1oz spec is 0.10mm (4mil) per Lite/Standard tier. The fan gap (0.106mm) is ABOVE this nominal spec, but tolerance bands can eat 1-2 mil. Confirm with JLC support if the order is borderline.
+
+**Reference:** routing committed in PR #69 (integ/C-F-usb), file `hardware/kicad/novapcb-stepwise/integ_C_F.py`. Fan-region geometry at X=69.50..71.862, Y=31.00..31.95 (post-pin-swap).
+
+**Not blocking** C↔F integration lock — passes DRC, just flag for the fab gate.
+
+
+
 ## v2-1. FMUv6X mechanical drop-in (deferred from `DECISIONS.md §2`)
 
 v1 is a functional drop-in only (single-PCB, Pixhawk-standard 30.5 × 30.5 mm M3, requires a new mounting tray on the airframe). v2 is the mechanical drop-in against the Holybro Pixhawk 6X — FMUv6X form factor, two-board (FMU + isolated IMU on vibration mounts), exact 6X connector pin-out and footprint so the existing airframe accepts novapcb in place of the 6X without any mechanical change.
@@ -160,7 +180,16 @@ Pad-edge gap in pitch direction = 0.5 - 0.25 = **0.25 mm** (clears the 0.2 mm ne
 
 ---
 
-## phase0.6-2. OpenEMS microstrip Z0-extraction — Phase 6b deep-dive required
+## phase0.6-2. OpenEMS microstrip Z0-extraction — Phase 6b deep-dive required (RESOLVED 2026-05-22)
+
+**RESOLVED 2026-05-22**: openEMS Z₀-extraction validated to 3.6% vs Hammerstad-Jensen 1980 (`sims/validation/VALIDATION_RESULTS.md` row 5 — Task 9). Three traps caught + documented:
+- `MSLPort.CalcPort(ref_impedance=…)` OVERWRITES measured Z₀ (ports.py:153). Don't pass `ref_impedance`.
+- `FeedShift` + `MeasPlaneShift` are absolute offsets from port start, not relative; both at the same offset → measurement probes see feed transient.
+- Without `Feed_R=50` on the un-excited port, energy bounces, no convergence; bound with `NrTS=` cap.
+
+openEMS is now the project's controlled-impedance ground truth. Subsequent C↔F integration USB diff-pair sign-off (2026-05-22) confirmed the value: the original analytical-only W=0.30/S=0.10 spec was 24 Ω off (70 Ω measured vs 94 Ω analytical) — `docs/CONTROLLED_IMPEDANCE.md` corrected to openEMS-validated W=0.20/S=0.13 (87 Ω). Original entry preserved below for traceability.
+
+— original entry —
 
 **Raised 2026-05-21** (Phase 0.6 PR #56 follow-up; convergence re-run after the one-line ref_impedance fix).
 
@@ -210,8 +239,8 @@ The dense 36×36 / 4-layer board is being set aside in favor of a deliberate, si
 1. **Board outline shape** — RECTANGLE. Aspect ratio is an OUTPUT of placement (Step 3), not pre-decided.
 2. **Board size** — sized to the placement. No fixed dim constraint. ✓
 3. **Layer count** — **OPEN**. 4 vs 6 to be decided in Step 3 based on whether 6-layer measurably reduces EMI/SI failure modes per the §10 reliability mandate.
-4. **Mounting pattern** — driven by the resulting board outline + the airframe envelope; new tray is acceptable per §2.
-5. **Airframe envelope** — **OPEN** (Sai will provide; not blocking Step 2 inrush mitigation or thermal-sim input prep).
+4. **Mounting pattern** — **RESOLVED 2026-05-23** (master, delegated from Sai). 4× M3 corner-inset holes on the 90×70 board; mid-long-edge +2 holes (6 total) gated on Phase 6 vibration sim (Task #10), placement reserves keep-out at mid-edge positions for later add-without-replace. See `pivot-2026-05-20-mounting-resolution` below for details.
+5. **Airframe envelope** — **RESOLVED 2026-05-23** (Sai). NO airframe size constraint — the 90×70 outline is final; no mechanical-fit check needed.
 
 ### What's locked
 - Schematic (Phase 3, in `hardware/kicad/novapcb/`) — unchanged
@@ -230,27 +259,31 @@ The Phase 6 P0 sim results surfaced real density-driven concerns: PDN anti-reson
 
 ---
 
-## Mounting-hole-pattern-90x70. Supersede `DECISIONS §2` 30.5×30.5 c-to-c with corner-inset M3 for the 90×70 board
+## pivot-2026-05-20-mounting-resolution. Mounting holes — RESOLVED 2026-05-23 (master, delegated by Sai)
 
-**Raised 2026-05-22** (master directive during SUBSYSTEM_CONTRACTS review).
+**RESOLVED 2026-05-23** (master, Sai-delegated decision). Supersedes earlier `Mounting-hole-pattern-90x70` open question and `pivot-2026-05-20` items 4 + 5.
 
-**Question for Sai to ratify.** `DECISIONS §2` locks the v1 mounting pattern at Pixhawk-standard 30.5×30.5 mm c-to-c M3 (4 holes). That number was sized for the original 36×36 mm form factor. With the **2026-05-20 pivot to a 90×70 mm rectangular board** (also `DECISIONS §2`, post-supersession note), a centered 30.5×30.5 pattern leaves ~30 mm of unsupported overhang per side — mechanically poor for a board carrying connector strain and a stack of through-hole motor cables.
+**Decision:**
 
-**Master's call 2026-05-22:** use 4 corner-inset M3 holes at ~5 mm inset, positions **(5, 5), (85, 5), (5, 65), (85, 65)** on the 90×70 board. The airframe gets a new tray anyway (v1 is a functional drop-in, not mechanical); corner holes maximize support and align with how every premium FC in this footprint class (Kakute H7, mRo Control Zero) actually mounts.
+1. **4× M3 corner-inset holes**, 3mm edge inset on the 90×70 board. Positions: (3, 3), (87, 3), (3, 67), (87, 67) → **c-to-c = 84 × 64 mm**. Hole spec per `docs/PLACEMENT_STRATEGY.md §5.2`: 3.2mm drilled, through-plated, 5mm GND-pad land to chassis GND.
 
-**What Sai needs to confirm:**
-- That the 4-corner pattern is acceptable for the airframe tray design.
-- That the 5 mm corner inset is correct (vs. tighter 3 mm or looser 8 mm). 5 mm gives M3 + 1 mm keep-out + some board edge margin and matches reference FC layouts.
+   The Pixhawk-standard 30.5×30.5 pattern is formally **dropped for v1.1** (per `DECISIONS.md §2` post-pivot, no longer applicable). Per Sai 2026-05-23: **no airframe size constraint**, 90×70 is final, no mechanical-fit check needed.
 
-**Effect on `DECISIONS.md`:** if Sai ratifies, `DECISIONS §2` gets a new entry that supersedes the 30.5×30.5 c-to-c c-locked-2026-05-18 entry for v1.1+. The 36×36 form factor itself is already superseded by the 90×70 rectangle pivot in the same §2; this is the follow-on mounting decision.
+2. **+2 mid-long-edge holes (6 total)** — **gated on Phase 6 vibration sim** (Task #10), NOT pre-committed. BUT: **placement MUST reserve keep-out** at the two mid-long-edge hole positions NOW. When B/A/D/H subsystems get placed, do NOT fill those two spots. This makes a sim-driven add free and prevents a re-place. Mid-edge keep-out positions: (3, 35) west mid, (87, 35) east mid — each with 8mm-diameter circular keep-out (M3 hole + GND-pad land + tolerance).
 
-Reference: `docs/SUBSYSTEM_CONTRACTS.md §0.5` (where the 4 corner holes are quoted as the global constraint driving zone assignment).
+3. **Current placement** (Step-1 C only): H1=(5, 5), H2=(85, 5), H3=(5, 65), H4=(85, 65) = c-to-c 80×60. Will update to 3mm-inset / 84×64 c-to-c in next placement pass (does not block C↔F sign-off).
+
+**`docs/DECISIONS.md §2` updated**: airframe envelope no longer open; 90×70 final.
+
+**`docs/PLACEMENT_STRATEGY.md §5` updated**: corner-hole pattern decided; mid-edge keep-out reservation + sim-gated 4-vs-6 documented.
 
 ---
 
 # Closed decisions (recorded here for traceability)
 
-## CLOSED phase3exit-can. CAN: novapcb v1 deliberately ships no CAN connector / transceiver
+## RE-OPENED phase3exit-can. CAN: novapcb v1.1 SHIPS 1× CAN port (RE-OPENED 2026-05-23)
+
+**RE-OPENED 2026-05-23** per master directive: this entry was originally CLOSED as "v1 ships no CAN"; the v1.1 re-spin re-introduced CAN at commit `13d26a8` ("hw: can_3j.py — 1× CAN port on FDCAN1 (R1.4)") for redundancy. The current ship-state is **1× CAN port populated** (U14 TJA1051 transceiver, U15 PESD2CAN ESD, J20 connector, R45 120Ω terminator). The "deliberately ships no CAN" reasoning below is from the earlier v1 scope decision and no longer applies. Original entry preserved for traceability.
 
 **Decided 2026-05-20** (Phase 3-exit A2 escalation; master adjudication).
 

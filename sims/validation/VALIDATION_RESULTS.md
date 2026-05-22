@@ -72,3 +72,36 @@ Per master's bar — "a tool is only trusted once it matches its benchmark" — 
 - openEMS: 3-4% vs closed-form H-J on isolated microstrip Z₀; trusted for USB diff-pair sign-off + radiated-EMI sims after the three-trap discipline above is followed every run
 
 Per `docs/PLACEMENT_ROUTING_GATES.md` Gate 13, this file is the authoritative tool-validation record. Adding a new tool to the suite requires a new row here (benchmark, error %, verdict) before that tool's output can be cited as gate evidence.
+
+---
+
+## Update 2026-05-23 — openEMS COUPLED-PAIR setup validation (Task #75)
+
+Per master 2026-05-23 directive ("USB DONE" gate): the coupled-pair Z_diff measurement at S=0.13 (W=0.20/h=0.21/εr=4.3) reads 87.41 Ω, used as the controlled-impedance ground truth in `docs/CONTROLLED_IMPEDANCE.md`. To validate the SETUP (independent of solver-vs-formula), ran limit-case sweep.
+
+**Strategy:** As S grows large (S/h >> 1), coupling vanishes → Z_diff → 2 × Z_se (single-line). Primary target = 2 × openEMS-single-line at SAME W (isolates COUPLED-SETUP from solver-vs-formula).
+
+**openEMS single-line at W=0.20** (matching coupled geometry): `val_openems_single_line_w020.py`, sha 7c33ea8.
+  Z_se = **65.504 Ω @ 1 GHz** (65.495 @ 0.5 GHz, 65.516 @ 1.5 GHz — flat across band)
+  vs H-J 67.32 Ω → 2.7% below H-J (consistent with Task 9 row 5 openEMS-vs-HJ 3.6%)
+  → **Primary limit target: 2 × Z_se = 131.008 Ω**
+
+**openEMS coupled-pair sweep** at W=0.20/h=0.21/εr=4.3 with S varied: `val_openems_limit.py`, sha 7c33ea8.
+
+| S (mm) | S/h  | openEMS Z_diff (Ω) | vs 2×Z_se_openEMS=131.0 Ω |
+|--------|------|---------------------|----------------------------|
+| 0.13   | 0.62 | **87.41** (USB design point) | −33.3% (tight coupled, expected) |
+| 0.50   | 2.38 | 119.44               | −8.8%                       |
+| 1.00   | 4.76 | 125.28               | −4.4%                       |
+| 2.00   | 9.52 | **127.18** (well decoupled) | **−2.9%** |
+
+**Verdict — VALIDATED:**
+
+- Z_diff monotonically INCREASES with S as expected (coupling weakens).
+- At S/h = 9.52 (well decoupled), Z_diff is within **−2.9%** of 2×openEMS-single-line — well below 5% bar.
+- The openEMS COUPLED-PAIR SETUP correctly converges to the SINGLE-LINE limit, isolating the SETUP question from the solver-vs-formula question.
+- Therefore the **87.41 Ω measurement at S=0.13 (USB design geometry) is TRUSTWORTHY**.
+
+Secondary cross-check (kept for completeness): 2 × H-J Z_se = 2 × 67.32 = 134.63 Ω. Coupled at S=2mm = 127.18 Ω is 5.5% below. The 5.5% gap = the openEMS-vs-HJ disagreement (Task 9 = 3.6%) + a small residual mesh discretization. Not a setup defect — well-known FDTD bias.
+
+**Bottom line:** USB 2.0 D+/D- pair Z_diff = **87.4 Ω** is the validated number. Well within USB 2.0 spec band 76.5..103.5 Ω. C↔F integration's controlled-impedance commitment is sound.

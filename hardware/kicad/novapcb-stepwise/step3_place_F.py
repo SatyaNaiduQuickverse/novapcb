@@ -39,8 +39,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PCB = os.path.join(HERE, "novapcb-stepwise.kicad_pcb")
 
 F_REFDES = ["J1", "R31", "R32", "U5"]
-ZONE_X_MIN, ZONE_X_MAX = 65.0, 91.0   # east third of board (J1 body extends to 90.0)
-ZONE_Y_MIN, ZONE_Y_MAX = 22.0, 42.0
+# Zone REVISED 2026-05-23 per master Step-3 SECOND re-open: extended X
+# WEST to 71mm to give U5 breathing room from J1 (the 1.785mm corridor
+# between U5 east pads and J1 west pads at U5_X=76 was too tight for
+# fan-split + bridge vias). U5 now at (73, 35) — 3mm west — opens the
+# corridor to 5.08mm. SUBSYSTEM_CONTRACTS §F updated to X=71..91.
+ZONE_X_MIN, ZONE_X_MAX = 71.0, 91.0
+ZONE_Y_MIN, ZONE_Y_MAX = 22.0, 45.0
 
 
 def _mm(x): return pcbnew.FromMM(x)
@@ -126,22 +131,30 @@ def main():
                 return
         print(f"  !! could not place {ref} near target ({x}, {y})")
 
-    # J1 USB-C: east edge, receptacle facing OUT (+X). Default orient ok.
-    # Center X=83.78 so body extends X=77.56..90.00 (to board edge).
-    # Center Y=30 centered on PA11/PA12 (Y=30.5/31.0 on U1's E edge).
+    # J1 USB-C: east edge, receptacle facing OUT (+X). Y=30 centered.
     try_place("J1", 83.78, 30.00, rot=0.0)
 
-    # R31 / R32 — CC pulldowns. Place on -Y side of J1 (north) so the
-    # diff pair path on +Y side is clear. CC pads are at offset ~(-4.04,
-    # +/-1.25) from J1 center → A5 at (79.74, 31.25), B5 at (79.74, 28.75).
+    # R31 / R32 — CC pulldowns NORTH of J1.
     try_place("R31", 78.5, 26.0)
     try_place("R32", 78.5, 27.0)
 
-    # U5 ESD diode — placed close to J1 (within ~4mm of D+/D- pads, per
-    # textbook ESD-at-connector-entry rule, master directive 2026-05-22).
-    # J1 D+/D- pads at X≈79.74. U5 footprint ~4.16mm wide. With center
-    # at X=76, U5 east edge at ~78.08 → 1.66mm gap to J1 pads.
-    try_place("U5", 76.0, 30.0)
+    # U5 ESD diode — THIRD re-open 2026-05-23 per master (root-cause):
+    # Master diagnosed the routing impasse: Y-misalignment between
+    # pair corridor (Y=31) and U5 (Y=35) was forcing 4mm steep descent
+    # at tight 0.33mm coupled pitch, creating perpendicular-distance
+    # DRC failures. Earlier reasoning "U5 out of Y=31 corridor" was
+    # exactly backwards — U5 is an INLINE ESD device, BELONGS on the
+    # pair corridor.
+    #
+    # Place U5 at Y=31 so DM/DP pins (pin 4 SE, pin 6 NE) straddle
+    # Y=31. Then:
+    #   - Coupled section runs STRAIGHT from U1 → U5 east pads (no descent)
+    #   - Y-traversal (down to J1 pads) absorbed by U5→J1 pre-ESD
+    #     segment which has wide pin pitch (~1.9mm) — non-impedance-
+    #     critical at USB FS
+    #   - Geometric perp-distance issue: not present (no descent)
+    # X=73 unchanged from 2nd re-open (clear of locked C subsystem).
+    try_place("U5", 73.0, 31.0)
 
     pcbnew.SaveBoard(PCB, brd)
     print(f"\n  Placed {len(placed_F)} of {len(F_REFDES)} F components", flush=True)

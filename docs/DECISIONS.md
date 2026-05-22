@@ -19,14 +19,17 @@ All 9 scoping decisions for the v1 FC, signed off 2026-05-18. Each section shows
 
 **SUPERSEDED 2026-05-20 (Sai pivot, mid-Phase-4)**: the 36×36 / 30.5×30.5 M3 v1 spec is set aside. New direction:
 
-**v1 = RECTANGULAR, sized to the placement.** No standard-dimension constraint. Board outline shape (length × breadth) is an OUTPUT of deliberate physics-guided placement (Phase pivot Step 3), not a fixed input. Sai's explicit direction 2026-05-20 ("don't confine to Pixhawk 30.5 / 36×36"). Mounting pattern + airframe tray follow the resulting board outline; a new tray is acceptable.
+**v1.1 = 90 × 70 mm RECTANGULAR** (LOCKED 2026-05-23 by Sai: "no airframe size constraint, 90×70 is final, no mechanical-fit check needed"). Mounting pattern follows; a new airframe tray is required (v1 is functional drop-in, not mechanical).
 
 **Reliability mandate** (Sai 2026-05-20, verbatim: "it working 100% is the priority", "strong resilient stuff that won't fail"): use the freed board area for generous spacing, clean subsystem separation, robust margins — design so EMI/EMC/thermal failure modes simply don't arise. Quality + real workability over time-to-build.
 
-**Open dimensions** (Sai's input pending — see `OPEN_QUESTIONS.md pivot-2026-05-20`):
-- Aspect ratio (the rectangle's length:breadth)
-- Layer count (4 vs 6 — Phase 0.6 pivot Step 3 assesses)
-- Mounting pattern (driven by the airframe envelope Sai will provide)
+**v1.1 dimensions — all RESOLVED 2026-05-23:**
+- Board outline: 90 × 70 mm (locked)
+- Aspect ratio: 9:7 (consequence of outline)
+- Layer count: 4 vs 6 — still OPEN (Phase 0.6 pivot Step 3 assesses, see `OPEN_QUESTIONS.md pivot-2026-05-20` items 1-3)
+- **Mounting pattern: 4× M3 corner-inset holes** (master decision 2026-05-23, Sai-delegated): 3mm edge inset, c-to-c **84 × 64 mm**, positions (3, 3), (87, 3), (3, 67), (87, 67). Hole spec per `PLACEMENT_STRATEGY.md §5.2`: 3.2mm drilled, through-plated, 5mm GND-pad land to chassis GND.
+  - +2 mid-long-edge holes (6 total) gated on Phase 6 vibration sim (Task #10). Placement RESERVES keep-out at mid-edge positions (3, 35) and (87, 35) — 8mm circular keep-out for free sim-driven add later.
+  - Pixhawk-standard 30.5×30.5 M3 pattern formally dropped.
 
 **v2 = FMUv6X mechanical drop-in** — still deferred (separate FMU + isolated-IMU boards, exact 6X mechanical match); see OPEN_QUESTIONS.
 

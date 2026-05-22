@@ -80,8 +80,8 @@ All zones in **pcbnew Y-down** (Y=0 = top edge, Y=70 = bottom edge):
 | C | MCU_CORE | U1, Y1, R1, R2, R3 + MCU decap (C11..C26) | **center** roughly X=33..58, Y=23..44 (U1 body centered at (45, 35)) | **HIGH (hub)** | E (south, on PB10/PB11), D (north, on bridge), F (east, on PA11/PA12), H (west, on PA0..3) |
 | D | IMU_ISLAND | U3, U8, U9, Q5 (IMU heater FET), R_heater (R61), FB-downstream caps (C41..C96) | **top stress-relief island** Y=7..19, X=33..63; mechanical bridge to C at Y=19..21 (10mm wide, X=40..50) | **HIGH (victim)** | C (below, via bridge only) |
 | E | BARO_I2C | U4, U7, R11, R12 + decap (C51, C52, C71, C72) | **small block south of U1**, adjacent to PB10/PB11 pins on U1's S edge: Y=44..52, X=42..58 | LOW | C (above; R11/R12 sit at the seam) |
-| F | USB_INTERFACE | J1, R31, R32, U5 | **east edge** X=75..90, Y=24..38 (near PA11/PA12 = pins 71/72 on E edge NE quadrant) | LOW | C (west; ≤30mm USB diff pair) |
-| G | EXTERNAL_IO | J2, J3, J5, J9, J10, J20, U14, U15, D11..D14, R45, R46 + decap | **east edge** X=75..90, Y=38..70 + **top edge** corners for GPS connector | **MIXED** | C (depending on connector pin) |
+| F | USB_INTERFACE | J1, R31, R32, U5 | **east edge** X=75..90, Y=22..45 (U5 moved south to clear pair Y=31 corridor; borrows Y=38..45 from G — Step-3 re-open 2026-05-22) | LOW | C (west; ≤30mm USB diff pair) |
+| G | EXTERNAL_IO | J2, J3, J5, J9, J10, J20, U14, U15, D11..D14, R45, R46 + decap | **east edge** X=75..90, Y=45..70 + **top edge** corners for GPS connector | **MIXED** | C (depending on connector pin) |
 | H | ESC_OUTPUTS | J11..J18 (motor pads) | **west edge** X=0..18, Y=10..60 (vertical strip; PWM signals route from MCU PA0..3 W edge, PB0/1 S edge, PD12/13 E edge — H's pads are W edge regardless) | **HIGH (aggressor)** | C (east; PWM routes cross the board) |
 
 Subsystem labels A..H are placement-PR identifiers. Each gets one PR.
@@ -350,16 +350,29 @@ PA11/PA12.
 
 **Output nets:** (none — connector is the terminus)
 
-**Zone:** X=75..90, Y=20..38 (east edge, lower half). Connector cutout
-on the east board edge. Trace from C to F runs roughly horizontal,
-≤30 mm.
+**Zone:** X=75..90, Y=22..45 (east edge, lower-to-mid).
+
+**Y-extension to 45** (revised 2026-05-22, Step-3 re-open): the
+original Y=20..38 was too tight — the U5 SOT-23-6 ESD diode array
+needed to clear the diff-pair Y=31 corridor (post-ESD pair from
+U1.PA11/PA12 routes east at Y=31.0..31.33), so U5 moved south to
+Y=35. F borrows Y=38..45 from G's allocation; G's net usable Y is
+trimmed correspondingly (see §G).
+
+Connector cutout on the east board edge. Trace from C to F runs
+roughly horizontal, ≤30 mm (post-ESD U1→U5 + pre-ESD U5→J1 total).
 
 **Adjacency:** C (west). Must NOT be adjacent to D (USB switching
 edges can couple to IMU SPI clock).
 
-**Controlled impedance:** USB differential pair Z_diff = 90 Ω,
-W=0.30 / S=0.10 / h=0.21 on L1 (per validated `val_skrf_microstrip.py`
-+ `val_openems_microstrip.py` field-solver match within 3.6%).
+**Controlled impedance:** USB differential pair Z_diff = 90 Ω ±15%,
+**W=0.20 / S=0.13 / h=0.21 on L1** (REVISED 2026-05-22 per openEMS
+3D-FDTD sign-off — measured Z_diff = 87.4 Ω, PASS within USB-2 spec
+band 76.5..103.5 Ω). The earlier W=0.30 / S=0.10 spec was analytical
+H-J only; openEMS measured it at 70 Ω (below the -15% floor). See
+`docs/CONTROLLED_IMPEDANCE.md` for the full sign-off + the discrepancy
+write-up. Note: openEMS coupled-pair SETUP validation against a
+published reference is in flight as a follow-up (task #75).
 
 **Reference teardowns:** Pixhawk 6X USB connector on the east edge; Kakute H7 USB-C on the north edge.
 
@@ -403,7 +416,9 @@ microSD, CRSF input, CAN bus. ESD-protect each one.
 
 **Output nets:** (none — connectors are the terminus)
 
-**Zone:** X=75..90, Y=38..70 (east edge, upper half) PLUS specific
+**Zone:** X=75..90, Y=45..70 (east edge, upper portion — revised
+2026-05-22; lower 7 mm Y=38..45 ceded to §F for U5 placement) PLUS
+specific
 corners:
 - J5 (GPS+MAG): northeast corner Y=58..70, X=75..90 — clean antenna
   lobe direction

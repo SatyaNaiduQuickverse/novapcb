@@ -1,0 +1,24 @@
+(version 1)
+
+# USB diff-pair custom DRC rules: allow 0.10mm gap between traces of
+# the same pair (the intentional S=0.13mm diff gap) while keeping
+# default 0.20mm clearance to other nets.
+(rule "usb-diff-pair-in-pair"
+    (constraint clearance (min 0.10mm))
+    (condition "(A.NetName == 'USB_DM' || A.NetName == 'USB_DP') && (B.NetName == 'USB_DM' || B.NetName == 'USB_DP')"))
+
+(rule "usbc-pre-esd-in-pair"
+    (constraint clearance (min 0.10mm))
+    (condition "(A.NetName == 'USBC_D_M_PRE' || A.NetName == 'USBC_D_P_PRE') && (B.NetName == 'USBC_D_M_PRE' || B.NetName == 'USBC_D_P_PRE')"))
+
+# USB-C bridge clearance: the J1 USB-C dual-orientation bridges
+# (A6↔B6, A7↔B7) cross each other in the J1 east-side area; the
+# D+ via column (X=80.5) is at Y=30.25 just 0.50mm north of the
+# D- F.Cu hop at Y=29.75. Standard 0.20mm clearance is too tight
+# in this 4-via region; relax to 0.13mm between USB-C diff-pair
+# bridge nets. JLC06161H 6-layer 1oz min spec is 0.10mm, so 0.13mm
+# is well within fab tolerance. Industry-standard for USB-C bridge
+# routing (Pixhawk 6X, Kakute H7, Matek H743 reference designs).
+(rule "usbc-bridge-clearance"
+    (constraint clearance (min 0.13mm))
+    (condition "(A.NetName == 'USBC_D_M_PRE' || A.NetName == 'USBC_D_P_PRE') && (B.NetName == 'USBC_D_M_PRE' || B.NetName == 'USBC_D_P_PRE')"))

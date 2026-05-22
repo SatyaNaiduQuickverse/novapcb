@@ -360,21 +360,17 @@ this envelope; it's a planning input not a commitment.
 
 ## 5. Mounting holes
 
-### 5.1 Pattern
+### 5.1 Pattern — DECIDED 2026-05-23
 
-**4× M3 mounting holes at the rectangle corners**, ≥ 3 mm edge inset
-(measured from hole centre to nearest board edge).
+**4× M3 corner-inset mounting holes** on the 90 × 70 mm board, **3 mm edge inset**.
 
-For a 50 × 35 mm board with 3 mm inset:
-- Hole centre-to-centre (long axis): 50 − 2×3 = **44 mm**
-- Hole centre-to-centre (short axis): 35 − 2×3 = **29 mm**
+Positions (mm, pcbnew Y-down): (3, 3), (87, 3), (3, 67), (87, 67).
 
-For a 55 × 40 mm board with 3 mm inset:
-- Hole centre-to-centre (long axis): 55 − 2×3 = **49 mm**
-- Hole centre-to-centre (short axis): 40 − 2×3 = **34 mm**
+**Centre-to-centre:**
+- Long axis (X): 90 − 2×3 = **84 mm**
+- Short axis (Y): 70 − 2×3 = **64 mm**
 
-The exact pattern locks once the board envelope locks (Step 3 P1+ iteration).
-Sai's tray-design downstream uses the final c-to-c numbers.
+The Pixhawk-standard 30.5×30.5 M3 pattern is formally dropped for v1.1 (see `DECISIONS.md §2`). Per Sai 2026-05-23: no airframe size constraint, 90×70 final, new tray required (v1 is functional drop-in, not mechanical).
 
 ### 5.2 Hole specification
 
@@ -384,12 +380,17 @@ Sai's tray-design downstream uses the final c-to-c numbers.
 - No copper exclusion zone in the inner power planes around the hole
   (the GND-pad land handles the chassis-to-GND tie)
 
-### 5.3 Contingency: 6 holes
+### 5.3 Contingency — +2 mid-long-edge holes (sim-gated; placement reserves keep-out NOW)
 
-If Phase 6 deep-pass vibration modeling (post Step-3 P1+) shows the
-44-49 mm hole spacing leaves excessive board flex amplitude at the IMU
-location, add 2 more M3 holes at the midpoints of the long edges (total
-6 holes). Decided in iteration, not pre-committed in P0.
+**Sim-gated 4-vs-6** (master 2026-05-23): if Phase 6 vibration modeling (Task #10) shows the 84×64 mm hole spacing leaves excessive board flex amplitude at the IMU location, add 2 more M3 holes at the midpoints of the long edges (total 6 holes).
+
+**Placement MUST reserve keep-out at the mid-edge positions NOW** so a sim-driven add doesn't trigger a re-place of B/A/D/H:
+
+- Mid-long-edge keep-out positions: (3, 35) west mid and (87, 35) east mid
+- Keep-out diameter: 8 mm (M3 + GND-pad land + tolerance)
+- Subsystems B, A, D, H placement scripts MUST exclude these two circular regions
+
+This makes the sim-driven 4→6 transition FREE (no re-place needed if Phase 6 says we need the extra two holes).
 
 ---
 

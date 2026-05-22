@@ -51,6 +51,58 @@ Supermaster delegated bounded autonomous-merge authority to master 2026-05-19:
 
 Audit before merge always answers the three SOTA self-check questions (is this SOTA? are we being honest? can we do better?) and reports per-Rule-6 what was verified + what was not.
 
+## 12. Root-cause discipline (Sai 2026-05-23)
+
+> "If there is an issue we should think about the ROOT of the problem
+> and not just a fix — or it gets uglier with time."
+
+Every fix — for any issue (DRC violation, ERC error, sim failure,
+routing plateau, unexpected result, failed gate) — MUST in its PR /
+commit message state:
+
+1. **Root cause** — traced to its origin, not just where the symptom
+   surfaced.
+2. **Root or stopgap** — does the fix REMOVE the root cause, or is it a
+   stopgap?
+3. **If a stopgap** — why a root fix isn't being done now, and the
+   root cause logged to `docs/OPEN_QUESTIONS.md` for follow-up.
+
+A stopgap is the rare, explicitly-justified exception — never the
+default. Patches compound: a symptom-patch leaves the real cause in
+place, and the issues it spawns are harder to fix than the original.
+
+Master audits every fix PR for root-vs-patch. If the same class of
+issue resurfaces after a "fix", the fix was a patch — go back to the
+root.
+
+### Patch instincts to recognize and resist
+
+- "omit the feature" / "ship without the bridges"
+- "accept with known violations" / "single-orientation USB-C for v1"
+- "defer to v2" (when the v1 problem is the same root issue)
+- "nudge one number" without understanding why the original was wrong
+
+### Examples (committed history)
+
+- **W=0.30/S=0.10 USB diff pair** — original spec was set by analytical
+  H-J; never validated by 3D field solver. openEMS sign-off (2026-05-22)
+  showed Z_diff = 70 Ω (below USB-2 -15% floor). Root fix: corrected
+  geometry to W=0.20/S=0.13 (openEMS = 87.4 Ω); `docs/CONTROLLED_IMPEDANCE.md`
+  rewritten with the openEMS-vs-analytical discrepancy explained.
+  *Not* a stopgap (e.g., would have been "accept 70 Ω, USB might work").
+
+- **F-zone routing whack-a-mole** — successive DRC fixes around U5
+  each surfaced a new adjacent conflict. Root cause: F-zone placement
+  was too tight (U5 IN the diff-pair Y corridor). Root fix: re-open
+  Step 3, move U5 south. *Not* a stopgap (e.g., would have been
+  Freerouting on the over-constrained region, which would have struggled
+  the same way).
+
+- **Bridges omitted** (PROPOSED but REJECTED by master) — would have
+  been classic patch: USB-C cable works in only one orientation.
+  Root fix: offset bridge vias OUTSIDE the 0.5mm-pitch pad field (option
+  b). Kept both orientations functional.
+
 ## Modifying this file
 
 Change to any commitment above requires:
