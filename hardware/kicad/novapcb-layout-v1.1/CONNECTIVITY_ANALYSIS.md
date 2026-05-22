@@ -347,6 +347,117 @@ SDMMC1 N+E pin spread is unavoidable — microSD MUST sit at the NE.
 
 ---
 
-## 8. Data files
+## 8. EMI map — aggressors vs victims
 
-Full peripheral-pin map JSON in `connectivity_data.json` (next).
+### AGGRESSORS (switching / noisy / source of EMI)
+| Source | Loc (mm) | Notes |
+|---|---|---|
+| **8× ESC outputs (MOT1..MOT8)** | J11-J18 @ S edge (X=32..67, Y=3) | DShot300/600 = 300/600 kbit/s digital pulse, edges ~5ns → harmonics ≥100 MHz |
+| **MCU U1 SDMMC1 lines** | N+E sides of U1 | SDMMC1_CLK at ~50MHz during card I/O, 6 fast-edge data lines |
+| **MCU U1 SPI buses** | SPI1 S+N, SPI2 E, SPI3 N | ~10-20MHz clocks during xfer (lower aggressor than SDMMC) |
+| **MCU U1 USB** | E side (pins 70, 71) | USB 2.0 full-speed 12 Mbps, harmonics to ~100 MHz |
+| **HSE crystal Y1 + load caps** | currently (52, 35) | 8MHz fundamental + 16/24/32 MHz harmonics, plus 480MHz PLL output radiation |
+| **Power input + eFuse U6** | W block (9, 36.5) | TPS25940A switching/inrush events; current spikes during arming |
+| **OR-ing FETs Q3/Q4** | W block (11, 28.5) and (11, 47.5) | switching during power source transitions; ~1µs edges |
+| **Heater PWM Q5+R61** | NE (65-71, 17) | AO3400A switching ~1kHz PWM into R61 heater (low-frequency but high di/dt edges) |
+| **CAN bus U14 + J20** | E (82, 35-50) | 1Mbit/s CAN bus, ~50ns edges; differential, but radiates |
+| **CRSF UART J10** | NE (74, 66.5) | 420 kbaud, lower priority |
+
+### VICTIMS (sensitive / quiet wanted)
+| Victim | Loc (mm) | Sensitivity |
+|---|---|---|
+| **IMU1 ICM-42688-P (U3)** | (69, 25) | accel ±0.5mg, gyro ±0.01dps — needs quiet SPI + isolated 3V3 |
+| **IMU2 BMI088 (U8)** | (69, 35) | dual-die accel+gyro, similar |
+| **IMU3 LSM6DSV16X (U9)** | (69, 45) | similar |
+| **Baro DPS310 (U4)** | (66.5, 30) B.Cu | pressure µbar resolution — sensitive to thermal AND EMI |
+| **Baro LPS22HB (U7)** | (75, 30) | same |
+| **ADC: BATT_VOLTAGE_SENS, BATT_CURRENT_SENS, ×2 (BATT2)** | U1 W pins 15-18 | 16-bit ADC, sensing power-rail noise |
+| **ADC: VREF_P** | U1 W pin 20 | analog reference |
+| **USB 2.0 diff pair (USBC_D_M/P_PRE)** | J1 (39, 66) → U5 (32, 55) → U1 E (70, 71) | needs 94.4Ω diff, quiet GND reference |
+| **+3V3A analog rail** | FB1 (30.5, 39.5) | feeds VREF_P and analog references |
+| **+3V3_IMU rail** | FB2 (65.5, 52) + U13 LDO (69, 52) | feeds the 3 IMUs from filtered supply |
+
+### EMI separation rules (for placement weighting)
+- Keep **DShot motor lines** away from **IMUs and baros** by ≥10 mm or
+  with a GND-via fence between.
+- Keep **HSE crystal** ≥10mm from analog ADC pins / VREF_P.
+- Keep **SDMMC1 CLK trace** routed AWAY from IMU SPI buses (different
+  side or under solid GND plane).
+- Keep **USB diff pair** routed direct over solid GND with no via
+  stitches near other-net inductors.
+- Keep **heater Q5+R61** away from baros (thermal AND EMI both bad).
+- Keep **power-input region** (J4/J19/U6/Q3/Q4/U11/U12) clustered W —
+  the high di/dt is naturally far from RHS sensors.
+- **+3V3A** (analog) should reach VREF_P with the shortest trace and
+  no crossing under digital tracks.
+
+### Current placement violations
+- **HSE Y1 at (52, 35)** is 14mm from baros U4/U7 — too close given
+  Y1 has 8MHz fundamental + harmonics.
+- **U14 CAN xcvr at (82.5, 35)** is right next to baros U7 (75, 30)
+  and U9 IMU (69, 45) — CAN edges very close to sensors.
+- **HEATER_PWM net from U1.31** runs across the board (~30mm trace
+  ending at Q5 at (65, 17)) — crosses any number of sensor lines.
+- **ESC pads (J11-J18) at S edge** are 22-30mm from the IMU island at
+  (69, 35) — borderline OK, but MOT3-6 must route through the MCU
+  S region close to SPI1 and I2C2.
+
+---
+
+## 9. Thermal map — heat sources + power figures
+
+Estimated power dissipation at nominal operating conditions. Worst
+case is hover/flight (peak motors + telemetry + SDMMC + sensors).
+
+| Source | Loc (mm) | Spec | Nominal | Peak |
+|---|---|---|---|---|
+| **U1 STM32H743VITx (MCU)** | (41, 35) | 400 MHz Cortex-M7, 240+ MHz buses, multiple peripherals | ~0.4 W (vec/FPU + DSP active + 4 SPI + SDMMC) | ~0.6 W (turbo + USB transfer + full IPC) |
+| **U2 AP2112K-3.3 LDO** | (24, 27.5) | 5V→3.3V drop, feeds MCU + most ICs | ~0.20 W (dropout 1.7V × 120 mA load) | ~0.34 W (250 mA peak) |
+| **U13 LP5907MFX-3.3 (IMU LDO)** | (69, 52) | Filtered 3.3V for IMUs | ~0.05 W (1.7V × 30 mA) | ~0.10 W (60 mA) |
+| **U6 TPS25940A (eFuse)** | (9, 36.5) | 25 mΩ Rds(on) pass FET, 6A trip | ~0.025 W typ (1A) | ~0.625 W (5A continuous trip threshold) |
+| **Q3 AO4262E (OR-ing N-FET A)** | (11, 28.5) | 6.5 mΩ × I² | ~0.026 W (2A) | ~0.16 W (5A) |
+| **Q4 AO4262E (OR-ing N-FET B)** | (11, 47.5) | same | same | same |
+| **U11/U12 LM74700-Q1** | (15.5, 28.5)/(15.5, 47.5) | active-OR-ing controller | ~0.01 W each | ~0.01 W |
+| **Q5 AO3400A (heater FET)** | (65, 17) | switches R61 heater | ~0 W (PWM low duty) | ~0.05 W |
+| **R61 (heater resistor)** | (71, 17) | TBD value, marked `TBD_SIM_OUT` — needs spec! | depends — typ. 0.5-1W for IMU heating | up to 2W if used for cold-start IMU warming |
+| **HSE crystal Y1 + load caps** | (52, 35) | active oscillator drive | negligible | <10 mW |
+| **3 IMUs (U3, U8, U9)** | (69, 25/35/45) | 3-5 mA each | <0.05 W combined | <0.1 W |
+| **2 baros (U4, U7)** | (66.5, 30) B.Cu / (75, 30) | <1 mA each | negligible | negligible |
+| **TJA1051 CAN xcvr (U14)** | (82.5, 35) | 50 mA peak when CAN active | ~0.05 W | ~0.20 W (high CAN traffic) |
+
+### Total system power
+- **Idle:** ~0.5 W (MCU + LDOs + sensors)
+- **Hover:** ~0.8 W
+- **Stress:** ~1.5 W (peak transient through eFuse + Q3/Q4 + MCU + telemetry)
+
+### Hottest spots (need spreading + thermal vias)
+1. **U2 AP2112K LDO** — 0.34W in a SOT-23-5. ~80°C rise without
+   copper pour. Currently at (24, 27.5). Wants thermal pour S + W.
+2. **U6 TPS25940A eFuse** — 0.625W trip case. HVSON-8, big pad.
+   Currently at (9, 36.5). Wants pour.
+3. **Q3+Q4 AO4262E** — 0.16W each peak. SOIC-8 with thermal pad.
+   Currently at (11, 28.5) and (11, 47.5).
+4. **U1 MCU** — 0.6W spread over 14×14mm body. Less critical (pin
+   pads themselves spread the heat into PCB). Avoid heat clustering
+   underneath.
+5. **R61 heater** — TBD W. Heater is INTENTIONALLY hot (target IMU
+   warming). Should sit NEAR but not UNDER the IMU island. Currently
+   at (71, 17) — 8mm SW of U3 IMU. OK distance for radiative coupling
+   but baros (U4, U7) are similarly close — may detect heater pulses.
+
+### Placement constraints from thermal
+- **U2 LDO**, **U6 eFuse**, **Q3/Q4 FETs** — keep clustered in W
+  block (current placement OK); provide large copper pour + thermal
+  vias to inner GND plane.
+- **U13 IMU LDO** — small power, can stay near U9 IMU current loc.
+- **R61 heater** — should be physically CLOSE to but not directly
+  ABOVE the IMUs (intentional heat coupling, but localized).
+- **NO** hot components clustered under U1 MCU (avoid additional
+  heating of CPU silicon).
+
+---
+
+## 10. Data files
+
+Full peripheral-pin map JSON in `connectivity_data.json`.
+
