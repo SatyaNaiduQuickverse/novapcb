@@ -1,9 +1,9 @@
 # SUBSYSTEM_CONTRACTS — novapcb v1.1 placement decomposition
 
-> **Status:** **DRAFT — awaiting master review.** Dispatched per master
-> directive 2026-05-22. Pairs with `docs/PLACEMENT_ROUTING_GATES.md`
-> as the governing process. After master refines + locks, every
-> placement PR scopes to exactly one subsystem from this doc.
+> **Status:** **APPROVED by master 2026-05-22** with the 6 refinements
+> in §3 applied. Pairs with `docs/PLACEMENT_ROUTING_GATES.md` as the
+> governing process. Every placement PR scopes to exactly one subsystem
+> from this doc.
 >
 > **Board outline (per `docs/DECISIONS.md §2` pivot 2026-05-20):**
 > 90 × 70 mm rectangle, 6-layer JLC06161H-7628 (cf. v1 36×36 mm
@@ -42,10 +42,14 @@ These are the cross-cutting constraints. Each subsystem inherits them.
    the top of the drone. Cluster on an edge where the airframe
    canopy clears.
 
-5. **Mounting holes.** Pixhawk-standard 30.5×30.5 mm c-to-c M3 (4
-   holes) per `DECISIONS §2` v1 lock; centered on board. Keep-out
-   ≥1 mm around each hole. Position roughly: (29.75, 19.75),
-   (60.25, 19.75), (29.75, 50.25), (60.25, 50.25).
+5. **Mounting holes.** **4 corner-inset M3 holes** at ~5 mm inset
+   from each corner of the 90×70 board: **(5, 5), (85, 5), (5, 65),
+   (85, 65)**. Keep-out ≥1 mm around each hole. Master directive
+   2026-05-22: the `DECISIONS §2` 30.5×30.5 c-to-c pattern was for
+   the original 36×36 form factor; on a 90×70 board the centered
+   30.5×30.5 leaves ~30 mm overhang per side (mechanically poor).
+   See `docs/OPEN_QUESTIONS.md` entry "Mounting-hole-pattern-90x70"
+   for Sai's ratification of this supersession.
 
 6. **Reference teardowns (for Gate 6).** Pixhawk 6X (FMUv6X family),
    Holybro Kakute H7, mRo Control Zero H7, Matek H743-Slim. Each
@@ -57,10 +61,10 @@ These are the cross-cutting constraints. Each subsystem inherits them.
 
 | # | Subsystem | Refdes (primary) | Zone (mm) | Conflict | Adjacent to |
 |---|---|---|---|---|---|
-| A | POWER_INPUT | J4, J19, Q3, Q4, Q5, U11, U12 + caps | south edge Y=0..15, X=20..70 | **HIGH** | B (immediately north of A) |
+| A | POWER_INPUT | J4, J19, Q3, Q4, U11, U12 + caps | south edge Y=0..15, X=20..70 | **HIGH** | B (immediately north of A) |
 | B | POWER_REG_3V3 | U2, U6, U13, FB2, D1, Q2 + LDO caps | mid-south Y=15..28, X=20..70 | **HIGH** | A (south), C (north), D (east) |
 | C | MCU_CORE | U1, Y1, R1, R2, R3 + MCU decap (C16..C26) | center Y=28..50, X=20..70 | **HIGH (hub)** | B, D, E, F (surrounds) |
-| D | IMU_ISLAND | U3, U8, U9, FB2-downstream caps (C41..C96) | north stress-relief island Y=51..63, X=33..63 | **HIGH (victim)** | C (south), bridge only |
+| D | IMU_ISLAND | U3, U8, U9, Q5 (IMU heater FET), R_heater (R61), FB2-downstream caps (C41..C96) | north stress-relief island Y=51..63, X=33..63 | **HIGH (victim)** | C (south), bridge only |
 | E | BARO_I2C | U4, U7, R11, R12 + decap (C51, C52, C71, C72) | small block adjacent to C, NW Y=42..50, X=20..32 | LOW | C (east) |
 | F | USB_INTERFACE | J1, R31, R32, U5 | east edge X=75..90, Y=20..38 | LOW | C (west) |
 | G | EXTERNAL_IO | J2, J3, J5, J9, J10, J20, U14, U15, D11..D14, R45, R46 + decap | east edge X=75..90, Y=38..70 + north corners | **MIXED** | C, D (depends on connector) |
@@ -100,11 +104,10 @@ Subsystem labels A..H are placement-PR identifiers. Each gets one PR.
 P5V_BEC rail with ideal-diode OR-ing. Sense pre-LDO voltage and current
 for ArduPilot battery monitoring.
 
-**Components (per SKiDL):**
+**Components (per SKiDL, verified 2026-05-22):**
 - J4 — Mauch primary 6-pin connector (BEC + sense)
 - J19 — Mauch secondary 6-pin (backup)
-- Q3, Q4 — N-FET OR-ing pass elements
-- Q5 — additional FET (TBD: hot-swap protection? Verify in `power_3b.py`)
+- Q3, Q4 — N-FET OR-ing pass elements (driven by U11/U12 gate signals)
 - U11 — LM74700-Q1 ideal-diode controller for input A
 - U12 — LM74700-Q1 ideal-diode controller for input B
 - C73, C74 — U11 VCAP + bypass
@@ -190,7 +193,12 @@ power decoupling for VDD/VDDA/VBAT/VREF.
 - R2 — VBAT tie
 - R3 — BOOT0 pulldown
 - C16 — bulk decoupling (10µF)
-- Per-VDD pin: 100nF X7R 0402 (multiple, refdes range C17..C30 — verify in `mcu_3a.py`)
+- Per-VDD pin: 100nF X7R 0402 (multiple, refdes range C17..C30 — verify in `mcu_3a.py`).
+  **These belong to C** (placed within ~3 mm of their MCU power pins —
+  the point of a decap). They connect to the +3V3 plane, which is a
+  global cross-subsystem net (§2), not B's. Master directive 2026-05-22:
+  "no real overlap" between B and C — B owns the LDO + regulation
+  passives; C owns the MCU decaps; +3V3 plane is global.
 
 **Input nets:**
 - `+3V3` (multiple pins: VDD1..VDD11, VDDA, VREF)
@@ -210,7 +218,12 @@ power decoupling for VDD/VDDA/VBAT/VREF.
 - East: F, G (USB short trace; UARTs to connectors)
 - West: H (PWM signals to motor pads)
 
-**Thermal vias (Gate 7):** ≥9 under U1's exposed pad (if package has one — STM32H743VIT6 LQFP-100 has an exposed pad on bottom).
+**Thermal vias (Gate 7):** **NOT required for U1**. Verified
+2026-05-22: STM32H743VIT6 in `Package_QFP:LQFP-100_14x14mm_P0.5mm`
+is a standard gull-wing LQFP — **no exposed thermal pad**. The MCU
+dissipates ≤500 mW through its 100 leads to the +3V3 / GND planes;
+Gate 7 thermal-via requirement applies to packages with exposed
+pads (U2, U6, U13, Q3, Q4) and not to U1.
 
 **Reference teardowns:** Pixhawk 6X FMU center placement of STM32H743; mRo Control Zero center placement; Kakute H7 MCU directly under USB-C.
 
@@ -219,9 +232,9 @@ power decoupling for VDD/VDDA/VBAT/VREF.
 ## D — IMU_ISLAND
 
 **Goal.** Three IMUs (ICM-42688-P + BMI088 + LSM6DSO32 or similar)
-on a vibration-isolated, EMI-shielded island. The island is mechanically
-decoupled via a stress-relief U-slot (existing geometry from
-`replace_v2.py` v13 placement; preserved for v1.1).
+on a vibration-isolated, EMI-shielded island, **plus the IMU heater
+FET + resistor for cold-start temperature stability**. The island
+is mechanically decoupled via a stress-relief U-slot.
 
 **Components:**
 - U3 — IMU1 (ICM-42688-P, SPI1)
@@ -230,22 +243,36 @@ decoupled via a stress-relief U-slot (existing geometry from
 - C41, C42, C43 — U3 decap (VDD 100nF, VDDIO 100nF, bulk 1µF)
 - C91, C92, C93 — U8 decap
 - C94, C95, C96 — U9 decap
+- **Q5** — AO3400 N-FET driving IMU heater (G = HEATER_PWM from
+  U1.PA15, D = HEATER_DRAIN, S = GND). Verified 2026-05-22 against
+  `power_3b.py:549-585` — Q5 is the IMU heater driver, NOT a
+  power-section FET (originally mis-listed in A).
+- **R_heater (R61)** — heater resistor in series from +5V to Q5
+  drain. Value TBD by Phase 6 thermal sim (under-IMU heating
+  power matched to IMU thermal mass for stable start-up).
 
 **Input nets:**
 - `+3V3_IMU` (from B, via short trace across bridge)
+- `+5V` (for Q5 heater drain → R61 heater)
 - `GND`
 - SPI1: `SPI1_SCK`, `SPI1_MISO`, `SPI1_MOSI`, `IMU1_CS` (from C)
 - SPI2: `SPI2_SCK`, `SPI2_MISO`, `SPI2_MOSI`, `IMU2_ACC_CS`, `IMU2_GYR_CS` (from C)
 - SPI3: `SPI3_SCK`, `SPI3_MISO`, `SPI3_MOSI`, `IMU3_CS` (from C)
 - INTs: `IMU2_ACC_INT1` (PE5), `IMU2_GYR_INT3` (PE6), `IMU3_INT1` (PE11), and any IMU1 INT if wired
+- `HEATER_PWM` (from C, U1.PA15 to Q5.G)
 
 **Output nets:** (same as inputs — SPI is bidirectional; this lists the
 zone-crossing nets, all of which return MOSI/MISO traffic)
 
 **Zone:** Y=51..63, X=33..63. Compact 43×12 mm island. Stress-relief
-U-kerf surrounds the island; bridge at Y=51..53 (X=38..52) — 14 mm wide
-— is the only mechanical+electrical connection. ALL signal traces +
-power must cross the bridge.
+U-kerf surrounds the island; **bridge starting at 10 mm wide** at
+Y=51..53 (X=40..50) is the only mechanical+electrical connection. ALL
+signal traces + power must cross the bridge. Master directive
+2026-05-22: 10 mm is the *starting point* — the Elmer structural FEA
+(validated in Task 9, `sims/validation/elmer_beam/`) refines the
+final bridge width at the D-integration step (step 7) before D LOCKs
+per Gate 12. Narrower bridge = better EMI isolation but lower
+structural margin; FEA picks the trade.
 
 **Adjacency:**
 - South: C (across the bridge)
@@ -333,7 +360,10 @@ microSD, CRSF input, CAN bus. ESD-protect each one.
 - J10 — CRSF connector (USART6 = PC6/PC7 + 3V3 + GND)
 - J20 — CAN bus connector (CAN1 from U14)
 - U14 — CAN1 transceiver
-- U15 — second IC (TBD — possibly CAN2 transceiver, verify in `can_3j.py`)
+- U15 — **PESD2CAN ESD diode array** for the CAN bus (verified
+  2026-05-22 against `can_3j.py:170-188` — pins I/O1=CANH,
+  I/O2=CANL, GND=common cathode). NOT a second CAN transceiver; no
+  CAN2 in v1.1 scope; no scope discrepancy to flag.
 - D11, D12 — telem RX/TX ESD diodes
 - D13, D14 — CRSF RX/TX ESD diodes
 - R21, R22 — I2C1 pullups
@@ -428,45 +458,61 @@ one PR:
 
 ---
 
-## 3. Open questions for master review
+## 3. Resolution log — master's answers (2026-05-22)
 
-1. **Q5 in A.** SKiDL shows `q5.ref = "Q5"` in `power_3b.py` but the
-   role isn't obvious from a grep. Need to confirm whether Q5 is
-   reverse-polarity protection on the input side or something else.
-   Affects A's component list.
+The six questions raised in the draft, with master's resolutions
+applied above:
 
-2. **U15 in G.** `can_3j.py` instantiates `u15` next to U14. Likely
-   second CAN transceiver for CAN2 (FDCAN2), but CAN2 isn't enabled
-   in hwdef. If U15 is a second CAN xcvr, G has a CAN2 connector
-   (not yet identified — TBD).
+1. **Q5 role — RESOLVED.** Verified against `power_3b.py:549-585`:
+   Q5 is AO3400 N-FET driving the **IMU heater** (G=HEATER_PWM,
+   D=HEATER_DRAIN→R61→+5V, S=GND). Q5 belongs to **D, not A**.
+   Subsystem tables and component lists updated. Per Rule 3 — no
+   guessing; verified.
 
-3. **MCU exposed pad on LQFP-100.** STM32H743VIT6 in LQFP-100 has a
-   slug pad — confirm whether the footprint we use exposes it
-   (vs. no-pad variant). Affects Gate 7 thermal-via count under U1.
+2. **U15 role — RESOLVED.** Verified against `can_3j.py:170-188`:
+   U15 is **PESD2CAN ESD diode array** (CANH/CANL ESD clamp to GND).
+   NOT a 2nd CAN transceiver. v1.1 single-CAN scope is intact; no
+   discrepancy to flag in `OPEN_QUESTIONS.md`.
 
-4. **Mounting hole positions.** I used the canonical 30.5×30.5 mm
-   c-to-c centered, giving (29.75, 19.75), (60.25, 19.75),
-   (29.75, 50.25), (60.25, 50.25). With 90×70 board this means
-   ≥19.75 mm to all edges. Confirm before placement.
+3. **MCU exposed pad — RESOLVED.** Footprint is
+   `Package_QFP:LQFP-100_14x14mm_P0.5mm` (per `mcu_3a.py:54`) — a
+   standard 14×14 mm gull-wing LQFP. Standard LQFP has **no exposed
+   thermal pad**. Gate 7 thermal-vias-under-U1 requirement REMOVED
+   from C; the MCU dissipates through its 100 leads to the planes.
 
-5. **Bridge width.** I quoted 14 mm bridge at Y=51..53 from the
-   existing v13 island geometry. Sai/master should confirm 14 mm is
-   the right number (vs. 10 mm tighter or 20 mm wider) given v1.1
-   sim requirements.
+4. **Mounting holes — RESOLVED.** **4 corner-inset M3 holes at ~5
+   mm** from each corner: **(5, 5), (85, 5), (5, 65), (85, 65)**.
+   Master directive 2026-05-22: `DECISIONS §2` 30.5×30.5 c-to-c
+   was for the original 36×36; on 90×70 it leaves ~30 mm overhang
+   per side (mechanically poor). Corner holes for v1.1; the airframe
+   gets a new tray anyway. `docs/OPEN_QUESTIONS.md` entry added
+   for Sai's ratification (supersedes `DECISIONS §2`).
 
-6. **Zone overlap between B and C.** Y=28 is the boundary; in
-   practice the MCU decap caps want to sit on the +3V3 plane, which
-   is generated by U2 ~5 mm south. The boundary is soft. Suggest
-   master clarifies whether decap caps belong to B (close to U2) or
-   C (close to MCU).
+5. **Bridge width — RESOLVED.** Start at **10 mm wide** (was 14 mm
+   in v13). 10 mm = better EMI isolation, still fits the IMU signal
+   bundle across 3 signal layers. **Final width determined by Elmer
+   structural FEA at step 7** (D integration) before D LOCKs per
+   Gate 12. Validated FEA tool from Task 9 (`sims/validation/elmer_beam/`).
+
+6. **B↔C decap ownership — RESOLVED.** **MCU decaps belong to C**
+   (placed within ~3 mm of MCU power pins — the whole point of a
+   decap). B owns U2/U13 LDOs + their immediate input/output bulk
+   caps. The +3V3 plane is a **global cross-subsystem net** (§2),
+   owned by neither A nor B nor C — it's a board-level zone-fill
+   handled in the cross-subsystem routing PR.
+
+No remaining open questions for master at the subsystem-decomp
+level. Step 1 (C — MCU_CORE) placement PR proceeds.
 
 ---
 
-## 4. Integration-order proposal (incremental integration loop)
+## 4. Integration-order — CONFIRMED by master 2026-05-22
 
 Per `PLACEMENT_ROUTING_GATES.md §0`, place + integrate + sim + LOCK
-subsystem-by-subsystem. This is the proposed order — **master refines
-+ confirms before any subsystem placement PR opens.**
+subsystem-by-subsystem. **Master confirmed this order verbatim:**
+`C → E → F → G-partial → B → A → D → H → G-remainder(CRSF) → full-board sim`.
+Master also confirmed the explicit hard-pairing steps (A↔B, C↔D bridge,
+C↔H, CRSF↔D) are correct.
 
 Each row is one **placement-step PR** followed by an
 **integration-step PR** that routes the new cross-subsystem nets and
