@@ -36,8 +36,8 @@ All 9 scoping decisions for the v1 FC, signed off 2026-05-18. Each section shows
 - Board outline: 105 × 85 mm
 - Aspect ratio: 21:17 (consequence of outline)
 - Layer count: 4 vs 6 — still OPEN (Phase 0.6 pivot Step 3 assesses, see `OPEN_QUESTIONS.md pivot-2026-05-20` items 1-3)
-- **Mounting pattern: 4× M3 corner-inset holes** (master decision 2026-05-23): 3mm edge inset, c-to-c **99 × 79 mm**, positions (3, 3), (102, 3), (3, 82), (102, 82). Hole spec per `PLACEMENT_STRATEGY.md §5.2`: 3.2mm drilled, through-plated, 5mm GND-pad land to chassis GND.
-  - +2 mid-long-edge holes (6 total) gated on Phase 6 vibration sim. Placement RESERVES keep-out at mid-edge positions (3, 42.5) and (102, 42.5) — 8mm circular keep-out for free sim-driven add later.
+- **Mounting pattern: 4× M3 corner-inset holes** (master decision 2026-05-23): **3.25 mm edge inset, c-to-c 98.5 × 78.5 mm**, positions (3.25, 3.25), (101.75, 3.25), (3.25, 81.75), (101.75, 81.75). Hole spec per `PLACEMENT_STRATEGY.md §5.2`: 3.2mm drilled NPTH, through-plated, **5.5 mm** GND-pad land to chassis GND. (Originally specified as 3.0mm inset / 99×79 c-to-c / 5.0mm pad; on apply discovered the actual mounting-hole footprint uses 5.5mm pads, which at 3.0mm inset leaves only 0.25mm to board edge — violates 0.5mm edge-clearance rule. Shifted to 3.25mm inset; mechanical mounting tolerance accommodates the 0.5mm c-to-c shift.)
+  - +2 mid-long-edge holes (6 total) gated on Phase 6 vibration sim. Placement RESERVES keep-out at mid-edge positions (3.25, 42.5) and (101.75, 42.5) — 8mm circular keep-out for free sim-driven add later.
   - Pixhawk-standard 30.5×30.5 M3 pattern formally dropped.
 
 **v1.1 thermal verification (the basis for the 105 × 85 sizing):**

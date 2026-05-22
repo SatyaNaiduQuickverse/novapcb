@@ -131,10 +131,12 @@ ANCHORS = {
     "C33": (22.0, 27.0, 90.0),   # U2 output decap (vertical)
     "C34": (30.0, 27.0, 0.0),    # decap, east of others
 
-    # FERRITE + IMU LDO EAST (along path to D) — kept positions
+    # FERRITE + IMU LDO EAST (along path to D)
+    # C77 originally at X=58 collided with U13 pad 5 — moved west to
+    # X=56.5 for 1.5mm extra clearance.
     "FB2": (50.0, 27.0, 0.0),    # ferrite, +3V3 → +3V3_IMU_PRE
     "U13": (60.0, 26.0, 0.0),    # LP5907 IMU LDO
-    "C77": (58.0, 27.0, 0.0),    # U13 input cap (pre)
+    "C77": (56.5, 27.0, 0.0),    # U13 input cap (pre) — moved west
     "C78": (63.0, 27.0, 0.0),    # U13 output cap (+3V3_IMU)
 }
 
