@@ -49,14 +49,20 @@ MOVES = [
     # Baros
     ("U7", 56.0, 58.0, 0),    # LPS22HB
     ("U4", 30.0, 58.0, 0),    # DPS310 B.Cu
-    # Heater + IMU LDO (separated to avoid +5V/HEATER_DRAIN shorts)
-    ("Q5",  55.0, 60.0, 0),
-    ("R61", 58.0, 60.0, 0),
-    ("U13", 65.0, 60.0, 0),
-    ("FB2", 62.0, 58.0, 0),
+    # Heater + IMU LDO — NOT pinned. Greedy placer will place these
+    # via get_ideal_pos based on net connectivity, then spiral-search
+    # for collision-free spot inside the island.
 
-    # J9 SWD: pads overflow into slot S edge keepout — move N (smaller Y)
-    ("J9", 41.0, 62.0, 0),
+    # J9 SWD: pads overflow into slot S edge — pad spans 2.54mm from center,
+    # need Y<=62 for pad S edge to clear slot N edge Y=65 with 0.3mm margin
+    ("J9", 41.0, 60.0, 0),
+
+    # USB CC pull-down resistors R31/R32 — pin clear of J1 USB-C W edge
+    ("R31", 73.0, 31.5, 0),
+    ("R32", 73.0, 28.5, 0),
+    # CAN termination R45/R46 — south of U14, 3mm apart for courtyard clear
+    ("R45", 74.0, 21.0, 0),
+    ("R46", 78.0, 21.0, 0),
 
     # Q2/Q4 back to original positions (10, 22)/(11, 47.5) — original was fine,
     # my earlier (12,22)/(13,47.5) brought them too close to U11/U12.

@@ -30,13 +30,17 @@ POWER_NETS = {"GND", "+3V3", "+5V", "+3V3A", "+3V3_IMU", "+3V3_IMU_PRE",
               "ORING_A_VCAP", "ORING_B_VCAP", "ORING_A_GATE", "ORING_B_GATE"}
 
 # Big block refs — these are FROZEN. Anything not in this set is a small.
+# Heater cluster (Q5/R61) + IMU LDO (U13) + IMU ferrite (FB2) are NOT frozen —
+# they get placed by greedy with ideal-pos + spiral-search.
 BIG_REFS = {
-    "U1","U2","U3","U4","U5","U6","U7","U8","U9","U11","U12","U13","U14","U15",
+    "U1","U2","U3","U4","U5","U6","U7","U8","U9","U11","U12","U14","U15",
     "J1","J2","J3","J4","J5","J9","J10","J11","J12","J13","J14","J15","J16",
     "J17","J18","J19","J20",
-    "Y1","Q2","Q3","Q4","Q5","R61",
-    "FB1","FB2","D1",
+    "Y1","Q2","Q3","Q4",
+    "FB1","D1",
     "D5","D6","D7","D8","D9","D11","D12","D13","D14",
+    # USB CC pull-down + CAN termination resistors — pinned by fix_residuals
+    "R31","R32","R45","R46",
 }
 
 CLEARANCE = 0.20   # mm safety between parts (matches netclass)
@@ -210,6 +214,10 @@ def main():
     placed_bboxes.append((45.0, 70.3, 45.0, 0.5))   # south edge band
     placed_bboxes.append((-0.3, 35.0, 0.5, 35.0))   # west edge band
     placed_bboxes.append((90.3, 35.0, 0.5, 35.0))   # east edge band
+    # Additional keepouts for ESC pad regions (Y=3 + 5mm margin) to keep
+    # decoupling caps out from under the ESC pad rows
+    placed_bboxes.append((17.5, 5.5, 9.0, 3.5))   # NW ESCs J11-J14 zone Y=2..9
+    placed_bboxes.append((67.5, 5.5, 9.0, 3.5))   # NE ESCs J15-J18 zone
     print(f"[frozen] {big_count} big blocks + 4 mounting holes + 4 slot bands + 4 edge bands", flush=True)
 
     # Collect small parts to place
