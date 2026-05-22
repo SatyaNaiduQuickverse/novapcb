@@ -39,8 +39,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PCB = os.path.join(HERE, "novapcb-stepwise.kicad_pcb")
 
 F_REFDES = ["J1", "R31", "R32", "U5"]
-ZONE_X_MIN, ZONE_X_MAX = 65.0, 91.0   # east third of board (J1 body extends to 90.0)
-ZONE_Y_MIN, ZONE_Y_MAX = 22.0, 42.0
+# Zone REVISED 2026-05-22 per master Step-3 re-open: extended Y south to
+# 45mm to give U5 breathing room out of the diff-pair Y=31 corridor.
+# Borrows from G's lower allocation; SUBSYSTEM_CONTRACTS §F/§G updated.
+ZONE_X_MIN, ZONE_X_MAX = 65.0, 91.0
+ZONE_Y_MIN, ZONE_Y_MAX = 22.0, 45.0
 
 
 def _mm(x): return pcbnew.FromMM(x)
@@ -126,22 +129,19 @@ def main():
                 return
         print(f"  !! could not place {ref} near target ({x}, {y})")
 
-    # J1 USB-C: east edge, receptacle facing OUT (+X). Default orient ok.
-    # Center X=83.78 so body extends X=77.56..90.00 (to board edge).
-    # Center Y=30 centered on PA11/PA12 (Y=30.5/31.0 on U1's E edge).
+    # J1 USB-C: east edge, receptacle facing OUT (+X). Y=30 centered.
     try_place("J1", 83.78, 30.00, rot=0.0)
 
-    # R31 / R32 — CC pulldowns. Place on -Y side of J1 (north) so the
-    # diff pair path on +Y side is clear. CC pads are at offset ~(-4.04,
-    # +/-1.25) from J1 center → A5 at (79.74, 31.25), B5 at (79.74, 28.75).
+    # R31 / R32 — CC pulldowns NORTH of J1.
     try_place("R31", 78.5, 26.0)
     try_place("R32", 78.5, 27.0)
 
-    # U5 ESD diode — placed close to J1 (within ~4mm of D+/D- pads, per
-    # textbook ESD-at-connector-entry rule, master directive 2026-05-22).
-    # J1 D+/D- pads at X≈79.74. U5 footprint ~4.16mm wide. With center
-    # at X=76, U5 east edge at ~78.08 → 1.66mm gap to J1 pads.
-    try_place("U5", 76.0, 30.0)
+    # U5 ESD diode — moved SOUTH (Y=35) out of the diff-pair Y=31 corridor
+    # per master Step-3 re-open 2026-05-22. The diff pair flows east at
+    # Y=31, then fans south to U5 east pads (post-ESD = MCU side) at
+    # X=77.14 / Y=34..37. Pre-ESD pair fans north from U5 west pads to
+    # J1. Both fans clear of U5 body and J1's other F.Cu pads.
+    try_place("U5", 76.0, 35.0)
 
     pcbnew.SaveBoard(PCB, brd)
     print(f"\n  Placed {len(placed_F)} of {len(F_REFDES)} F components", flush=True)

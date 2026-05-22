@@ -160,7 +160,16 @@ Pad-edge gap in pitch direction = 0.5 - 0.25 = **0.25 mm** (clears the 0.2 mm ne
 
 ---
 
-## phase0.6-2. OpenEMS microstrip Z0-extraction — Phase 6b deep-dive required
+## phase0.6-2. OpenEMS microstrip Z0-extraction — Phase 6b deep-dive required (RESOLVED 2026-05-22)
+
+**RESOLVED 2026-05-22**: openEMS Z₀-extraction validated to 3.6% vs Hammerstad-Jensen 1980 (`sims/validation/VALIDATION_RESULTS.md` row 5 — Task 9). Three traps caught + documented:
+- `MSLPort.CalcPort(ref_impedance=…)` OVERWRITES measured Z₀ (ports.py:153). Don't pass `ref_impedance`.
+- `FeedShift` + `MeasPlaneShift` are absolute offsets from port start, not relative; both at the same offset → measurement probes see feed transient.
+- Without `Feed_R=50` on the un-excited port, energy bounces, no convergence; bound with `NrTS=` cap.
+
+openEMS is now the project's controlled-impedance ground truth. Subsequent C↔F integration USB diff-pair sign-off (2026-05-22) confirmed the value: the original analytical-only W=0.30/S=0.10 spec was 24 Ω off (70 Ω measured vs 94 Ω analytical) — `docs/CONTROLLED_IMPEDANCE.md` corrected to openEMS-validated W=0.20/S=0.13 (87 Ω). Original entry preserved below for traceability.
+
+— original entry —
 
 **Raised 2026-05-21** (Phase 0.6 PR #56 follow-up; convergence re-run after the one-line ref_impedance fix).
 
@@ -250,7 +259,9 @@ Reference: `docs/SUBSYSTEM_CONTRACTS.md §0.5` (where the 4 corner holes are quo
 
 # Closed decisions (recorded here for traceability)
 
-## CLOSED phase3exit-can. CAN: novapcb v1 deliberately ships no CAN connector / transceiver
+## RE-OPENED phase3exit-can. CAN: novapcb v1.1 SHIPS 1× CAN port (RE-OPENED 2026-05-23)
+
+**RE-OPENED 2026-05-23** per master directive: this entry was originally CLOSED as "v1 ships no CAN"; the v1.1 re-spin re-introduced CAN at commit `13d26a8` ("hw: can_3j.py — 1× CAN port on FDCAN1 (R1.4)") for redundancy. The current ship-state is **1× CAN port populated** (U14 TJA1051 transceiver, U15 PESD2CAN ESD, J20 connector, R45 120Ω terminator). The "deliberately ships no CAN" reasoning below is from the earlier v1 scope decision and no longer applies. Original entry preserved for traceability.
 
 **Decided 2026-05-20** (Phase 3-exit A2 escalation; master adjudication).
 
