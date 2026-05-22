@@ -84,28 +84,43 @@ Z_diff = 2 × Z_se × (1 - 0.48 × exp(-0.96 × S/h))
 
 ### 2.3 Sweep at h = 0.21 mm (JLC06161H-7628), ε_r = 4.3, t = 35 µm
 
-| W (mm) | S (mm) | Z_se (Ω) | Z_diff (Ω) | In USB 2.0 ±15% spec? |
-|---|---|---|---|---|
-| 0.20 | 0.10 | 73.4 | 96.3 | IN (7.2 Ω margin) |
-| 0.25 | 0.10 | 70.4 | 95.4 | IN |
-| **0.30** | **0.10** | **67.8** | **94.4** | **IN (9.1 Ω margin)** |
-| 0.30 | 0.12 | 67.8 | 99.0 | IN |
-| 0.35 | 0.10 | 65.6 | 93.4 | IN (10.1 Ω margin) |
-| 0.40 | 0.10 | 63.8 | 92.4 | IN |
-| 0.50 | 0.10 | 60.7 | 90.5 | IN (right at 90 Ω nominal) |
+**SUPERSEDED 2026-05-22**: the analytical sweep below over-estimated
+Z_diff by ~20-25 Ω compared to the validated openEMS field solver. The
+table is preserved for historical reference; use §2.4 for the
+ship-state recommendation.
 
-Wider trace → closer to 90 Ω nominal. The choice is between routing
-convenience (narrower trace = less area, easier dense routing) and
-impedance accuracy.
+| W (mm) | S (mm) | Z_se H-J (Ω) | Z_diff H-J (Ω) | Z_diff openEMS (Ω) | Notes |
+|---|---|---|---|---|---|
+| 0.20 | 0.10 | 67.3 | 93.7 | (extrapolated ~84) | candidate |
+| **0.20** | **0.13** | **67.3** | **99.0** | **87.4 (measured)** | **CHOSEN** |
+| 0.20 | 0.15 | 67.3 | 102.1 | ~92 | also viable |
+| 0.30 | 0.10 | 56.0 | 78.0 | **70.0 (measured)** | original spec — FAILS USB-2 floor |
 
-### 2.4 Recommendation — W = 0.30 mm, S = 0.10 mm
+Wider trace + tighter coupling → LOWER Z_diff. The original spec
+assumed Z_diff was higher than reality (analytical over-estimate).
+Always validate with the 3D field solver.
 
-**Z_diff = 94.4 Ω** — within USB 2.0 ±15% spec with 9 Ω margin to the
-upper limit. Reasonable routing width for an 80×60 mm board.
+### 2.4 Recommendation — W = 0.20 mm, S = 0.13 mm (CORRECTED 2026-05-22)
 
-W = 0.30 mm is also wide enough to carry the 500 mA USB peak current
-(USB-C spec) comfortably (IPC-2152: 0.30 mm × 35 µm Cu = 0.85 A at 20°C
-rise).
+**Z_diff = 87.41 Ω per openEMS 3D FDTD** (validated tool, Task 9 row 5).
+Cross-checks:
+- Hammerstad-Jensen analytical: 98.96 Ω (within ±10%)
+- scikit-rf MLine + coupling: 100.76 Ω (within USB-2 ±15%)
+- openEMS: **87.41 Ω — within ±10% of 90 Ω target → PASS**
+
+**Why the W/S correction (was W=0.30 / S=0.10 in pre-2026-05-22 spec):**
+the original recommendation was based on the analytical formula in §2.2
+without 3D field-solver validation. When openEMS was run on the actual
+W=0.30/S=0.10 geometry, it returned **Z_diff = 70.06 Ω** — below the
+USB-2 -15% floor (76.5 Ω). The closed-form formulae over-estimated by
+~24 Ω because they apply only an isolated-trace correction and miss
+mutual coupling magnitude. The C↔F integration sign-off (master
+directive 2026-05-22) caught this discrepancy; the doc is updated to
+the openEMS-validated geometry.
+
+W = 0.20 mm carries 500 mA peak USB-C current within IPC-2152 spec
+(0.20 mm × 35 µm Cu ≈ 0.65 A at 20 °C rise — USB 2.0 peak is well
+under that).
 
 ### 2.5 Why not the alternative JLC stackup variants
 
