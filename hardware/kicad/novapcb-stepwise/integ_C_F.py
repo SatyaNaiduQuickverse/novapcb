@@ -98,13 +98,16 @@ def main():
     pads_dmp = {(r,n): (x,y) for r,n,x,y in find_pads_on_net(brd, "USBC_D_M_PRE")}
     pads_dpp = {(r,n): (x,y) for r,n,x,y in find_pads_on_net(brd, "USBC_D_P_PRE")}
 
-    # ===== PAIR 1: U1 → U5 (post-ESD, ~24mm) =====
-    # U1.70 USB_DM @ (52.67, 31.50)  →  U5.4 @ (77.14, 30.95)
-    # U1.71 USB_DP @ (52.67, 31.00)  →  U5.6 @ (77.14, 29.05)
+    # ===== PAIR 1: U1 → U5 (post-ESD) =====
+    # PIN-SWAP 2026-05-23 (see crsf_usb_3g.py): USB_DM/DP now land on
+    # U5 WEST pads (pin 1=DP NW, pin 3=DM SW). Pair flows U1(west) →
+    # U5_west directly — no body crossing, no detour.
+    # U1.70 USB_DM @ (52.67, 31.50)  →  U5.3 @ (71.862, 31.95)
+    # U1.71 USB_DP @ (52.67, 31.00)  →  U5.1 @ (71.862, 30.05)
     u1_dm = pads_dm[("U1","70")]
     u1_dp = pads_dp[("U1","71")]
-    u5_dm = pads_dm[("U5","4")]
-    u5_dp = pads_dp[("U5","6")]
+    u5_dm = pads_dm[("U5","3")]   # SW (south)
+    u5_dp = pads_dp[("U5","1")]   # NW (north)
 
     # ROOT-CAUSE FIX (master Step-3 re-open 2026-05-22): the previous
     # routing iterations hit over-constrained-region whack-a-mole around
@@ -197,130 +200,77 @@ def main():
     # Pin5 margin: DM at Y=35 at X = 78.65 - 2.980 = 75.67 → 0.87mm
     # east of pin5 east edge 74.80 (below master's 1mm soft, but
     # ≥0.30mm hard; trade-off forced by A5 pad X=79.010 constraint).
-    # 2026-05-23 MASTER ROOT-CAUSE DIRECTIVE:
-    # U5 RE-PLACED at (73, 31) — on the pair Y=31 corridor. The earlier
-    # U5 at Y=35 created a 4mm Y-misalignment forcing steep descent at
-    # tight 0.33mm pitch (perp-distance failure). With U5 at Y=31:
-    #   - DM pin 4 at (74.138, 31.95) — 0.62mm south of coupled Y=31.33
-    #   - DP pin 6 at (74.138, 30.05) — 0.95mm north of coupled Y=31.00
-    #   - Short fan, no steep descent.
+    # 2026-05-23 MASTER PIN-SWAP DIRECTIVE:
+    # USBLC6-2P6 pin pairs are internally interchangeable (symmetric
+    # ESD device per ST datasheet §4). Swapped pin assignments so
+    # U1-side nets (USB_DM/DP) land on U5 WEST pads, J1-side nets
+    # (USBC_D_*_PRE) on EAST pads. Pair flows U1(W)→U5_W direct,
+    # U5_E→J1(E) direct. No body crossing.
     #
-    # But U5 pin 2 (GND, X=71.862, Y=31) and pin 5 (+5V, X=74.138, Y=31)
-    # sit ON the pair corridor, AND pin 3 (D-_pre, X=71.862, Y=31.95)
-    # blocks DM fan to pin 4. Use TWO-STAGE fan:
-    #
-    #   Stage 1 (shallow, X_SPLIT→72.825):
-    #     DM goes from (X_SPLIT, 31.33) shallowly to (72.825, 31.30)
-    #       (clears pin 3 N edge 31.65 with ≥0.20 margin)
-    #     DP goes from (X_SPLIT, 31.00) shallowly to (72.825, 30.55)
-    #       (clears pin 1 S edge 30.35 with ≥0.20 margin)
-    #   Stage 2 (steeper, 72.825→74.138):
-    #     DM (72.825, 31.30) → (74.138, 31.95) — into U5.4
-    #     DP (72.825, 30.55) → (74.138, 30.05) — into U5.6
-    #     Both clear pin 5 (Y=31, X 73.475..74.80) by ≥0.20mm
-    #
-    # X_SPLIT = 70.90 — DM/DP coupled-H end before pin 2 west edge
-    # (71.20) with cap+clearance.
-    X_M_H = 70.90       # DM coupled-H east end (pin 2 GND clearance)
-    X_P_H = 70.90       # DP coupled-H end (same X — no stagger needed)
-    X_STAGE2 = 72.825   # 2-stage fan bend point (east of pin 3 by 0.30mm)
-    X_FAN_END = 74.138  # U5 east pad centers
-    Y_DM_STAGE1 = 31.30 # DM Y at stage1 end (clears pin 3 by 0.20+0.10)
-    Y_DP_STAGE1 = 30.55 # DP Y at stage1 end (clears pin 1 by 0.20+0.10)
-    Y_PIN4 = u5_dm[1]   # 31.95
-    Y_PIN6 = u5_dp[1]   # 30.05
+    # Pair coupled-H from U1 ends at X_SPLIT (before pin 2 GND at
+    # X=71.862), then short fan into U5 west pads:
+    #   DM coupled Y=31.33 → U5.3 SW Y=31.95 (descent 0.62mm)
+    #   DP coupled Y=31.00 → U5.1 NW Y=30.05 (ascent 0.95mm)
+    # Pair fans AROUND pin 2 (GND at Y=31) — DP NORTH, DM SOUTH.
+    # Fan angle ≤24.6° required for in-pair clearance (0.10mm edge):
+    #   DP slope 0.95/X_span ≤ tan(24.6°)=0.458 → X_span ≥ 2.07mm
+    # X_SPLIT = 69.50 gives X_span=2.36mm for DP fan, slope 0.402,
+    # angle 21.9°, perp 0.306mm, edge 0.106mm — PASS.
+    X_M_H = 69.50       # DM coupled-H east end
+    X_P_H = 69.50       # DP coupled-H end (same X — symmetric fan)
+    X_FAN_END = u5_dm[0]  # 71.862 — U5 west pad centers
+    Y_PIN_DM = u5_dm[1]   # 31.95 (SW, U5.3)
+    Y_PIN_DP = u5_dp[1]   # 30.05 (NW, U5.1)
 
-    # DM: 5 segments (west jog, coupled-H, stage 1 fan, stage 2 fan, pad land)
+    # DM: 4 segments (west jog, coupled-H, single fan diagonal, land at U5.3)
     add_track(brd, u1_dm[0], u1_dm[1], X_BEND_W_1, Y_DM_COUPLED, n_dm, layer=F_CU, w_mm=W_DIFF)
     add_track(brd, X_BEND_W_1, Y_DM_COUPLED, X_M_H, Y_DM_COUPLED, n_dm, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, X_M_H, Y_DM_COUPLED, X_STAGE2, Y_DM_STAGE1, n_dm, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, X_STAGE2, Y_DM_STAGE1, X_FAN_END, Y_PIN4, n_dm, layer=F_CU, w_mm=W_DIFF)
+    add_track(brd, X_M_H, Y_DM_COUPLED, X_FAN_END, Y_PIN_DM, n_dm, layer=F_CU, w_mm=W_DIFF)
 
-    # DP: 4 segments (west jog, coupled-H, stage 1 fan, stage 2 fan)
+    # DP: 4 segments (west jog, coupled-H, single fan diagonal, land at U5.1)
     add_track(brd, u1_dp[0], u1_dp[1], X_BEND_W_1, Y_DP_COUPLED, n_dp, layer=F_CU, w_mm=W_DIFF)
     add_track(brd, X_BEND_W_1, Y_DP_COUPLED, X_P_H, Y_DP_COUPLED, n_dp, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, X_P_H, Y_DP_COUPLED, X_STAGE2, Y_DP_STAGE1, n_dp, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, X_STAGE2, Y_DP_STAGE1, X_FAN_END, Y_PIN6, n_dp, layer=F_CU, w_mm=W_DIFF)
+    add_track(brd, X_P_H, Y_DP_COUPLED, X_FAN_END, Y_PIN_DP, n_dp, layer=F_CU, w_mm=W_DIFF)
 
-    print(f"  USB_DM: H to X={X_M_H} → stage1 (X={X_STAGE2}, Y={Y_DM_STAGE1}) → pin 4 (X={X_FAN_END}, Y={Y_PIN4})")
-    print(f"  USB_DP: H to X={X_P_H} → stage1 (X={X_STAGE2}, Y={Y_DP_STAGE1}) → pin 6 (X={X_FAN_END}, Y={Y_PIN6})")
+    print(f"  USB_DM: H to X={X_M_H} → fan south → U5.3 (X={X_FAN_END}, Y={Y_PIN_DM})")
+    print(f"  USB_DP: H to X={X_P_H} → fan north → U5.1 (X={X_FAN_END}, Y={Y_PIN_DP})")
 
-    # ===== PAIR 2: U5 → J1 (pre-ESD, ~5mm) =====
-    # U5.3 USBC_D_M_PRE @ (74.86, 30.95)  →  J1.A7 (79.73, 29.75) + J1.B7 (79.73, 30.75)
-    # U5.1 USBC_D_P_PRE @ (74.86, 29.05)  →  J1.A6 (79.73, 30.25) + J1.B6 (79.73, 29.25)
-    u5_dmp = pads_dmp[("U5","3")]
-    u5_dpp = pads_dpp[("U5","1")]
+    # ===== PAIR 2: U5 → J1 (pre-ESD) =====
+    # PIN-SWAP 2026-05-23: USBC_D_M_PRE now at U5.4 (SE), USBC_D_P_PRE
+    # at U5.6 (NE). Pre-ESD pair exits U5 EAST → J1 (east) directly.
+    # U5.4 USBC_D_M_PRE @ (74.138, 31.95)  →  J1.B7 (79.735, 30.75)
+    # U5.6 USBC_D_P_PRE @ (74.138, 30.05)  →  J1.B6 (79.735, 29.25)
+    u5_dmp = pads_dmp[("U5","4")]   # SE (south) — was U5.3 pre-swap
+    u5_dpp = pads_dpp[("U5","6")]   # NE (north) — was U5.1 pre-swap
     # J1 has dual D+ / dual D- pads — route to one + bridge to the other
     j1_a7 = pads_dmp[("J1","A7")]
     j1_b7 = pads_dmp[("J1","B7")]
     j1_a6 = pads_dpp[("J1","A6")]
     j1_b6 = pads_dpp[("J1","B6")]
 
-    # PAIR 2: pre-ESD from U5 west pads to J1 west pads.
-    # With U5 at X=73 (west move), U5 west pads at X=71.862.
-    # Route PAIR 2 NORTH around U5 body (Y < 28) on B.Cu coupled,
-    # then descend to J1 D+/D- pad pair via F.Cu.
-    Y_DPP_COUPLED = 27.50    # north of U5 body and J1 GND row
-    Y_DMP_COUPLED = 27.85    # 0.35mm south of DPP (paired on B.Cu)
-    X_F2_E = 79.10           # west of J1 pads (B8 west edge 79.585)
+    # PAIR 2: pre-ESD from U5 EAST pads (post-pin-swap) to J1 pads.
+    # U5.4 USBC_D_M_PRE (74.138, 31.95) → J1.A7 (79.735, 29.75) — NORTH
+    #   (B7 landing would put diagonal too close to J1.A5 USBC_CC1 pad
+    #    edge by 0.097mm — fails default 0.20mm clearance. A7 landing
+    #    has diagonal pass well north of A5, ~0.95mm edge gap.)
+    # U5.6 USBC_D_P_PRE (74.138, 30.05) → J1.B6 (79.735, 29.25)
+    # Pair order preserved: DP NORTH (B6=29.25), DM SOUTH (A7=29.75).
+    # Bridges (A6↔B6 D+, A7↔B7 D-) connect the unused pads.
+    j1_dmp_target = j1_a7
+    j1_dpp_target = j1_b6
+    print(f"\n[PAIR 2] U5(east) → J1 (pre-ESD) — F.Cu direct diagonals")
 
-    # Pick which J1 pad each net lands on. For DM (south of pair @ Y_DMP=26.9):
-    # J1 D- pads: A7 (29.75 north) or B7 (30.75 south). DM coupled at Y=26.9
-    # → both pads are FAR south; the fanout descends a lot. Use A7 (closer:
-    # 29.75 vs 30.75). For DP (north of pair @ Y_DPP=26.5): J1 D+ pads:
-    # A6 (30.25) or B6 (29.25). Use B6 (29.25, closer to coupled Y).
-    # Then the A6↔B6 and A7↔B7 bridges happen at J1.
-    j1_dmp_target = j1_a7   # DM lands at A7
-    j1_dpp_target = j1_b6   # DP lands at B6
+    # DPP direct diagonal — no obstacle
+    add_track(brd, u5_dpp[0], u5_dpp[1], j1_b6[0], j1_b6[1], n_dpp, layer=F_CU, w_mm=W_DIFF)
+    # DMP 2-segment to avoid A6 NW corner clearance violation:
+    #   direct U5.4→A7 diagonal passes 0.13mm from A6 W edge at Y=30.10
+    #   intermediate point (78.50, 29.85) routes the diagonal further
+    #   north so it crosses Y=30.10 at X<78.50, clear of A6's X range.
+    add_track(brd, u5_dmp[0], u5_dmp[1], 78.50, 29.85, n_dmp, layer=F_CU, w_mm=W_DIFF)
+    add_track(brd, 78.50, 29.85, j1_a7[0], j1_a7[1], n_dmp, layer=F_CU, w_mm=W_DIFF)
 
-    # NOTE: USB-C dual-orientation requires A6↔B6 + A7↔B7 bridges so
-    # the cable works in either rotation. These bridges geometrically
-    # cross each other at J1 (the other-orientation pad sits exactly
-    # between the bridge's source and destination). Bridging properly
-    # requires B.Cu vias + an X-offset jog — a small follow-up.
-    # For v1 we OMIT the bridges, accept single-orientation USB-C, and
-    # connect only the A6/A7 pads. The cable will plug in either way
-    # but only one orientation enumerates. Marked in DECISIONS for v1
-    # bring-up; v2 fixes it cleanly.
-    # PAIR 2 topology v3 — B.Cu straight diagonals to B-side J1 pads:
-    print(f"\n[PAIR 2] U5 ↔ J1 (pre-ESD) — B.Cu straight diagonals to B6/B7")
-    # Crossing analysis: DPP→B6 (Y=29.25) keeps DPP north of DMP at both
-    # ends (pre-ESD pair Y-order preserved). DMP→B7 (Y=30.75) keeps DMP
-    # south. Straight diagonals don't cross (solved: crossing point
-    # outside [0,1] segment range).
-    # Lands at B6/B7 (B-side pads). Bridges (A6↔B6, A7↔B7) provide the
-    # A-side connection for USB-C dual-orientation.
-    #
-    # U5 west pads: U5.1 (71.862, 34.05) D+, U5.3 (71.862, 35.95) D-
-    # Pad west edge X = 71.862 - 0.6625 = 71.20
-    # Via spots WEST of pad west edge (with 0.20 clearance + 0.25 via r):
-    #   v3_dpp at (70.55, 34.05) — 0.65mm west of pad west edge ≥ 0.45 ✓
-    #   v3_dmp at (70.10, 35.95) — 1.10mm west of pad west edge ✓
-    # U5 at (73, 31): pre-ESD pads at (71.862, 30.05) D+ and (71.862, 31.95) D-
-    v3_dpp = (70.50, 30.05)   # F.Cu west stub from pin 1, via west of U5 body
-    v3_dmp = (70.50, 31.95)   # F.Cu west stub from pin 3, via west of U5 body
-    # B.Cu landing vias just west of J1 pad column (X=79.010 west edge)
-    v4_dpp = (78.50, 29.25)   # land at B6 (X=79.735, Y=29.25)
-    v4_dmp = (78.50, 30.75)   # land at B7 (X=79.735, Y=30.75)
-
-    # F.Cu west stubs from U5 pads to vias
-    add_track(brd, u5_dpp[0], u5_dpp[1], v3_dpp[0], v3_dpp[1], n_dpp, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, u5_dmp[0], u5_dmp[1], v3_dmp[0], v3_dmp[1], n_dmp, layer=F_CU, w_mm=W_DIFF)
-    add_via(brd, v3_dpp[0], v3_dpp[1], n_dpp)
-    add_via(brd, v3_dmp[0], v3_dmp[1], n_dmp)
-
-    # B.Cu straight diagonals
-    add_track(brd, v3_dpp[0], v3_dpp[1], v4_dpp[0], v4_dpp[1], n_dpp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
-    add_track(brd, v3_dmp[0], v3_dmp[1], v4_dmp[0], v4_dmp[1], n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
-    add_via(brd, v4_dpp[0], v4_dpp[1], n_dpp)
-    add_via(brd, v4_dmp[0], v4_dmp[1], n_dmp)
-
-    # F.Cu east stubs to J1 B-side pads (B6 = D+ B-side, B7 = D- B-side)
-    add_track(brd, v4_dpp[0], v4_dpp[1], j1_b6[0], j1_b6[1], n_dpp, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, v4_dmp[0], v4_dmp[1], j1_b7[0], j1_b7[1], n_dmp, layer=F_CU, w_mm=W_DIFF)
-
-    print(f"  USBC_D_P_PRE: F.Cu stub + B.Cu diagonal + F.Cu stub → J1.B6")
-    print(f"  USBC_D_M_PRE: parallel topology → J1.B7")
+    print(f"  USBC_D_P_PRE: F.Cu diagonal U5.6 → J1.B6")
+    print(f"  USBC_D_M_PRE: F.Cu 2-segment U5.4 → (78.50, 29.85) → J1.A7")
 
     # USB-C reversibility bridges (per master 2026-05-22 option (b)):
     # OFFSET vias OUTSIDE the 0.5mm-pitch J1 pad field, with short F.Cu
