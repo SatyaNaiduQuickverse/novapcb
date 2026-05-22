@@ -1,113 +1,146 @@
-# R4 Routing Handoff — Clean Base for Push-and-Shove Close-out (2026-05-22)
+# R4 Routing Handoff — Final State (2026-05-22)
 
-## Status
+## Status: HOLD for Sai's interactive close-out decision
 
-Per master 2026-05-22: numbers bouncing without clean convergence
-(DRC 33 → 73 → 86 → 169; unconnected 143 → 57 → 53). Stopping
-headless effort here. Sai to direct path forward, likely interactive
-push-and-shove routing.
+Per master 2026-05-22: numbers bouncing without clean convergence on
+the residuals. Stopping headless effort. Plane-stitch pass completed
+on clean FR3 baseline; signal residuals UNTOUCHED.
 
-PCB reverted to **commit `14a2d46`** — the cleanest checkpoint:
-Freerouting 3-signal stackup 88.8% routed, no whack-a-mole cleanup
-residuals.
+## Current state (commit `94a752f` pushed)
 
-## Recoverable base
+- **988 + ~190 vias** = ~1180 total tracks/vias (FR3 base + stitching)
+- **30 unconnected items**:
+  - 12 signal-net residuals (UNTOUCHED — per directive)
+  - ~9 +3V3_IMU items (routing job, NOT stitch — see breakdown)
+  - ~4-5 MCU power pins (cannot stitch in 0.5mm pitch)
+  - ~4 signal-pad residuals appearing as unconnected (FR3 partial routes)
+- **59 DRC violations** (stitch-via clashes with existing routes):
+  - 11 tracks_crossing
+  - 8 solder_mask_bridge (front)
+  - 3+2+2+2+2+1 clearance (various ~0.04-0.20mm gaps)
+  - 5 shorting_items (VCAP1↔GND, VBAT↔GND, GND↔ORING_B_GATE, 2 nameless)
+  - 3 copper_edge_clearance (marginal 0.21-0.23mm)
+
+## Recoverable bases
+
+Two checkpoints depending on close-out approach:
 
 ```bash
+# Option 1: clean FR3 baseline (no stitch tangles, 67 unconnected)
 git checkout 14a2d46 -- hardware/kicad/novapcb-layout-v1.1/novapcb-layout-v1.1.kicad_pcb
+# 988 tracks + 113 vias, 0 DRC, 67 unconnected
+
+# Option 2: current state with stitches (30 unconnected, 59 DRC clashes)
+git checkout 94a752f -- hardware/kicad/novapcb-layout-v1.1/novapcb-layout-v1.1.kicad_pcb
 ```
 
-Verified state at this commit:
-- **988 tracks + 113 vias** (FR3 -mp 30 v2.2.3 SES imported)
-- **67 unconnected items** (= 55 plane-stitch + 12 signal-net residuals)
-- 3 marginal copper_edge_clearance (0.21–0.23mm vs 0.30mm) — minor
-- 0 shorts, 0 mask_bridge, 0 invalid_outline
-- Stackup: 3-signal (L1/L4/L6 sig; L2/L5 GND; L3 +3V3 plane)
+## Residual breakdown — current state
 
-## Residual breakdown
+### Class 1: 12 signal-net residuals (HELD — untouched)
 
-Total: 67 unconnected items, of which:
-
-### Plane-stitch needed (55 items) — need stitch vias to inner planes
-
-| Net | Items | Notes |
+| Net | Endpoints | Traverse |
 |---|---|---|
-| +3V3 | 46 | Bulk of remaining work — many pads still need stitch vias to L3 +3V3 plane (~30+ failed/missed by earlier stitch script). MCU power pins 11/27/50/75/100 + various decap pads + IMU LDO. |
-| +3V3_IMU | 4 | C78/C94/C95 + U9 pin 5/8 — IMU LDO output rail, separate net from main +3V3. |
-| GND | 5 | U9 pins 6/7 + J9 pins 3/5/9 + C94.2 — small set, U9 IMU + SWD ground stitch issue. |
+| IMU3_CS | U1.1 (33.33, 29.00) F.Cu ↔ U9.12 (41.50, 58.92) F.Cu | MCU W → island ~30mm |
+| IMU3_INT1 | U1.41 (42.50, 42.67) F.Cu ↔ U9.4 (43.17, 57.25) F.Cu | MCU S → island ~15mm |
+| MOT1 | J11.1 (10.00, 3.00) F.Cu ↔ U1.34 (39.00, 42.67) F.Cu | N edge → MCU S ~46mm |
+| MOT2 | J12.1 (15.00, 3.00) F.Cu ↔ U1.35 (39.50, 42.67) F.Cu | N edge → MCU S ~45mm |
+| SPI1_MISO | U3.9 (34.46, 58.25) F.Cu ↔ U1.30 (37.00, 42.67) F.Cu | Island → MCU S ~16mm |
+| SPI1_MOSI | U3.12 (33.50, 56.80) F.Cu ↔ U1.31 (37.50, 42.67) F.Cu | Island → MCU S ~15mm |
+| SPI1_SCK | U3.11 (34.46, 57.25) F.Cu ↔ U1.29 (36.50, 42.67) F.Cu | Island → MCU S ~15mm |
+| SPI3_MISO | U1.90 (40.00, 27.32) F.Cu ↔ U9.1 (43.17, 58.75) F.Cu | MCU N → island ~32mm |
+| SPI3_MOSI | U1.91 (39.50, 27.32) F.Cu ↔ U9.14 (42.50, 58.92) F.Cu | MCU N → island ~32mm |
+| SPI3_SCK | U1.89 (40.50, 27.32) F.Cu ↔ U9.13 (42.00, 58.92) F.Cu | MCU N → island ~32mm |
+| SWCLK | J9.4 (42.95, 61.27) B.Cu ↔ U1.76 (47.00, 27.32) F.Cu | SWD → MCU N ~35mm + via |
+| SWDIO | J9.2 (42.95, 62.54) B.Cu ↔ U1.72 (48.67, 30.50) F.Cu | SWD → MCU E ~33mm + via |
 
-### Signal-net residuals (12 items) — actual unrouted net legs
+### Class 2: +3V3_IMU routing (9 items — short TRACE job from FB2 output)
 
-| Net | Endpoints | Direction |
++3V3_IMU is a SEPARATE net (post-FB2 ferrite). Not a plane-stitch issue.
+The FB2 (65, 52) output → U13 LDO → +3V3_IMU consumers (U9 IMU at
+~42-43 X, ~57-59 Y) was never traced.
+
+| Pad | Position | What it needs |
 |---|---|---|
-| IMU3_CS | U1.1 (33.33, 29.00) F.Cu → U9.12 (41.50, 58.92) F.Cu | MCU W → island ~30mm diag |
-| IMU3_INT1 | U1.41 (42.50, 42.67) F.Cu → U9.4 (43.17, 57.25) F.Cu | MCU S → island ~15mm |
-| MOT1 | J11.1 (10.00, 3.00) F.Cu → U1.34 (39.00, 42.67) F.Cu | N-edge ESC → MCU S ~46mm |
-| MOT2 | J12.1 (15.00, 3.00) F.Cu → U1.35 (39.50, 42.67) F.Cu | N-edge ESC → MCU S ~45mm |
-| SPI1_MISO | U3.9 (34.46, 58.25) F.Cu → U1.30 (37.00, 42.67) F.Cu | Island → MCU S ~16mm |
-| SPI1_MOSI | U3.12 (33.50, 56.80) F.Cu → U1.31 (37.50, 42.67) F.Cu | Island → MCU S ~15mm |
-| SPI1_SCK | U3.11 (34.46, 57.25) F.Cu → U1.29 (36.50, 42.67) F.Cu | Island → MCU S ~15mm |
-| SPI3_MISO | U1.90 (40.00, 27.32) F.Cu → U9.1 (43.17, 58.75) F.Cu | MCU N → island ~32mm |
-| SPI3_MOSI | U1.91 (39.50, 27.32) F.Cu → U9.14 (42.50, 58.92) F.Cu | MCU N → island ~32mm |
-| SPI3_SCK | U1.89 (40.50, 27.32) F.Cu → U9.13 (42.00, 58.92) F.Cu | MCU N → island ~32mm |
-| SWCLK | J9.4 (42.95, 61.27) B.Cu → U1.76 (47.00, 27.32) F.Cu | SWD → MCU N ~35mm + via |
-| SWDIO | J9.2 (42.95, 62.54) B.Cu → U1.72 (48.67, 30.50) F.Cu | SWD → MCU E ~33mm + via |
+| C78.1 | (42.52, 55.58) F.Cu | Trace from FB2 output |
+| C94.1 | (39.51, 55.57) F.Cu | Trace from FB2 output |
+| C95.1 | (42.52, 54.33) F.Cu | Trace from FB2 output |
+| U9.5 | (42.50, 57.08) F.Cu | Trace from FB2 output |
+| U9.8 | (40.83, 57.25) F.Cu | Trace from FB2 output |
+| (+ 4 more pad-pair items between these) |
 
-## What the 12 signal residuals need
+### Class 3: MCU power pins (~4-5 items — cannot stitch, dense 0.5mm pitch)
 
-All 12 require routing through the dense MCU-south region where they
-intersect existing 988-track routing. They are exactly what FR3
-plateau'd on. Interactive push-and-shove routing (KiCad GUI router or
-A* with proper plane-keepout modeling) is the natural close-out.
+| Pad | Net | Position | Why failed |
+|---|---|---|---|
+| U1.11 | +3V3 | (33.33, 34.00) F.Cu | Adjacent pins too close for via at pad+offset |
+| U1.50 | +3V3 | (47.00, 42.67) F.Cu | Same |
+| U1.74 | GND | (48.67, 29.50) F.Cu | Same |
+| U1.75 | +3V3 | (48.67, 29.00) F.Cu | Same |
 
-Notable clusters:
-- **SPI3 (3 nets)** all from MCU N pins to U9 island — diagonal
-  ~32mm traverses through congested center. THIS is the bottleneck.
-- **SPI1 (3 nets)** from U3 island to MCU S — shorter ~15mm but
-  area is dense.
-- **MOT1/2** long N-edge to MCU S — pin-mux locked.
-- **SWCLK/SWDIO** SWD (B.Cu) to MCU — long traverse.
+These MAY route through their decoupling caps — need manual placement.
 
-## What the 55 plane-stitch items need
+### Class 4: Signal pads appearing unconnected (partial FR3 routes)
 
-Mostly +3V3 pads on F.Cu/B.Cu requiring vias to L3 +3V3 plane.
-Earlier `run_stitch_plane_nets.py` placed 170 stitches successfully
-but failed on 21 in dense pad regions. Those + the rest of the
-+3V3 pads listed in HANDOFF_residuals.json need:
-- Spiral-search via placement (current radius 4mm; may need 6-8mm)
-- Or trace-to-decap-with-via for MCU power pins (master step A approach)
-- DRC-clean
+These pads on U1 don't have a complete route to their destination:
+- U1.86 = GPS1_TX (FR3 routed partially)
+- U1.88 = BUZZER (FR3 routed partially)
+- A few others
+
+## 59 DRC characterization
+
+| Category | Count | Notes |
+|---|---|---|
+| tracks_crossing | 11 | Stitch-vias placed on existing routes — net pairs |
+| solder_mask_bridge (front) | 8 | Stitch-via apertures merging with adjacent pads |
+| clearance violations (~0.04-0.20mm) | 13 | Stitch-via too close to other-net tracks |
+| shorting_items | 5 | VCAP1↔GND (U1.48 area), VBAT↔GND (W block), GND↔ORING_B_GATE (Q4 area), 2 nameless (U1 pin 97 area) |
+| copper_edge_clearance | 3 | 2 marginal (0.21-0.23mm), 1 specific (J9 SWD pad spillover) |
+| starved_thermal | 0 | (cleared) |
+| invalid_outline | 0 | ✓ |
+
+## What close-out work needs
+
+### Mechanical (small-scope, post-Sai):
+1. **+3V3_IMU traces** (~10mm of routes): FB2.2 → C94 → U9.8/5 → C78 → C95
+   path on F.Cu. Single-layer, short. ~5min in KiCad GUI.
+2. **Clean 59 DRC** stitch clashes: each stitch via that landed on an
+   existing track — slide it 0.5-1mm to clear. ~5-10 nudges.
+3. **MCU power pins** (U1.11/50/74/75): connect each via short trace to
+   nearest already-stitched +3V3/GND cap. Manual placement; ~3-5min.
+
+### Strategic (the real work):
+**12 signal-net residuals** through MCU south. The 3-signal stackup has
+the bandwidth (FR3 88.8% proved it); the remaining 12 are concentrated
+diagonal MCU↔island traverses. Push-and-shove interactive routing in
+KiCad GUI is the natural close-out.
 
 ## Files / artifacts
 
-- `novapcb-layout-v1.1.kicad_pcb` — at FR3 88.8% baseline (commit 14a2d46)
-- `novapcb-layout-v1.1.ses` — FR3 Specctra SES (76 KB)
-- `HANDOFF_residuals.json` — machine-readable residual list with
-  endpoint coords + layers
-- `render_handoff_top.png` + `render_handoff_bot.png` — current top + bottom
-  visuals at the FR3 baseline
+- `novapcb-layout-v1.1.kicad_pcb` — current state at commit `94a752f`
+- `novapcb-layout-v1.1.ses` — FR3 SES (76 KB)
+- `HANDOFF_residuals.json` — machine-readable residual list (refreshed)
+- `render_handoff_top.png` + `render_handoff_bot.png` — current visuals
 
-## Tools available (built during this effort)
+## Tool inventory (built during this effort)
 
-- `run_pristine_2layer.py` — Freerouting 2-signal wrapper
-- `run_3layer.py` — Freerouting 3-signal wrapper (this checkpoint's run)
-- `run_4layer.py` — Freerouting 4-signal wrapper (tested, WORSE result)
-- `astar_router.py` — 2-layer A* (depreciated, plane-keepout gap)
-- `astar_3layer.py` — 3-layer A* (depreciated, same gap)
-- `astar_via_cleanup.py` — A* + path-level layer-excursion collapse
-  (this is the post-processor that got 500→33 DRC but introduced
-  endpoint gaps)
-- `fix_endpoints.py` — Endpoint-gap fixer (closes A* cell-grid vs
-  pad-center mismatches; +9 closures in last run)
-- `fix_mcu_power.py` — MCU power pin → decap connection trace adder
-- `nudge_shorts.py` — Via-nudge for AVC shorts (broken: doesn't
-  reconnect routes properly when via moves)
-- `run_stitch_plane_nets.py` — Plane stitch via placer (170/191
-  success rate, fails dense regions)
-- `place_smalls_fresh.py` / `greedy_placer.py` — re-placement (used
-  for v13 placement)
-- `cleanup_placement.py` — slot polygon + outer outline management
-- All `batch_B*.json` / `batch_*.json` — net groupings used during
-  iteration
+| Script | What it does | Status |
+|---|---|---|
+| `run_pristine_2layer.py` | Freerouting 2-signal wrapper | Works |
+| `run_3layer.py` | Freerouting 3-signal wrapper | **Used for FR3 88.8%** |
+| `run_4layer.py` | Freerouting 4-signal wrapper | Tested, WORSE result |
+| `astar_router.py` | 2-layer A* | Deprecated (plane gap) |
+| `astar_3layer.py` | 3-layer A* | Routes topologically; plane gap |
+| `astar_via_cleanup.py` | A* + path-level layer-excursion collapse | 500→33 DRC but endpoint gaps |
+| `fix_endpoints.py` | Cell-grid vs pad-center gap closer | Limited effect |
+| `fix_mcu_power.py` | MCU pin → decap trace | Added 8-15 traces |
+| `nudge_shorts.py` | Via-nudge for AVC shorts | **BROKEN** (revert logic missing) |
+| `run_stitch_plane_nets.py` | Plane stitch via placer | 170-176 success, 15-21 dense fail |
+| `replace_v2.py` | Big-block re-placement | Used for v13 placement |
+| `cleanup_placement.py` | Slot polygon + outer outline | Used for v13 |
+| `greedy_placer.py` | Per-block fresh small-part placement | Used for v13 |
 
-Standing by for Sai's path decision.
+## Standing by
+
+PCB at commit `94a752f`. Sai's decision pending on:
+- 12 signal residuals close-out path (KiCad GUI push-and-shove?)
+- Mechanical cleanup (+3V3_IMU traces, 5 MCU pins, 59 DRC nudges)
