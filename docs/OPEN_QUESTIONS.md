@@ -254,6 +254,10 @@ Reference: `docs/SUBSYSTEM_CONTRACTS.md §0.5` (where the 4 corner holes are quo
 
 **Decided 2026-05-20** (Phase 3-exit A2 escalation; master adjudication).
 
+**SUPERSEDED 2026-05-22** by commit `13d26a8` ("hw: can_3j.py — 1× CAN port on FDCAN1 (R1.4)") in the v1.1 re-spin. The SKiDL netlist `hardware/kicad/novapcb/sheets/can_3j.py` now instantiates the full CAN front-end: **U14** (TJA1051TK/3 transceiver), **U15** (PESD2CAN ESD diode array), **J20** (CAN connector), **R45** (120 Ω terminator), **R46** (terminator jumper), **C83/C84** (U14 decoupling). v1.1 ships **1× CAN port** on FDCAN1 (PD0/PD1 + GPIO_CAN1_SILENT on PD3). The original entry below is preserved verbatim for traceability of the earlier decision; the current ship-state is per the R1.4 SKiDL netlist (immutable for v1.1).
+
+— original entry —
+
 novapcb v1 deliberately ships **no CAN connector / transceiver**. The Nova drone uses zero CAN peripherals (GPS via UART, power via analog Mauch, ESCs via DShot, mag via I²C). Adding CAN would require an external CAN transceiver IC + 120 Ω termination + connector + board area — an unvalidated sub-circuit for a feature the target drone doesn't use. Per Rule 4 (match scope) + don't-design-for-hypothetical-futures discipline.
 
 The `hwdef.dat` CAN1 definition (`hwdef.dat:147-149`: PD0/PD1 CAN1 + PD3 GPIO_CAN1_SILENT) is **RETAINED as harmless firmware capability** — if a future v1.x or v2 adopts a CAN peripheral (DroneCAN gimbal, smart battery, ESC telemetry-via-CAN), the firmware side is already in place and adding the transceiver + connector then is a contained change.
