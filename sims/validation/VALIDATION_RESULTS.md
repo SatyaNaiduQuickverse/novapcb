@@ -5,7 +5,7 @@
 > vs the reference. A tool is only trusted once it matches its
 > benchmark."
 
-**Status: ALL 4 TOOLS PASS.** Run on `novatics64` 2026-05-22.
+**Status: ALL 5 TOOLS PASS** (openEMS added 2026-05-22 per master directive to close the field-solver gap). Run on `novatics64` 2026-05-22.
 
 | # | Tool | Benchmark | Tool result | Reference | Error | Verdict |
 |---|---|---|---|---|---|---|
@@ -13,6 +13,7 @@
 | 2 | scikit-rf `MLine` | Microstrip Z₀ vs Hammerstad-Jensen 1980 (W=0.30mm, h=0.21mm, t=35µm, εr=4.3) | 56.59 Ω | 56.01 Ω (H-J) / 55.30 Ω (IPC-2141) | **1.03%** vs H-J, 2.34% vs IPC | **PASS** (<5%) |
 | 3 | Elmer FEM (heat) | 1D steady-state conduction, 100×10mm slab, T(0)=0, T(L)=100, T(x)=x analytical | T_FEM = T_analytical to machine precision at all sample x | exact linear | **0.000%** | **PASS** (Q1 interpolates linear exactly) |
 | 4 | Elmer FEM (structural) | Cantilever tip deflection, L=1m, h=0.05m, b=0.01m, E=210 GPa, ν=0.30, P=100 N at tip | −1.519 mm | −1.527 mm (Timoshenko) / −1.524 mm (Euler-Bernoulli) | **0.51%** vs Timoshenko (refined NX=200,NY=20) | **PASS** (<2%) |
+| 5 | openEMS (3D FDTD field solver) | Microstrip Z₀ vs Hammerstad-Jensen 1980 (same geometry as #2) | 53.995 Ω @ 1 GHz (53.88..54.14 Ω across 0.2..2 GHz) | 56.01 Ω (H-J 1980) | **3.6%** vs H-J | **PASS** (<5%) |
 
 ## Notes per tool
 
@@ -34,27 +35,39 @@
 - **Convergence verified**: refining to NX=200, NY=20 reduces error to **0.51%** — confirms tool is correct, coarse-mesh error was discretization artifact, not solver bug.
 - Tool is trusted for Phase 6j structural / vibration sims. **Note for future use**: mesh densely through-thickness for any bending-dominated sim; consider higher-order elements (Q2) if Q1 underestimates by >2%.
 
+### 5. openEMS 3D FDTD — `val_openems_microstrip.py`
+- **Three traps caught + fixed in this validation:**
+  - (a) `MSLPort.CalcPort(..., ref_impedance=50)` OVERWRITES the measured line Z₀ with the reference port impedance (ports.py line 153). First attempt returned 50.0 Ω at every frequency before this was caught. Fix: call CalcPort WITHOUT `ref_impedance` so `Z_ref` stays at the value computed from E/H probes (line ~375).
+  - (b) `FeedShift` and `MeasPlaneShift` are absolute drawing-unit offsets from port start (not relative). With MSL_length=15mm and FeedShift=5mm + MeasPlaneShift=5mm, both landed at the same point — measurement probes saw the feed transient, giving meaningless 3-7 Ω. Fix: extend MSL_length=25mm, separate FeedShift=2mm vs MeasPlaneShift=15mm (13 mm clean line between).
+  - (c) Without lumped termination at the un-excited port, energy bounces between line ends and never decays to the EndCriteria → run never terminates. Mitigation: `Feed_R=50` on both ports AND a hard `NrTS=30000` cap that bounds the run before reflection corrupts the FFT-based Z₀ extraction. Result terminates in ~62 sec on 4 threads with a clean per-frequency Z₀ readout.
+- **Result vs H-J 1980:** 53.99 Ω @ 1 GHz vs 56.01 Ω H-J → 3.6% error (under the 5% bar). 3D FDTD includes fringing fields and discretization; the 3-4% spread vs closed-form is consistent with published openEMS-vs-formula comparisons.
+- Tool is trusted for Phase 6b USB diff-pair impedance sign-off + Phase 6k radiated-EMI sims. **Note for future use:** always cap with `NrTS=` when extracting from a known-pulse signal; verify FeedShift/MeasPlaneShift separation ≥3×wavelength-in-substrate; do NOT pass `ref_impedance` if you want the LINE's actual Z₀.
+
 ## Artifacts (all kept; reproducible)
 
 ```
 sims/validation/
-├── val_ngspice_rc.py           — script
-├── val_skrf_microstrip.py      — script
+├── val_ngspice_rc.py             — script
+├── val_skrf_microstrip.py        — script
+├── val_openems_microstrip.py     — script (requires LD_LIBRARY_PATH=$HOME/local/openems/lib)
 ├── elmer_thermal/
-│   ├── case.sif                — Elmer input
-│   ├── mesh2/                  — hand-written mesh (1111 nodes, 220 bnd edges)
-│   └── mesh2/case_t0001.vtu    — ASCII VTU output
+│   ├── case.sif                  — Elmer input
+│   ├── gen_mesh.py               — reproduces mesh2/
+│   └── mesh2/case_t0001.vtu      — ASCII VTU output
 └── elmer_beam/
-    ├── case.sif                — Elmer input
-    ├── mesh/                   — hand-written mesh (4221 nodes, 440 bnd edges)
-    └── mesh/case_t0001.vtu     — ASCII VTU output
+    ├── case.sif                  — Elmer input
+    ├── gen_mesh.py               — reproduces mesh/
+    └── mesh/case_t0001.vtu       — ASCII VTU output
 ```
 
 ## Bottom line
 
-Per master's bar — "a tool is only trusted once it matches its benchmark" — all four planned sim tools are validated against canonical analytical references and PASS. Phase 6 simulation work can proceed on these tools with documented expected accuracy:
+Per master's bar — "a tool is only trusted once it matches its benchmark" — all FIVE planned sim tools are validated against canonical analytical references and PASS. Phase 6 simulation work can proceed on these tools with documented expected accuracy:
 
 - ngspice: ≤0.1% on transient circuits (limited only by timestep)
 - scikit-rf: 1-2% on isolated microstrip Z₀ (analytical formula spread)
 - Elmer thermal: exact for linear, ~1% for piecewise-linear with adequate mesh
 - Elmer structural: <1% with refined mesh; ≤2% with coarse Q1 (shear-locking)
+- openEMS: 3-4% vs closed-form H-J on isolated microstrip Z₀; trusted for USB diff-pair sign-off + radiated-EMI sims after the three-trap discipline above is followed every run
+
+Per `docs/PLACEMENT_ROUTING_GATES.md` Gate 13, this file is the authoritative tool-validation record. Adding a new tool to the suite requires a new row here (benchmark, error %, verdict) before that tool's output can be cited as gate evidence.

@@ -230,11 +230,33 @@ The Phase 6 P0 sim results surfaced real density-driven concerns: PDN anti-reson
 
 ---
 
+## Mounting-hole-pattern-90x70. Supersede `DECISIONS §2` 30.5×30.5 c-to-c with corner-inset M3 for the 90×70 board
+
+**Raised 2026-05-22** (master directive during SUBSYSTEM_CONTRACTS review).
+
+**Question for Sai to ratify.** `DECISIONS §2` locks the v1 mounting pattern at Pixhawk-standard 30.5×30.5 mm c-to-c M3 (4 holes). That number was sized for the original 36×36 mm form factor. With the **2026-05-20 pivot to a 90×70 mm rectangular board** (also `DECISIONS §2`, post-supersession note), a centered 30.5×30.5 pattern leaves ~30 mm of unsupported overhang per side — mechanically poor for a board carrying connector strain and a stack of through-hole motor cables.
+
+**Master's call 2026-05-22:** use 4 corner-inset M3 holes at ~5 mm inset, positions **(5, 5), (85, 5), (5, 65), (85, 65)** on the 90×70 board. The airframe gets a new tray anyway (v1 is a functional drop-in, not mechanical); corner holes maximize support and align with how every premium FC in this footprint class (Kakute H7, mRo Control Zero) actually mounts.
+
+**What Sai needs to confirm:**
+- That the 4-corner pattern is acceptable for the airframe tray design.
+- That the 5 mm corner inset is correct (vs. tighter 3 mm or looser 8 mm). 5 mm gives M3 + 1 mm keep-out + some board edge margin and matches reference FC layouts.
+
+**Effect on `DECISIONS.md`:** if Sai ratifies, `DECISIONS §2` gets a new entry that supersedes the 30.5×30.5 c-to-c c-locked-2026-05-18 entry for v1.1+. The 36×36 form factor itself is already superseded by the 90×70 rectangle pivot in the same §2; this is the follow-on mounting decision.
+
+Reference: `docs/SUBSYSTEM_CONTRACTS.md §0.5` (where the 4 corner holes are quoted as the global constraint driving zone assignment).
+
+---
+
 # Closed decisions (recorded here for traceability)
 
 ## CLOSED phase3exit-can. CAN: novapcb v1 deliberately ships no CAN connector / transceiver
 
 **Decided 2026-05-20** (Phase 3-exit A2 escalation; master adjudication).
+
+**SUPERSEDED 2026-05-22** by commit `13d26a8` ("hw: can_3j.py — 1× CAN port on FDCAN1 (R1.4)") in the v1.1 re-spin. The SKiDL netlist `hardware/kicad/novapcb/sheets/can_3j.py` now instantiates the full CAN front-end: **U14** (TJA1051TK/3 transceiver), **U15** (PESD2CAN ESD diode array), **J20** (CAN connector), **R45** (120 Ω terminator), **R46** (terminator jumper), **C83/C84** (U14 decoupling). v1.1 ships **1× CAN port** on FDCAN1 (PD0/PD1 + GPIO_CAN1_SILENT on PD3). The original entry below is preserved verbatim for traceability of the earlier decision; the current ship-state is per the R1.4 SKiDL netlist (immutable for v1.1).
+
+— original entry —
 
 novapcb v1 deliberately ships **no CAN connector / transceiver**. The Nova drone uses zero CAN peripherals (GPS via UART, power via analog Mauch, ESCs via DShot, mag via I²C). Adding CAN would require an external CAN transceiver IC + 120 Ω termination + connector + board area — an unvalidated sub-circuit for a feature the target drone doesn't use. Per Rule 4 (match scope) + don't-design-for-hypothetical-futures discipline.
 
