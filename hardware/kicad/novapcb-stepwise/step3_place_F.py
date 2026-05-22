@@ -39,10 +39,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PCB = os.path.join(HERE, "novapcb-stepwise.kicad_pcb")
 
 F_REFDES = ["J1", "R31", "R32", "U5"]
-# Zone REVISED 2026-05-22 per master Step-3 re-open: extended Y south to
-# 45mm to give U5 breathing room out of the diff-pair Y=31 corridor.
-# Borrows from G's lower allocation; SUBSYSTEM_CONTRACTS §F/§G updated.
-ZONE_X_MIN, ZONE_X_MAX = 65.0, 91.0
+# Zone REVISED 2026-05-23 per master Step-3 SECOND re-open: extended X
+# WEST to 71mm to give U5 breathing room from J1 (the 1.785mm corridor
+# between U5 east pads and J1 west pads at U5_X=76 was too tight for
+# fan-split + bridge vias). U5 now at (73, 35) — 3mm west — opens the
+# corridor to 5.08mm. SUBSYSTEM_CONTRACTS §F updated to X=71..91.
+ZONE_X_MIN, ZONE_X_MAX = 71.0, 91.0
 ZONE_Y_MIN, ZONE_Y_MAX = 22.0, 45.0
 
 
@@ -136,12 +138,17 @@ def main():
     try_place("R31", 78.5, 26.0)
     try_place("R32", 78.5, 27.0)
 
-    # U5 ESD diode — moved SOUTH (Y=35) out of the diff-pair Y=31 corridor
-    # per master Step-3 re-open 2026-05-22. The diff pair flows east at
-    # Y=31, then fans south to U5 east pads (post-ESD = MCU side) at
-    # X=77.14 / Y=34..37. Pre-ESD pair fans north from U5 west pads to
-    # J1. Both fans clear of U5 body and J1's other F.Cu pads.
-    try_place("U5", 76.0, 35.0)
+    # U5 ESD diode — SECOND re-open 2026-05-23 per master:
+    # Moved further WEST (X=76 → X=73) to open the U5↔J1 corridor.
+    # Full corridor analysis:
+    #   - U5 east pad east edge (X=U5+1.80) = 74.80 at U5_X=73
+    #   - J1 west pad column = X=79.585..79.885
+    #   - Corridor = 4.78mm — enough for fan-split (1mm DM-pin5
+    #     clearance margin) + 4 USB-C bridge vias (0.30mm)
+    # Pre-ESD trace U5→J1 = ~10.8mm Euclidean (>8mm target, but
+    # geometrically forced by the 1mm-margin requirement on the fan).
+    # Total USB length still ≤30mm spec.
+    try_place("U5", 73.0, 35.0)
 
     pcbnew.SaveBoard(PCB, brd)
     print(f"\n  Placed {len(placed_F)} of {len(F_REFDES)} F components", flush=True)

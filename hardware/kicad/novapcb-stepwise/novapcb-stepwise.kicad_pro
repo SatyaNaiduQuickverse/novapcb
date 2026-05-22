@@ -277,7 +277,24 @@
     },
     "net_colors": null,
     "netclass_assignments": null,
-    "netclass_patterns": []
+    "netclass_patterns": [
+      {
+        "netclass": "USB_diffpair",
+        "pattern": "USB_DM"
+      },
+      {
+        "netclass": "USB_diffpair",
+        "pattern": "USB_DP"
+      },
+      {
+        "netclass": "USB_diffpair",
+        "pattern": "USBC_D_M_PRE"
+      },
+      {
+        "netclass": "USB_diffpair",
+        "pattern": "USBC_D_P_PRE"
+      }
+    ]
   },
   "pcbnew": {
     "last_paths": {
