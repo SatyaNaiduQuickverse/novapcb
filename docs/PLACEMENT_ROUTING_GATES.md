@@ -1,4 +1,4 @@
-# PLACEMENT, ROUTING & SIM-VALIDATION GATES — novapcb v1.1+
+# PLACEMENT, ROUTING, SIM-VALIDATION & DRC GATES — novapcb v1.1+
 
 > **Status:** governing process for ALL placement/routing work on novapcb,
 > effective 2026-05-22. Sourced from the more-mature pcb.ai project;
@@ -17,9 +17,9 @@
 > merge regardless of how complete the rest of the PR looks. Sai
 > sign-off is required for fab orders only (Phase 7b).
 >
-> **13 gates total:** 7 placement (1..7), 5 routing (8..12), 1
-> sim-validation (13). All apply at every placement/routing/integration
-> PR scope where relevant.
+> **14 gates total:** 7 placement (1..7), 5 routing (8..12), 1
+> sim-validation (13), 1 DRC (14). All apply at every
+> placement/routing/integration PR scope where relevant.
 
 ---
 
@@ -356,6 +356,59 @@ small.
 `VALIDATION_RESULTS.md` row (or link to it) and a one-paragraph
 "convergence + BC + cross-check" note for the run. Reviewable in <2
 minutes.
+
+---
+
+---
+
+## DRC GATE (1)
+
+### Gate 14 — KiCad DRC — 0 violations on-board (HARD GATE, mandatory for any PR touching .kicad_pcb)
+
+> **Master 2026-05-22 (process fix after #67 audit miss):**
+> "I accepted PR #67 (C↔E integration) WITHOUT a DRC run. 'Gate 4 GREEN
+> — 7 tracks parse-verified' means the tracks EXIST in the file, NOT
+> that they are DRC-clean. From here every integration audit includes
+> the DRC result."
+
+**Every** PR that touches `.kicad_pcb` (placement, routing, integration,
+plane stitching, anything) must run `kicad-cli pcb drc` and report the
+result. Two acceptance criteria:
+
+**14.a — Zero "real" on-board violations.**
+
+Filter the DRC report to **on-board** items only (any item whose
+coordinate has X < 100 mm and Y < 100 mm — excludes the parked-area at
+X ≥ 110 mm in the stepwise board). Of those, **zero** of every
+category EXCEPT `unconnected_items`:
+- `tracks_crossing`, `shorting_items`, `clearance`, `hole_clearance`,
+  `drill_out_of_range`, `via_diameter`, `solder_mask_bridge`,
+  `courtyards_overlap`, `copper_edge_clearance`, `starved_thermal`,
+  `invalid_outline`, etc. — **zero**.
+
+**14.b — `unconnected_items` are honest.**
+
+`unconnected_items` are acceptable ONLY if they correspond to power
+nets (+3V3, GND, +5V, +3V3A, etc.) that the cross-subsystem routing
+PR will fill via plane zones, OR to signal nets explicitly deferred to
+a later integration step (per `SUBSYSTEM_CONTRACTS.md`). The PR
+description lists each unconnected net by name and which future
+step/plane will satisfy it.
+
+**Reproducible command:**
+```bash
+kicad-cli pcb drc --severity-error --format report \
+  --output /tmp/drc.txt --units mm <board>.kicad_pcb
+```
+
+**Acceptance:** PR description includes the DRC summary line ("Found N
+violations / N unconnected items") and the on-board / off-board /
+unconnected breakdown from a parser (the PRs after 2026-05-22 use the
+filter snippet in `hardware/kicad/novapcb-stepwise/gate14_drc.py`).
+
+**Reviewer behavior:** if a PR claims a gate is GREEN without a DRC
+run, the gate has NOT been verified — request the DRC output.
+"Parse-verified" (tracks exist in the file) is **not** "DRC-clean".
 
 ---
 
