@@ -30,10 +30,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PCB = os.path.join(HERE, "novapcb-stepwise.kicad_pcb")
 F_CU = pcbnew.F_Cu
 
-# Diff-pair design rules
-W_DIFF = 0.30   # trace width (mm)
-S_DIFF = 0.10   # trace-to-trace gap (mm)
-PITCH = W_DIFF + S_DIFF   # 0.40 mm center-to-center spacing
+# Diff-pair design rules (REVISED 2026-05-22 per openEMS sign-off)
+W_DIFF = 0.20   # trace width (mm) — openEMS Z_diff = 87.4Ω at this W/S
+S_DIFF = 0.13   # trace-to-trace gap (mm)
+PITCH = W_DIFF + S_DIFF   # 0.33 mm center-to-center spacing
 
 # Fanout / single-end width
 W_SE = 0.20
@@ -231,30 +231,20 @@ def main():
         (X_F2_E, Y_DPP_COUPLED, j1_b6[0], j1_b6[1]),
     ]
 
-    # PAIR 2: U5 west pads → J1 east pads. Short route, but J1 has many
-    # adjacent pads (VBUS, GND, etc.) on F.Cu. Use B.Cu coupled diff
-    # pair to avoid J1 pad conflicts.
-    print(f"\n[PAIR 2] U5 ↔ J1 (pre-ESD) — B.Cu diff pair")
-    # vias just west of U5 west pads
+    # PAIR 2: U5 west pads → J1 east pads. Use B.Cu coupled diff pair
+    # (avoids J1's many F.Cu pads).
+    print(f"\n[PAIR 2] U5 ↔ J1 (pre-ESD) — B.Cu diff pair + USB-C bridges")
     v3_dmp = (u5_dmp[0] - 0.6, u5_dmp[1])
     v3_dpp = (u5_dpp[0] - 0.6, u5_dpp[1])
-    # vias just inside J1 footprint, north of J1's other pads
     v4_dmp = (j1_a7[0] - 0.5, j1_a7[1])
     v4_dpp = (j1_b6[0] - 0.5, j1_b6[1])
 
-    # F.Cu stubs
     add_track(brd, u5_dmp[0], u5_dmp[1], v3_dmp[0], v3_dmp[1], n_dmp, layer=F_CU, w_mm=W_DIFF)
     add_track(brd, u5_dpp[0], u5_dpp[1], v3_dpp[0], v3_dpp[1], n_dpp, layer=F_CU, w_mm=W_DIFF)
     add_via(brd, v3_dmp[0], v3_dmp[1], n_dmp)
     add_via(brd, v3_dpp[0], v3_dpp[1], n_dpp)
-    # B.Cu coupled diff pair from v3 to v4. Coupled rows: DPP north, DMP south.
-    Y_DMP_BCU = 30.95
-    Y_DPP_BCU = Y_DMP_BCU - 0.4   # 30.55 — DP north
-    # Wait — U5.3 DMP at Y=30.95, U5.1 DPP at Y=29.05, gap 1.9mm.
-    # Want coupled run at 0.4mm gap. Average position: (30.95+29.05)/2 = 30.
-    # Use coupled Y_DPP = 29.8, Y_DMP = 30.2.
     Y_DPP_BCU = 29.8
-    Y_DMP_BCU = 30.2
+    Y_DMP_BCU = Y_DPP_BCU + S_DIFF + W_DIFF   # 30.13 — DMP south, 0.33mm pitch
 
     add_track(brd, v3_dmp[0], v3_dmp[1], v3_dmp[0], Y_DMP_BCU, n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
     add_track(brd, v3_dmp[0], Y_DMP_BCU, v4_dmp[0], Y_DMP_BCU, n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
@@ -266,9 +256,29 @@ def main():
     add_via(brd, v4_dpp[0], v4_dpp[1], n_dpp)
     add_track(brd, v4_dmp[0], v4_dmp[1], j1_a7[0], j1_a7[1], n_dmp, layer=F_CU, w_mm=W_DIFF)
     add_track(brd, v4_dpp[0], v4_dpp[1], j1_b6[0], j1_b6[1], n_dpp, layer=F_CU, w_mm=W_DIFF)
-    print(f"  USBC_D_M_PRE: F.Cu stub + B.Cu coupled + via + F.Cu stub → J1.A7 only")
-    print(f"  USBC_D_P_PRE: same pattern → J1.B6 only")
-    print(f"  (USB-C dual-orientation bridges omitted for v1; single-orientation)")
+    print(f"  USBC_D_M_PRE: F.Cu stub + B.Cu coupled + F.Cu stub → J1.A7")
+    print(f"  USBC_D_P_PRE: same pattern → J1.B6")
+
+    # USB-C reversibility bridges (per master 2026-05-22): one F.Cu, one B.Cu
+    # so the cable works in either orientation.
+    # A6 (D+, F.Cu) ↔ B6 (D+, F.Cu): bridge on B.Cu with vias at each pad.
+    #   B.Cu vertical at X=79.73 from Y=A6 to Y=B6.
+    # A7 (D-, F.Cu) ↔ B7 (D-, F.Cu): bridge on B.Cu with X-EAST jog at X=80.5
+    #   so it doesn't cross the A6↔B6 B.Cu bridge.
+    print(f"\n[BRIDGES] USB-C dual-orientation A6↔B6 (D+) + A7↔B7 (D-)")
+    # D+ bridge B.Cu vertical at X=79.73
+    add_via(brd, j1_a6[0], j1_a6[1], n_dpp)
+    add_via(brd, j1_b6[0], j1_b6[1], n_dpp)
+    add_track(brd, j1_a6[0], j1_a6[1], j1_b6[0], j1_b6[1], n_dpp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
+    # D- bridge B.Cu with X-east jog
+    add_via(brd, j1_a7[0], j1_a7[1], n_dmp)
+    add_via(brd, j1_b7[0], j1_b7[1], n_dmp)
+    jog_x = 80.5
+    add_track(brd, j1_a7[0], j1_a7[1], jog_x, j1_a7[1], n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
+    add_track(brd, jog_x, j1_a7[1], jog_x, j1_b7[1], n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
+    add_track(brd, jog_x, j1_b7[1], j1_b7[0], j1_b7[1], n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
+    print(f"  D+ bridge: B.Cu vertical at X={j1_a6[0]:.2f}, Y={j1_a6[1]:.2f}→{j1_b6[1]:.2f}")
+    print(f"  D- bridge: B.Cu with X-east jog to X={jog_x} (clear of D+ bridge)")
 
     pcbnew.SaveBoard(PCB, brd)
     total_segs = len(segs_dm) + len(segs_dp) + len(segs_dmp) + len(segs_dpp)

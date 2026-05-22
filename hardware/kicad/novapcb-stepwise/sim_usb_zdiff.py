@@ -35,9 +35,15 @@ import sys
 import math
 import tempfile
 
-# Geometry (SI / mm where noted)
-W_mm = 0.30
-S_mm = 0.10
+# Geometry — REVISED 2026-05-22 per Z_diff openEMS sign-off.
+#   ORIGINAL docs/CONTROLLED_IMPEDANCE.md spec: W=0.30, S=0.10 → openEMS
+#   measured 70 Ω (BELOW USB-2 -15% floor = 76.5 Ω). The 90Ω target was
+#   never verified against the actual JLC06161H-7628 stackup.
+#   REVISED: W=0.20, S=0.13 → analytical 99 Ω, openEMS expected ~89 Ω
+#   (calibrated against the W=0.30/S=0.10 measurement showing openEMS
+#   ≈ 0.90 × H-J for this stackup).
+W_mm = 0.20
+S_mm = 0.13
 H_mm = 0.21
 T_mm = 0.035
 EpR  = 4.3
