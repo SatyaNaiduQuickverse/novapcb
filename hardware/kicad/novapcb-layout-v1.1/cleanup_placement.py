@@ -15,47 +15,45 @@ PCB = os.path.join(HERE, "novapcb-layout-v1.1.kicad_pcb")
 
 
 def remove_old_slot(brd):
-    """Remove slot segments only (preserve outer board outline at X=0/90, Y=0/70).
-    Slot is ANY segment fully inside the board (NOT touching X=0/90 or Y=0/70)."""
-    n = 0
+    """Remove ANY Edge.Cuts shape whose bbox is FULLY INSIDE the board
+    (not touching edges X=0/90, Y=0/70). Catches both segments and
+    polygons (the old IMU slot was a POLYGON shape type 4)."""
+    n_removed = 0
     for d in list(brd.GetDrawings()):
         if d.GetLayer() != pcbnew.Edge_Cuts: continue
-        if not hasattr(d, 'GetStart'): continue
-        s = d.GetStart(); e = d.GetEnd()
-        sx, sy = s.x/1e6, s.y/1e6
-        ex, ey = e.x/1e6, e.y/1e6
-        # Outer outline: any endpoint exactly on board edges (X=0/90, Y=0/70)
-        on_edge = (sx <= 0.1 or sx >= 89.9 or sy <= 0.1 or sy >= 69.9 or
-                   ex <= 0.1 or ex >= 89.9 or ey <= 0.1 or ey >= 69.9)
-        if on_edge:
-            continue   # keep outer outline
-        brd.Remove(d); n += 1
-    return n
+        bb = d.GetBoundingBox()
+        L = bb.GetLeft()/1e6; R = bb.GetRight()/1e6
+        T = bb.GetTop()/1e6; B = bb.GetBottom()/1e6
+        # Outer outline = bbox spans entire board
+        if L < 0.5 and R > 89.5 and T < 0.5 and B > 69.5:
+            continue
+        # Edge-touching segment = part of outer outline (kept separately)
+        # Use bbox: if any side of bbox is on board edge (X=0/90, Y=0/70)
+        if L < 0.5 or R > 89.5 or T < 0.5 or B > 69.5:
+            continue
+        # Pure interior shape — slot polygon or interior segments. Remove.
+        brd.Remove(d)
+        n_removed += 1
+    return n_removed
 
 
 def ensure_outer_outline(brd):
-    """If outer 90x70 outline is missing, re-add it."""
-    OUTER = [
-        ((0, 0), (90, 0)),    # top
-        ((90, 0), (90, 70)),  # right
-        ((90, 70), (0, 70)),  # bottom
-        ((0, 70), (0, 0)),    # left
-    ]
-    # Check which already exist (by start+end match)
-    existing = set()
+    """Only add 4 outer outline segments if NO outer outline (rectangle or
+    edge segments) currently exists. Avoid duplicating an existing rectangle."""
+    has_outer = False
     for d in brd.GetDrawings():
         if d.GetLayer() != pcbnew.Edge_Cuts: continue
-        if not hasattr(d, 'GetStart'): continue
-        s = d.GetStart(); e = d.GetEnd()
-        key = ((round(s.x/1e6, 1), round(s.y/1e6, 1)),
-               (round(e.x/1e6, 1), round(e.y/1e6, 1)))
-        existing.add(key)
-        # also reverse
-        existing.add((key[1], key[0]))
+        bb = d.GetBoundingBox()
+        L = bb.GetLeft()/1e6; R = bb.GetRight()/1e6
+        T = bb.GetTop()/1e6; B = bb.GetBottom()/1e6
+        if L < 0.5 and R > 89.5 and T < 0.5 and B > 69.5:
+            has_outer = True; break
+    if has_outer:
+        return 0
+    OUTER = [((0, 0), (90, 0)), ((90, 0), (90, 70)),
+              ((90, 70), (0, 70)), ((0, 70), (0, 0))]
     n_added = 0
     for (x1, y1), (x2, y2) in OUTER:
-        key = ((float(x1), float(y1)), (float(x2), float(y2)))
-        if key in existing or (key[1], key[0]) in existing: continue
         seg = pcbnew.PCB_SHAPE(brd)
         seg.SetShape(pcbnew.SHAPE_T_SEGMENT)
         seg.SetStart(pcbnew.VECTOR2I(int(x1*1e6), int(y1*1e6)))
