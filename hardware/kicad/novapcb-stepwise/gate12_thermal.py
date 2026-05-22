@@ -965,7 +965,7 @@ def full_v11_load(board_L_m: float = 0.090, board_W_m: float = 0.070):
         status = ("LOCK" if Tj < LOCK_TARGET
                   else "TIGHT" if Tj < T_J_TARGET_C else "FAIL")
         print(f"  Tj_{s.name:<7} = {Tj:.2f}°C  (margin to 80°C: {margin:+.1f}°C)  {status}")
-        if s.name.startswith("U1"):
+        if s.name == "U1" or s.name == "U1*":
             mcu_Tj = Tj
         if Tj > T_J_TARGET_C:
             fails.append((s.name, Tj))

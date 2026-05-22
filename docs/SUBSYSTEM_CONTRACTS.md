@@ -5,9 +5,22 @@
 > governing process. Every placement PR scopes to exactly one subsystem
 > from this doc.
 >
-> **Board outline (per `docs/DECISIONS.md §2` pivot 2026-05-20):**
-> 90 × 70 mm rectangle, 6-layer JLC06161H-7628 (cf. v1 36×36 mm
-> superseded).
+> **Board outline (per `docs/DECISIONS.md §2`, master sign-off
+> 2026-05-23 of gate12 v3 corrected sweep):**
+> **105 × 85 mm rectangle**, 6-layer JLC06161H-7628. Was 90 × 70 mm
+> until 2026-05-23 — the gate12 v3 + rigorous-powers sweep showed
+> that size FAILS the ≥5°C MCU margin (MCU=83.86°C); 105×85 is the
+> smallest size meeting the target. The zone coordinates below were
+> originally drawn for 90×70 and are gradually being updated. **A
+> zone update in progress 2026-05-23**: B zone scaled to use the
+> extra board area (X=10..85, Y=13..30 — U2 pushed MAX-west to
+> 32.7mm from U1 vs 23mm on 90×70). A/D/H/G zones not yet rescaled —
+> the extra 15mm width + 15mm height is "available area" to be used
+> by those subsystems when placed.
+>
+> All Y-down coords below are valid as RELATIVE positions; the board
+> edges move from 90×70 to 105×85 but MCU stays at (45, 35) so
+> existing C/E/F/G placements remain physically valid.
 >
 > **Coordinate convention (RECONCILED 2026-05-22 per master directive)**:
 > all zones use **pcbnew-native Y-DOWN** — origin (0, 0) at the **NW
@@ -174,7 +187,9 @@ Add eFuse protection on the input side.
 - `+3V3_IMU` (filtered rail) → to D only
 - `PGOOD`, `FLT` → to C (MCU GPIO, optional)
 
-**Zone:** Y=15..28, X=20..70. Locate U2 closer to MCU side (Y=24..28),
+**Zone (v1.1 105×85 updated 2026-05-23):** Y=13..30, X=10..85. U2 pushed MAX-west (X=15) to maximize separation from U1 MCU at (45, 35) — 32.7mm vs 23mm on old 90×70. Reduces LDO heat funneling into MCU vicinity. Was Y=15..28, X=20..70 on 90×70.
+
+  Old zone description (90×70, kept for traceability): Y=15..28, X=20..70. Locate U2 closer to MCU side (Y=24..28),
 U6 closer to power input (Y=15..20). U13 + FB2 along the path to D
 (north side), so the +3V3_IMU exit point is at the boundary with D.
 

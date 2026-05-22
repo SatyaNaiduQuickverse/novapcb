@@ -15,22 +15,28 @@ B subsystem per docs/SUBSYSTEM_CONTRACTS.md §B:
   U13  — secondary LDO for +3V3_IMU (LP5907MFX-3.3, SOT-23-5)
   C77, C78 — U13 input/output decap
 
-Zone: X=20..70, Y=15..28.
-  - U6 closer to power input (south, Y=15..20)
-  - U2 closer to MCU (north, Y=24..28)
-  - FB2 + U13 along path to D (north side; +3V3_IMU exits at Y≈28, X≈45)
+Zone (v1.1 = 105 × 85 mm board, updated 2026-05-23 after gate12 v3
+sign-off): X=10..85, Y=13..30 (expanded from old 90×70 X=20..70,
+Y=15..28 — more breathing room west + east on the bigger board).
+  - U6 closer to power input (south of B band, Y=15..20)
+  - U2 closer to MCU but **pushed maximally west** to put extra
+    distance between U2 (LDO heat ~0.642W) and U1 (MCU heat ~0.700W).
+    On 90×70 U2 was at (24, 25) = 23mm from U1; on 105×85 U2 moves
+    to (15, 22) = 32.7mm from U1 (+40% separation, ~30% heat-flux
+    benefit at the U1 site).
+  - FB2 + U13 along path to D (north side; +3V3_IMU exits ~Y=28).
 
-Mid-long-edge mounting-hole keep-out RESERVED per master 2026-05-23
-(see PLACEMENT_STRATEGY.md §5.3): (3, 35) and (87, 35) with 8mm
-circular keep-out. B zone X=20..70 doesn't overlap these positions —
-no constraint impact for B specifically, but enforced in the
-collision-detection logic as a board-wide rule.
+Mid-long-edge mounting-hole keep-out (sim-gated +2 holes per master
+2026-05-23): on 105×85 board the mid-edge positions are (3, 42.5)
+west mid + (102, 42.5) east mid, 8mm circular each. B zone Y=13..30
+doesn't overlap these (B is north band, mid-edge is mid-board).
 
 All coords pcbnew Y-down (per reconciled convention).
 
 Hard gate prerequisite (master RF-2 2026-05-23): gate12_thermal.py
 must be parameterized BEFORE this PR. Confirmed — see
-`gate12_thermal.py` committed sha b960739.
+`gate12_thermal.py` committed sha 3f80f3b (v3 with per-body Body
+Force + energy-balance gate + min-mesh-density gate).
 """
 import os
 import sys
@@ -47,14 +53,16 @@ B_REFDES = [
     "C77", "C78",
 ]
 
-ZONE_X_MIN, ZONE_X_MAX = 20.0, 70.0
-ZONE_Y_MIN, ZONE_Y_MAX = 15.0, 28.0
+# v1.1 = 105 × 85 mm board (master sign-off 2026-05-23)
+ZONE_X_MIN, ZONE_X_MAX = 10.0, 85.0
+ZONE_Y_MIN, ZONE_Y_MAX = 13.0, 30.0
 
 # Mid-long-edge mounting-hole keep-out (sim-gated +2 holes per master
-# 2026-05-23). 8mm circular keep-out at each midpoint of long edges.
+# 2026-05-23). 8mm circular keep-out at each midpoint of long edges
+# on the 105×85 board → mid-edge Y = 85/2 = 42.5.
 MID_HOLE_KEEPOUT = [
-    (3.0, 35.0, 8.0),    # west mid
-    (87.0, 35.0, 8.0),   # east mid
+    (3.0, 42.5, 8.0),    # west mid
+    (102.0, 42.5, 8.0),  # east mid
 ]
 
 # Constraint analysis 2026-05-23 (master directive: full analysis up
@@ -86,14 +94,14 @@ MID_HOLE_KEEPOUT = [
 #    larger 90×70 board with anisotropic k=33.5/0.316 + h=5 + Tamb=50°C.
 ANCHORS = {
     # POWER INPUT SOUTH (Y=15..20)
-    "U6":  (28.0, 18.0, 0.0),    # eFuse — input side, south
+    "U6":  (28.0, 18.0, 0.0),    # eFuse — input side, south (kept from 90×70)
     "D1":  (35.0, 18.0, 0.0),    # TVS post-eFuse
     "C7":  (24.0, 19.0, 0.0),    # U6 input bulk cap
     "C8":  (32.0, 19.0, 0.0),    # U6 output cap
     "C9":  (28.0, 16.0, 0.0),    # secondary bulk
 
     # AUXILIARY FET MID (Y=21..23)
-    "Q2":  (24.0, 22.0, 0.0),    # reverse-polarity FET
+    "Q2":  (24.0, 22.0, 0.0),    # reverse-polarity FET (kept; small heat)
 
     # eFuse PROGRAMMING RESISTORS — small 0402, row at Y=22
     "R7":  (35.0, 22.0, 0.0),
@@ -102,18 +110,28 @@ ANCHORS = {
     "R10": (41.0, 22.0, 0.0),
     "R13": (43.0, 22.0, 0.0),
 
-    # LDO NORTH — WEST OFFSET FROM U1 (heat stacking mitigation)
-    # Iteration: tested U2 at X=22 (max west) → MCU margin shrank to
-    # +0.9°C (heat funneled east by adiabatic west edge). U2 at X=24
-    # gives MCU +2.1°C — best balance. STEP4 had ~30mm U2↔U1 separation;
-    # mine is 23mm (B zone limit; can't push U2 further away from U1).
-    "U2":  (24.0, 25.0, 0.0),    # AP2112K main LDO, west-offset
+    # LDO — KEPT at (24, 25) sweet spot.
+    #
+    # Iteration log (DO NOT push U2 max-west again, mistake documented):
+    #   - (22, 25) on 90×70: MCU +0.9°C — adiabatic-west-edge reflects
+    #     heat eastward into MCU.
+    #   - (24, 25) on 90×70: MCU +2.1°C — best balance found.
+    #   - (24, 25) on 105×85: MCU +6.0°C — the bigger board's extra
+    #     north-south space gives the MCU enough surrounding cool board
+    #     even without changing U2.
+    #   - (15, 22) on 105×85: MCU +4.8°C — RE-MADE the same adiabatic-edge
+    #     mistake; U2 too close to adiabatic west edge (15mm) forces heat
+    #     east into MCU vicinity. Reverted 2026-05-23.
+    #
+    # Conclusion: on 105×85 board, U2 at (24, 25) gives both MCU +6°C
+    # margin AND U2 itself at +10°C margin. No need to relocate.
+    "U2":  (24.0, 25.0, 0.0),    # AP2112K main LDO, 21mm from MCU, 24mm from W edge
     "C31": (28.0, 25.0, 0.0),    # U2 input cap
     "C32": (26.0, 27.0, 90.0),   # U2 output cap (vertical)
     "C33": (22.0, 27.0, 90.0),   # U2 output decap (vertical)
     "C34": (30.0, 27.0, 0.0),    # decap, east of others
 
-    # FERRITE + IMU LDO EAST (along path to D)
+    # FERRITE + IMU LDO EAST (along path to D) — kept positions
     "FB2": (50.0, 27.0, 0.0),    # ferrite, +3V3 → +3V3_IMU_PRE
     "U13": (60.0, 26.0, 0.0),    # LP5907 IMU LDO
     "C77": (58.0, 27.0, 0.0),    # U13 input cap (pre)
