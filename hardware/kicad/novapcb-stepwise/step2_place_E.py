@@ -27,8 +27,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PCB = os.path.join(HERE, "novapcb-stepwise.kicad_pcb")
 
 E_REFDES = ["U4", "U7", "C51", "C52", "C71", "C72", "R11", "R12"]
-ZONE_X_MIN, ZONE_X_MAX = 18.0, 33.0
-ZONE_Y_MIN, ZONE_Y_MAX = 42.0, 53.0
+# Zone reconciled 2026-05-22 per master directive: E sits south of U1
+# adjacent to PB10 (pin 46 @ X=49) / PB11 (pin 47 @ X=49.5) on U1's
+# south edge — that's where I2C2_SCL/SDA exit the MCU. All coords
+# pcbnew Y-down (Y=0 top, Y=70 bottom).
+ZONE_X_MIN, ZONE_X_MAX = 40.0, 60.0
+ZONE_Y_MIN, ZONE_Y_MAX = 44.0, 53.0
 
 
 def _mm(x_mm: float) -> int:
@@ -83,25 +87,20 @@ def main():
             placed.append((fp, _courtyard_bbox(fp)))
     print(f"  on-board (already-placed): {len(placed)} footprints", flush=True)
 
-    # Targeted placement: keep decaps within 1-2 mm of their parent IC,
-    # group pullups together. Coordinates chosen to honor the zone
-    # (X 18..33, Y 42..53) and the SUBSYSTEM_CONTRACTS adjacency rule
-    # (E sits NW of C, short I2C2 trace to U1 PB10/PB11 on E edge).
-    #
-    # U4 (DPS310, 2.0×2.5mm LGA-8) — primary baro, west end of zone.
-    # U7 (BMP388, 2.0×2.0mm LGA-10) — alternate baro, ~6mm east of U4.
-    # Each baro: VDD decap + VDDIO decap immediately N (within 1mm).
-    # R11/R12 (I2C2 pullups, 0402) — together near the U1-facing edge.
+    # Targeted placement: E sits south of U1, with R11/R12 (I2C2
+    # pullups) RIGHT BELOW the PB10/PB11 pins (pin 46 @ X=49, pin 47 @
+    # X=49.5, both Y=42.67 on U1 S edge). Baros U4/U7 to the west,
+    # decaps adjacent to each baro within 1mm.
     targets = [
-        # (ref, x, y) in mm
-        ("U4",  20.0, 46.5),
-        ("C51", 22.0, 46.5),   # U4 VDD decap, immediately E of U4
-        ("C52", 20.0, 48.5),   # U4 VDDIO decap, immediately N of U4
-        ("U7",  26.5, 46.5),
-        ("C71", 28.5, 46.5),   # U7 VDD decap
-        ("C72", 26.5, 48.5),   # U7 VDDIO decap
-        ("R11", 31.5, 45.5),   # I2C2_SDA pullup, east edge of zone
-        ("R12", 31.5, 46.5),   # I2C2_SCL pullup
+        # (ref, x, y) in mm (pcbnew Y-down)
+        ("R11", 49.0, 45.0),   # I2C2_SDA pullup, 2.3mm S of PB10
+        ("R12", 49.5, 45.0),   # I2C2_SCL pullup, 2.3mm S of PB11
+        ("U4",  43.0, 47.0),   # DPS310 primary baro, west of pullups
+        ("C51", 45.5, 47.0),   # U4 VDD decap, immediately E of U4
+        ("C52", 43.0, 49.0),   # U4 VDDIO decap, immediately S of U4
+        ("U7",  53.5, 47.0),   # BMP388 alternate baro, east of pullups
+        ("C71", 56.0, 47.0),   # U7 VDD decap
+        ("C72", 53.5, 49.0),   # U7 VDDIO decap
     ]
     placed_E = []
     for ref, x, y in targets:
