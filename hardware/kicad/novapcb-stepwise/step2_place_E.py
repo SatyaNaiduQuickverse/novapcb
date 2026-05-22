@@ -32,7 +32,7 @@ E_REFDES = ["U4", "U7", "C51", "C52", "C71", "C72", "R11", "R12"]
 # south edge — that's where I2C2_SCL/SDA exit the MCU. All coords
 # pcbnew Y-down (Y=0 top, Y=70 bottom).
 ZONE_X_MIN, ZONE_X_MAX = 40.0, 60.0
-ZONE_Y_MIN, ZONE_Y_MAX = 44.0, 53.0
+ZONE_Y_MIN, ZONE_Y_MAX = 44.0, 53.5
 
 
 def _mm(x_mm: float) -> int:
@@ -91,16 +91,23 @@ def main():
     # pullups) RIGHT BELOW the PB10/PB11 pins (pin 46 @ X=49, pin 47 @
     # X=49.5, both Y=42.67 on U1 S edge). Baros U4/U7 to the west,
     # decaps adjacent to each baro within 1mm.
+    # Pullup placement corrected 2026-05-22 per master Step-3 audit:
+    # R11 = SDA pullup -> paired with PB11 (X=49.5), placed EAST of the
+    #   C13/C17 corridor so the I2C2_SDA route can come straight south
+    #   from PB11 east of C13.
+    # R12 = SCL pullup -> paired with PB10 (X=49.0), placed WEST of the
+    #   corridor so I2C2_SCL routes south west of C17.
+    # Each pullup is a clean stub on the RIGHT net (no SCL↔SDA short).
     targets = [
         # (ref, x, y) in mm (pcbnew Y-down)
-        ("R11", 49.0, 45.0),   # I2C2_SDA pullup, 2.3mm S of PB10
-        ("R12", 49.5, 45.0),   # I2C2_SCL pullup, 2.3mm S of PB11
+        ("R11", 52.0, 46.5),   # SDA pullup, east of C13 (X=51 +/-0.5)
+        ("R12", 46.0, 46.5),   # SCL pullup, west of C17 (X=49 +/-0.5)
         ("U4",  43.0, 47.0),   # DPS310 primary baro, west of pullups
-        ("C51", 45.5, 47.0),   # U4 VDD decap, immediately E of U4
+        ("C51", 45.0, 47.5),   # U4 VDD decap (moved W 0.5mm to clear SCL via)
         ("C52", 43.0, 49.0),   # U4 VDDIO decap, immediately S of U4
-        ("U7",  53.5, 47.0),   # BMP388 alternate baro, east of pullups
-        ("C71", 56.0, 47.0),   # U7 VDD decap
-        ("C72", 53.5, 49.0),   # U7 VDDIO decap
+        ("U7",  55.0, 47.0),   # BMP388 alternate baro, far east clear of R11
+        ("C71", 57.5, 47.0),   # U7 VDD decap
+        ("C72", 55.0, 49.0),   # U7 VDDIO decap
     ]
     placed_E = []
     for ref, x, y in targets:
