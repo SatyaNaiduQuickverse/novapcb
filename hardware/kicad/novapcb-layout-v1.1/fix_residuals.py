@@ -39,8 +39,21 @@ MOVES = [
     # R61 too close to Q5 — move E
     ("R61", 67.5, 55.0, None),
 
-    # U8 (BMI088) pin 8 (SPI2_SCK) overlaps slot bridge — move S
-    ("U8", 50.0, 57.0, 0),
+    # Sensor island — keep components central in 43×12mm island
+    # U3 ICM-42688 (3×6.5 incl silk): center Y=58 keeps body fully inside Y=53..65
+    ("U3", 33.0, 58.0, 0),
+    # U8 BMI088 (6×13.5 long axis Y): SPI2 lock keeps at island NE; center (50, 58)
+    ("U8", 50.0, 58.0, 0),
+    # U9 LSM6DSV (10×11.5 long axis Y) — central; Y=58 keeps body inside
+    ("U9", 42.0, 58.0, 0),
+    # Baros
+    ("U7", 56.0, 58.0, 0),    # LPS22HB
+    ("U4", 30.0, 58.0, 0),    # DPS310 B.Cu
+    # Heater + IMU LDO (separated to avoid +5V/HEATER_DRAIN shorts)
+    ("Q5",  55.0, 60.0, 0),
+    ("R61", 58.0, 60.0, 0),
+    ("U13", 65.0, 60.0, 0),
+    ("FB2", 62.0, 58.0, 0),
 
     # J9 SWD: pads overflow into slot S edge keepout — move N (smaller Y)
     ("J9", 41.0, 62.0, 0),

@@ -55,8 +55,12 @@ def get_all_pads(brd):
 
 
 def get_part_footprint_bbox(fp):
-    """Return (half_w, half_h) in mm. Use BoundingBox for outer extent."""
-    bb = fp.GetBoundingBox()
+    """Return (half_w, half_h) in mm. Use GetBoundingBox(False, False) which
+    excludes silkscreen / invisible text — gives true component+pad extent."""
+    try:
+        bb = fp.GetBoundingBox(False, False)
+    except Exception:
+        bb = fp.GetBoundingBox()
     return bb.GetWidth()/2/1e6, bb.GetHeight()/2/1e6
 
 
@@ -194,14 +198,13 @@ def main():
         if fp.GetReference().startswith("H"):
             pos = fp.GetPosition()
             placed_bboxes.append((pos.x/1e6, pos.y/1e6, 3.0, 3.0))
-    # IMU stress-relief slot keepout: 4 rectangles around the slot perimeter
-    # Slot occupies X=25..72, Y=51..67 with a bridge X=40..50, Y=51..53.
-    # Block the SLOT region itself + a 0.3mm margin around the slot edge lines.
-    # Slot keepout as 4 rect bands:
-    placed_bboxes.append((48.5, 51.5, 23.5, 1.0))   # W half of bottom (X=25..72, Y=51..52)
-    placed_bboxes.append((48.5, 66.5, 23.5, 1.0))   # top of slot S edge (X=25..72, Y=66..67)
-    placed_bboxes.append((25.5, 59.0, 1.0, 8.0))    # slot W edge band (X=25, Y=51..67)
-    placed_bboxes.append((71.5, 59.0, 1.0, 8.0))    # slot E edge band (X=72, Y=51..67)
+    # IMU stress-relief slot KERFS — match cleanup_placement (5 thin slots,
+    # 14mm bridge X=38..52 at top).
+    placed_bboxes.append((31.5, 52.0, 6.5, 1.0))    # N_west X=25..38 Y=51..53
+    placed_bboxes.append((62.0, 52.0, 10.0, 1.0))   # N_east X=52..72 Y=51..53
+    placed_bboxes.append((26.0, 59.0, 1.0, 8.0))    # W kerf X=25..27 Y=51..67
+    placed_bboxes.append((71.0, 59.0, 1.0, 8.0))    # E kerf X=70..72 Y=51..67
+    placed_bboxes.append((48.5, 66.0, 23.5, 1.0))   # S kerf X=25..72 Y=65..67
     # Inset board edges by 0.3mm — block 4 thin strips on board perimeter
     placed_bboxes.append((45.0, -0.3, 45.0, 0.5))   # north edge band
     placed_bboxes.append((45.0, 70.3, 45.0, 0.5))   # south edge band

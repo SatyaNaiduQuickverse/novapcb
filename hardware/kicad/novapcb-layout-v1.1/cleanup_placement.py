@@ -66,20 +66,37 @@ def ensure_outer_outline(brd):
 
 
 def add_slot_closed_polygon(brd):
-    """Add a proper closed-polygon U-slot around the new S-edge IMU island.
-    8 segments forming a closed loop. 10mm bridge at top X=40..50, Y=51..53."""
-    SEGMENTS = [
-        # CCW outline of slot region (closed polygon):
-        ((40.0, 51.0), (25.0, 51.0)),   # NW bridge top → NW slot corner
-        ((25.0, 51.0), (25.0, 67.0)),   # W side
-        ((25.0, 67.0), (72.0, 67.0)),   # S side
-        ((72.0, 67.0), (72.0, 51.0)),   # E side
-        ((72.0, 51.0), (50.0, 51.0)),   # NE slot corner → NE bridge top
-        ((50.0, 51.0), (50.0, 53.0)),   # NE bridge S
-        ((50.0, 53.0), (40.0, 53.0)),   # bridge bottom W
-        ((40.0, 53.0), (40.0, 51.0)),   # NW bridge S — close polygon
+    """Add 5 THIN RECTANGULAR slot cutouts forming a U-shaped kerf around
+    the IMU island. Each rect is a closed polygon (4 segments).
+    Kerf width: 2mm. Bridge: 10mm wide (X=40..50) at top Y=51..53.
+
+    Island remains as material at X=27..70, Y=53..65 (43×12mm), connected
+    to mainland via the 10mm bridge on north side. Mainland is everywhere
+    outside the slot rectangles.
+    """
+    # SINGLE 13-vertex closed polygon traces the U-shaped kerf perimeter.
+    # The polygon is a topological loop: outer perimeter of slot region,
+    # dives through bridge to inner perimeter of island, returns via the
+    # other side of the bridge. Defines the kerf region (removed material).
+    # Island = X=27..70, Y=53..65 (43×12mm). 14mm bridge X=38..52, Y=51..53.
+    VERTICES = [
+        (25.0, 51.0),   # 1: outer NW
+        (38.0, 51.0),   # 2: outer top -> bridge W upper
+        (38.0, 53.0),   # 3: down bridge W into island N-line
+        (27.0, 53.0),   # 4: W along island N (inner NW)
+        (27.0, 65.0),   # 5: S along island W (inner SW)
+        (70.0, 65.0),   # 6: E along island S (inner SE)
+        (70.0, 53.0),   # 7: N along island E (inner NE)
+        (52.0, 53.0),   # 8: W to bridge E lower
+        (52.0, 51.0),   # 9: up bridge E to outer top
+        (72.0, 51.0),   # 10: E to outer NE
+        (72.0, 67.0),   # 11: S to outer SE
+        (25.0, 67.0),   # 12: W to outer SW
+        (25.0, 51.0),   # 13: close to outer NW
     ]
-    for (x1, y1), (x2, y2) in SEGMENTS:
+    n_segs = 0
+    for i in range(len(VERTICES) - 1):
+        x1, y1 = VERTICES[i]; x2, y2 = VERTICES[i+1]
         seg = pcbnew.PCB_SHAPE(brd)
         seg.SetShape(pcbnew.SHAPE_T_SEGMENT)
         seg.SetStart(pcbnew.VECTOR2I(int(x1*1e6), int(y1*1e6)))
@@ -87,7 +104,8 @@ def add_slot_closed_polygon(brd):
         seg.SetLayer(pcbnew.Edge_Cuts)
         seg.SetWidth(int(0.1*1e6))
         brd.Add(seg)
-    return len(SEGMENTS)
+        n_segs += 1
+    return n_segs
 
 
 def get_fp(brd, ref):
