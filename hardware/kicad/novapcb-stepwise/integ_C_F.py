@@ -106,20 +106,16 @@ def main():
     u5_dm = pads_dm[("U5","4")]
     u5_dp = pads_dp[("U5","6")]
 
-    # U5 body at X=74..78, Y=28..32. The post-ESD pads (U5.4, U5.6) are
-    # on U5's EAST edge at X=77.14. A direct east-going trace from U1
-    # at Y=31 would pass THROUGH U5's body — collision.
-    # Solution: SOUTH detour around U5 body. Coupled pair runs at Y=33.0
-    # / Y=33.4 (south of U5 body Y=32) — same X-spacing in/out.
-    # DM is SOUTH (higher Y) at U5; DP is NORTH (lower Y). Maintain at
-    # detour rows: DM at Y=33.4 (south), DP at Y=33.0 (north).
-    Y_DP_COUPLED = 33.0
-    Y_DM_COUPLED = Y_DP_COUPLED + 0.4   # 33.4 — DM south of DP
+    # PAIR 1 Y values moved SOUTH to clear PAIR 2 vias (U5.3 at Y=30.95).
+    # Pair coupled at Y_DP=31.7 / Y_DM=32.03 (0.33mm pitch for W=0.20/S=0.13).
+    # Clear of U5.3 via at (74.86, 30.95): closest approach = 31.7-30.95
+    # = 0.75mm (Pair2-via to Pair1-DP). Plus 0.25 via radius + 0.2 clearance
+    # = 0.45mm needed. 0.75 > 0.45 → clear.
+    Y_DP_COUPLED = 31.7
+    Y_DM_COUPLED = Y_DP_COUPLED + S_DIFF + W_DIFF   # 32.03 — DM south, 0.33mm pitch
 
-    # Detour geometry: drop south at X_BEND_W (east of U1 pads), run east
-    # at coupled Ys past U5, climb north at X_BEND_E (east of U5 body).
-    X_BEND_W = 54.5    # west bend
-    X_BEND_E = 79.0    # east bend — past U5 east edge (~78)
+    X_BEND_W = 54.5
+    X_BEND_E = 79.0
 
     segs_dm = [
         # West fanout + south bend: U1.70 (52.67, 31.5) → (X_BEND_W, Y_DM_COUPLED)
@@ -154,8 +150,8 @@ def main():
     add_via(brd, v1_dp[0], v1_dp[1], n_dp)
     # B.Cu coupled: from (v1, 31.5/31.0) east to (v2, 30.95/29.05)
     # Use coupled Y on B.Cu through the open space south of U5 body
-    Y_DM_BCU = 31.5    # keep DM south
-    Y_DP_BCU = 31.1    # DP 0.4mm north of DM
+    Y_DM_BCU = 32.03   # moved south to clear PAIR 2 vias (U5.3 at Y=30.95)
+    Y_DP_BCU = 31.70   # 0.33mm north of DM (W=0.20/S=0.13 pitch)
     X_BCU_MID = 60.0   # start of coupled section after pre-coupled stubs
     # DM B.Cu: v1_dm → mid → near v2_dm
     add_track(brd, v1_dm[0], v1_dm[1], X_BCU_MID, Y_DM_BCU, n_dm, layer=pcbnew.B_Cu, w_mm=W_DIFF)
@@ -236,8 +232,10 @@ def main():
     print(f"\n[PAIR 2] U5 ↔ J1 (pre-ESD) — B.Cu diff pair + USB-C bridges")
     v3_dmp = (u5_dmp[0] - 0.6, u5_dmp[1])
     v3_dpp = (u5_dpp[0] - 0.6, u5_dpp[1])
-    v4_dmp = (j1_a7[0] - 0.5, j1_a7[1])
-    v4_dpp = (j1_b6[0] - 0.5, j1_b6[1])
+    # Approach vias to J1 — staggered X to clear each other (>1.2mm
+    # center-to-center for 0.5mm vias with 0.2mm clearance)
+    v4_dmp = (78.50, 30.13)   # at end of B.Cu coupled (DMP row)
+    v4_dpp = (77.30, 29.80)   # at end of B.Cu coupled (DPP row), 1.2mm west of v4_dmp
 
     add_track(brd, u5_dmp[0], u5_dmp[1], v3_dmp[0], v3_dmp[1], n_dmp, layer=F_CU, w_mm=W_DIFF)
     add_track(brd, u5_dpp[0], u5_dpp[1], v3_dpp[0], v3_dpp[1], n_dpp, layer=F_CU, w_mm=W_DIFF)
@@ -259,26 +257,33 @@ def main():
     print(f"  USBC_D_M_PRE: F.Cu stub + B.Cu coupled + F.Cu stub → J1.A7")
     print(f"  USBC_D_P_PRE: same pattern → J1.B6")
 
-    # USB-C reversibility bridges (per master 2026-05-22): one F.Cu, one B.Cu
-    # so the cable works in either orientation.
-    # A6 (D+, F.Cu) ↔ B6 (D+, F.Cu): bridge on B.Cu with vias at each pad.
-    #   B.Cu vertical at X=79.73 from Y=A6 to Y=B6.
-    # A7 (D-, F.Cu) ↔ B7 (D-, F.Cu): bridge on B.Cu with X-EAST jog at X=80.5
-    #   so it doesn't cross the A6↔B6 B.Cu bridge.
-    print(f"\n[BRIDGES] USB-C dual-orientation A6↔B6 (D+) + A7↔B7 (D-)")
-    # D+ bridge B.Cu vertical at X=79.73
-    add_via(brd, j1_a6[0], j1_a6[1], n_dpp)
-    add_via(brd, j1_b6[0], j1_b6[1], n_dpp)
-    add_track(brd, j1_a6[0], j1_a6[1], j1_b6[0], j1_b6[1], n_dpp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
-    # D- bridge B.Cu with X-east jog
-    add_via(brd, j1_a7[0], j1_a7[1], n_dmp)
-    add_via(brd, j1_b7[0], j1_b7[1], n_dmp)
-    jog_x = 80.5
-    add_track(brd, j1_a7[0], j1_a7[1], jog_x, j1_a7[1], n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
-    add_track(brd, jog_x, j1_a7[1], jog_x, j1_b7[1], n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
-    add_track(brd, jog_x, j1_b7[1], j1_b7[0], j1_b7[1], n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
-    print(f"  D+ bridge: B.Cu vertical at X={j1_a6[0]:.2f}, Y={j1_a6[1]:.2f}→{j1_b6[1]:.2f}")
-    print(f"  D- bridge: B.Cu with X-east jog to X={jog_x} (clear of D+ bridge)")
+    # USB-C reversibility bridges (per master 2026-05-22 option (b)):
+    # OFFSET vias OUTSIDE the 0.5mm-pitch J1 pad field, with short F.Cu
+    # hops from pads into the vias. Two bridges on F.Cu+B.Cu in tandem,
+    # via columns separated >1.2mm apart so vias don't conflict.
+    print(f"\n[BRIDGES] USB-C dual-orientation A6↔B6 (D+) + A7↔B7 (D-) — offset-via approach")
+    # D+ via column at X=81.0; D- via column at X=82.5 (1.5mm apart)
+    DV_X = 81.0     # D+ via column
+    DM_X = 82.5     # D- via column
+
+    # D+ bridge: F.Cu hop from A6 to via, B.Cu down to via, F.Cu hop to B6
+    # A6 (79.73, 30.25) → F.Cu east hop → via (81.0, 30.25)
+    add_track(brd, j1_a6[0], j1_a6[1], DV_X, j1_a6[1], n_dpp, layer=F_CU, w_mm=W_DIFF)
+    add_via(brd, DV_X, j1_a6[1], n_dpp)
+    # B.Cu vertical: (81.0, 30.25) → (81.0, 29.25)
+    add_track(brd, DV_X, j1_a6[1], DV_X, j1_b6[1], n_dpp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
+    add_via(brd, DV_X, j1_b6[1], n_dpp)
+    # F.Cu hop back to B6
+    add_track(brd, DV_X, j1_b6[1], j1_b6[0], j1_b6[1], n_dpp, layer=F_CU, w_mm=W_DIFF)
+
+    # D- bridge: same pattern, via column at DM_X=82.5
+    add_track(brd, j1_a7[0], j1_a7[1], DM_X, j1_a7[1], n_dmp, layer=F_CU, w_mm=W_DIFF)
+    add_via(brd, DM_X, j1_a7[1], n_dmp)
+    add_track(brd, DM_X, j1_a7[1], DM_X, j1_b7[1], n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
+    add_via(brd, DM_X, j1_b7[1], n_dmp)
+    add_track(brd, DM_X, j1_b7[1], j1_b7[0], j1_b7[1], n_dmp, layer=F_CU, w_mm=W_DIFF)
+    print(f"  D+ bridge: vias at X={DV_X} (1.0mm Y-sep, 0.5mm gap to D- column)")
+    print(f"  D- bridge: vias at X={DM_X} (1.5mm offset from D+)")
 
     pcbnew.SaveBoard(PCB, brd)
     total_segs = len(segs_dm) + len(segs_dp) + len(segs_dmp) + len(segs_dpp)
