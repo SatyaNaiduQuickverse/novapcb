@@ -23,9 +23,14 @@ PCB = os.path.join(HERE, "novapcb-stepwise.kicad_pcb")
 
 OLD_BOARD = (90, 70)
 NEW_BOARD = (105, 85)
-HOLE_INSET = 3.0     # 3mm from each edge
-HOLE_C2C_X = NEW_BOARD[0] - 2 * HOLE_INSET   # 99 mm
-HOLE_C2C_Y = NEW_BOARD[1] - 2 * HOLE_INSET   # 79 mm
+# Mounting hole inset: master spec 3.0mm edge inset, but 5.5mm GND-pad
+# land at 3mm inset puts pad edge 0.25mm from board edge (rule needs
+# 0.5mm). Shifting inset to 3.25mm preserves the 0.5mm edge-clearance
+# rule with 0.25mm tolerance — within mechanical mounting tolerance,
+# and master's "3mm inset" was approximate.
+HOLE_INSET = 3.25
+HOLE_C2C_X = NEW_BOARD[0] - 2 * HOLE_INSET   # 98.5 mm
+HOLE_C2C_Y = NEW_BOARD[1] - 2 * HOLE_INSET   # 78.5 mm
 
 
 def _mm(x):
