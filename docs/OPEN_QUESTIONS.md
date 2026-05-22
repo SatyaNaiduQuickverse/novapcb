@@ -239,8 +239,8 @@ The dense 36×36 / 4-layer board is being set aside in favor of a deliberate, si
 1. **Board outline shape** — RECTANGLE. Aspect ratio is an OUTPUT of placement (Step 3), not pre-decided.
 2. **Board size** — sized to the placement. No fixed dim constraint. ✓
 3. **Layer count** — **OPEN**. 4 vs 6 to be decided in Step 3 based on whether 6-layer measurably reduces EMI/SI failure modes per the §10 reliability mandate.
-4. **Mounting pattern** — driven by the resulting board outline + the airframe envelope; new tray is acceptable per §2.
-5. **Airframe envelope** — **OPEN** (Sai will provide; not blocking Step 2 inrush mitigation or thermal-sim input prep).
+4. **Mounting pattern** — **RESOLVED 2026-05-23** (master, delegated from Sai). 4× M3 corner-inset holes on the 90×70 board; mid-long-edge +2 holes (6 total) gated on Phase 6 vibration sim (Task #10), placement reserves keep-out at mid-edge positions for later add-without-replace. See `pivot-2026-05-20-mounting-resolution` below for details.
+5. **Airframe envelope** — **RESOLVED 2026-05-23** (Sai). NO airframe size constraint — the 90×70 outline is final; no mechanical-fit check needed.
 
 ### What's locked
 - Schematic (Phase 3, in `hardware/kicad/novapcb/`) — unchanged
@@ -259,21 +259,23 @@ The Phase 6 P0 sim results surfaced real density-driven concerns: PDN anti-reson
 
 ---
 
-## Mounting-hole-pattern-90x70. Supersede `DECISIONS §2` 30.5×30.5 c-to-c with corner-inset M3 for the 90×70 board
+## pivot-2026-05-20-mounting-resolution. Mounting holes — RESOLVED 2026-05-23 (master, delegated by Sai)
 
-**Raised 2026-05-22** (master directive during SUBSYSTEM_CONTRACTS review).
+**RESOLVED 2026-05-23** (master, Sai-delegated decision). Supersedes earlier `Mounting-hole-pattern-90x70` open question and `pivot-2026-05-20` items 4 + 5.
 
-**Question for Sai to ratify.** `DECISIONS §2` locks the v1 mounting pattern at Pixhawk-standard 30.5×30.5 mm c-to-c M3 (4 holes). That number was sized for the original 36×36 mm form factor. With the **2026-05-20 pivot to a 90×70 mm rectangular board** (also `DECISIONS §2`, post-supersession note), a centered 30.5×30.5 pattern leaves ~30 mm of unsupported overhang per side — mechanically poor for a board carrying connector strain and a stack of through-hole motor cables.
+**Decision:**
 
-**Master's call 2026-05-22:** use 4 corner-inset M3 holes at ~5 mm inset, positions **(5, 5), (85, 5), (5, 65), (85, 65)** on the 90×70 board. The airframe gets a new tray anyway (v1 is a functional drop-in, not mechanical); corner holes maximize support and align with how every premium FC in this footprint class (Kakute H7, mRo Control Zero) actually mounts.
+1. **4× M3 corner-inset holes**, 3mm edge inset on the 90×70 board. Positions: (3, 3), (87, 3), (3, 67), (87, 67) → **c-to-c = 84 × 64 mm**. Hole spec per `docs/PLACEMENT_STRATEGY.md §5.2`: 3.2mm drilled, through-plated, 5mm GND-pad land to chassis GND.
 
-**What Sai needs to confirm:**
-- That the 4-corner pattern is acceptable for the airframe tray design.
-- That the 5 mm corner inset is correct (vs. tighter 3 mm or looser 8 mm). 5 mm gives M3 + 1 mm keep-out + some board edge margin and matches reference FC layouts.
+   The Pixhawk-standard 30.5×30.5 pattern is formally **dropped for v1.1** (per `DECISIONS.md §2` post-pivot, no longer applicable). Per Sai 2026-05-23: **no airframe size constraint**, 90×70 is final, no mechanical-fit check needed.
 
-**Effect on `DECISIONS.md`:** if Sai ratifies, `DECISIONS §2` gets a new entry that supersedes the 30.5×30.5 c-to-c c-locked-2026-05-18 entry for v1.1+. The 36×36 form factor itself is already superseded by the 90×70 rectangle pivot in the same §2; this is the follow-on mounting decision.
+2. **+2 mid-long-edge holes (6 total)** — **gated on Phase 6 vibration sim** (Task #10), NOT pre-committed. BUT: **placement MUST reserve keep-out** at the two mid-long-edge hole positions NOW. When B/A/D/H subsystems get placed, do NOT fill those two spots. This makes a sim-driven add free and prevents a re-place. Mid-edge keep-out positions: (3, 35) west mid, (87, 35) east mid — each with 8mm-diameter circular keep-out (M3 hole + GND-pad land + tolerance).
 
-Reference: `docs/SUBSYSTEM_CONTRACTS.md §0.5` (where the 4 corner holes are quoted as the global constraint driving zone assignment).
+3. **Current placement** (Step-1 C only): H1=(5, 5), H2=(85, 5), H3=(5, 65), H4=(85, 65) = c-to-c 80×60. Will update to 3mm-inset / 84×64 c-to-c in next placement pass (does not block C↔F sign-off).
+
+**`docs/DECISIONS.md §2` updated**: airframe envelope no longer open; 90×70 final.
+
+**`docs/PLACEMENT_STRATEGY.md §5` updated**: corner-hole pattern decided; mid-edge keep-out reservation + sim-gated 4-vs-6 documented.
 
 ---
 
