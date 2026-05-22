@@ -33466,6 +33466,14 @@
 		(uuid "09412e69-046a-4a87-a006-43e23bb06732")
 	)
 	(segment
+		(start 48.8 56.5)
+		(end 46.9445 57.1449)
+		(width 0.25)
+		(layer "F.Cu")
+		(net 29)
+		(uuid "09a29980-eeab-4a1d-974e-7a5c2db8ca06")
+	)
+	(segment
 		(start 31.1 35.85)
 		(end 30.4 35.85)
 		(width 0.2)
@@ -33538,6 +33546,14 @@
 		(uuid "3c26e1de-c50e-439f-9aa6-ca74e8f0ed62")
 	)
 	(segment
+		(start 41.5 57.08)
+		(end 40.4748 55.5748)
+		(width 0.25)
+		(layer "F.Cu")
+		(net 29)
+		(uuid "40e5bcf9-71d2-4e71-88e3-5f46f524ad4d")
+	)
+	(segment
 		(start 56.5 57.17)
 		(end 56.407612 57.131731)
 		(width 0.2)
@@ -33602,6 +33618,14 @@
 		(uuid "66d33a2b-dccd-4935-a191-459f4e3d5a38")
 	)
 	(segment
+		(start 48.8 58)
+		(end 46.9445 57.1449)
+		(width 0.25)
+		(layer "F.Cu")
+		(net 29)
+		(uuid "69503001-a1bc-4f79-9d70-d38c75f8f928")
+	)
+	(segment
 		(start 46.9445 60.0151)
 		(end 47.0445 60.0151)
 		(width 0.2)
@@ -33650,12 +33674,28 @@
 		(uuid "8df3358f-f238-48f9-9bbc-6ddbbbd9fd0f")
 	)
 	(segment
+		(start 48.8 57)
+		(end 46.9445 57.1449)
+		(width 0.25)
+		(layer "F.Cu")
+		(net 29)
+		(uuid "8df8cf1d-0cc3-476d-9fd3-31352850fd23")
+	)
+	(segment
 		(start 39.575 7.275)
 		(end 38.847901 9.030371)
 		(width 0.2)
 		(layer "F.Cu")
 		(net 29)
 		(uuid "8fd819d7-6bc5-473d-a24e-3dc2194f5bf6")
+	)
+	(segment
+		(start 33.325 38)
+		(end 31.465 37.75)
+		(width 0.25)
+		(layer "F.Cu")
+		(net 29)
+		(uuid "91d2aadd-b437-44fd-9c44-8cbb23c5ee12")
 	)
 	(segment
 		(start 56.5 58.83)
@@ -33778,6 +33818,14 @@
 		(uuid "d1317a48-dae9-4fd7-9d0b-36a77cea93d7")
 	)
 	(segment
+		(start 14.35 47.5)
+		(end 15.33 50.05)
+		(width 0.25)
+		(layer "F.Cu")
+		(net 29)
+		(uuid "d87da349-2a22-49df-acfe-f4385bd1df5e")
+	)
+	(segment
 		(start 78.53 23.6)
 		(end 80.23 23.6)
 		(width 0.2)
@@ -33840,6 +33888,14 @@
 		(layer "F.Cu")
 		(net 29)
 		(uuid "f8d5dde6-39cd-47bb-97e5-cfc01f934439")
+	)
+	(segment
+		(start 42 57.08)
+		(end 43.48 55.58)
+		(width 0.25)
+		(layer "F.Cu")
+		(net 29)
+		(uuid "f91b2986-6291-4f75-9dbe-905fb23e2c36")
 	)
 	(segment
 		(start 31.5375 58.75)
