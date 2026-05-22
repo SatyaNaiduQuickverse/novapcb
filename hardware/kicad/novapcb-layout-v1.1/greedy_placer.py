@@ -189,13 +189,25 @@ def main():
             hw, hh = get_part_footprint_bbox(fp)
             placed_bboxes.append((pos.x/1e6, pos.y/1e6, hw, hh))
             big_count += 1
-    # Mounting holes also frozen
+    # Mounting holes also frozen (use generous 3mm radius for keepout)
     for fp in brd.GetFootprints():
         if fp.GetReference().startswith("H"):
             pos = fp.GetPosition()
-            hw, hh = get_part_footprint_bbox(fp)
-            placed_bboxes.append((pos.x/1e6, pos.y/1e6, hw, hh))
-    print(f"[frozen] {big_count} big blocks + 4 mounting holes", flush=True)
+            placed_bboxes.append((pos.x/1e6, pos.y/1e6, 3.0, 3.0))
+    # IMU stress-relief slot keepout: 4 rectangles around the slot perimeter
+    # Slot occupies X=25..72, Y=51..67 with a bridge X=40..50, Y=51..53.
+    # Block the SLOT region itself + a 0.3mm margin around the slot edge lines.
+    # Slot keepout as 4 rect bands:
+    placed_bboxes.append((48.5, 51.5, 23.5, 1.0))   # W half of bottom (X=25..72, Y=51..52)
+    placed_bboxes.append((48.5, 66.5, 23.5, 1.0))   # top of slot S edge (X=25..72, Y=66..67)
+    placed_bboxes.append((25.5, 59.0, 1.0, 8.0))    # slot W edge band (X=25, Y=51..67)
+    placed_bboxes.append((71.5, 59.0, 1.0, 8.0))    # slot E edge band (X=72, Y=51..67)
+    # Inset board edges by 0.3mm — block 4 thin strips on board perimeter
+    placed_bboxes.append((45.0, -0.3, 45.0, 0.5))   # north edge band
+    placed_bboxes.append((45.0, 70.3, 45.0, 0.5))   # south edge band
+    placed_bboxes.append((-0.3, 35.0, 0.5, 35.0))   # west edge band
+    placed_bboxes.append((90.3, 35.0, 0.5, 35.0))   # east edge band
+    print(f"[frozen] {big_count} big blocks + 4 mounting holes + 4 slot bands + 4 edge bands", flush=True)
 
     # Collect small parts to place
     smalls = []
