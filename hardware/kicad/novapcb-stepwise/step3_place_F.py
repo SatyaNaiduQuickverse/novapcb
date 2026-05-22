@@ -138,17 +138,23 @@ def main():
     try_place("R31", 78.5, 26.0)
     try_place("R32", 78.5, 27.0)
 
-    # U5 ESD diode — SECOND re-open 2026-05-23 per master:
-    # Moved further WEST (X=76 → X=73) to open the U5↔J1 corridor.
-    # Full corridor analysis:
-    #   - U5 east pad east edge (X=U5+1.80) = 74.80 at U5_X=73
-    #   - J1 west pad column = X=79.585..79.885
-    #   - Corridor = 4.78mm — enough for fan-split (1mm DM-pin5
-    #     clearance margin) + 4 USB-C bridge vias (0.30mm)
-    # Pre-ESD trace U5→J1 = ~10.8mm Euclidean (>8mm target, but
-    # geometrically forced by the 1mm-margin requirement on the fan).
-    # Total USB length still ≤30mm spec.
-    try_place("U5", 73.0, 35.0)
+    # U5 ESD diode — THIRD re-open 2026-05-23 per master (root-cause):
+    # Master diagnosed the routing impasse: Y-misalignment between
+    # pair corridor (Y=31) and U5 (Y=35) was forcing 4mm steep descent
+    # at tight 0.33mm coupled pitch, creating perpendicular-distance
+    # DRC failures. Earlier reasoning "U5 out of Y=31 corridor" was
+    # exactly backwards — U5 is an INLINE ESD device, BELONGS on the
+    # pair corridor.
+    #
+    # Place U5 at Y=31 so DM/DP pins (pin 4 SE, pin 6 NE) straddle
+    # Y=31. Then:
+    #   - Coupled section runs STRAIGHT from U1 → U5 east pads (no descent)
+    #   - Y-traversal (down to J1 pads) absorbed by U5→J1 pre-ESD
+    #     segment which has wide pin pitch (~1.9mm) — non-impedance-
+    #     critical at USB FS
+    #   - Geometric perp-distance issue: not present (no descent)
+    # X=73 unchanged from 2nd re-open (clear of locked C subsystem).
+    try_place("U5", 73.0, 31.0)
 
     pcbnew.SaveBoard(PCB, brd)
     print(f"\n  Placed {len(placed_F)} of {len(F_REFDES)} F components", flush=True)
