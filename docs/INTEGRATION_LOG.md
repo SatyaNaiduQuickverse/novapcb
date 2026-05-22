@@ -34,7 +34,9 @@
 
 | Sub-phase | Branch | Notes |
 |---|---|---|
-| Step 5 — place B (POWER_REG_3V3) | `integ/C-F-B-step5` (branches from integ/C-F-usb @ c4c47f1) | First HIGH-conflict subsystem (places main LDO U2 — first real new heat source). Full constraint analysis up front before placement (master direction 2026-05-23). |
+| Step 5 — place B (POWER_REG_3V3) | `integ/C-F-B-step5` (HOLD) | B placement HELD pending v1.1 thermal architecture re-evaluation. First try at +2.1°C MCU margin (within model uncertainty) rejected by master 2026-05-23. Now blocked on board-size determination from corrected gate12 v3 + rigorous power inputs. |
+| gate12 v3 refactor | `sim/gate12-v3-perbody` (PR #71, signed off by master) | Per-body Body Force replaces MATC bbox. Energy-balance + min-mesh-density gates permanent. STEP4 regression: T_MCU converged 0.57°C across 4 meshes, energy balance +0.3% all meshes. Sign-off recorded as PR #71 comment (single-account repo can't gh review-approve). |
+| v1.1 full-load board sizing | `sim/gate12-v3-perbody` | Sweep of 90×70 to 120×100 mm with rigorous powers (MCU=0.700W, U2=0.642W, Q5=0W hot-case, full v1.1 set). Find smallest board with ≥5°C MCU margin. Report to master BEFORE outline change. |
 
 ## Tracked, non-blocking
 
