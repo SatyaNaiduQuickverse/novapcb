@@ -36,7 +36,7 @@
 |---|---|---|
 | Step 5 — place B (POWER_REG_3V3) | `integ/C-F-B-step5` (HOLD) | B placement HELD pending v1.1 thermal architecture re-evaluation. First try at +2.1°C MCU margin (within model uncertainty) rejected by master 2026-05-23. Now blocked on board-size determination from corrected gate12 v3 + rigorous power inputs. |
 | gate12 v3 refactor | `sim/gate12-v3-perbody` (PR #71, signed off by master) | Per-body Body Force replaces MATC bbox. Energy-balance + min-mesh-density gates permanent. STEP4 regression: T_MCU converged 0.57°C across 4 meshes, energy balance +0.3% all meshes. Sign-off recorded as PR #71 comment (single-account repo can't gh review-approve). |
-| v1.1 full-load board sizing | `sim/gate12-v3-perbody` | Sweep of 90×70 to 120×100 mm with rigorous powers (MCU=0.700W, U2=0.642W, Q5=0W hot-case, full v1.1 set). Find smallest board with ≥5°C MCU margin. Report to master BEFORE outline change. |
+| v1.1 full-load board sizing | `sim/gate12-v3-perbody` (sweep complete 2026-05-23, recommendation pending master sign-off) | Sweep 90×70 → 120×100. Smallest board with ≥5°C MCU margin = **105×85 mm** (Tj_MCU = 73.98°C, +6.02°C margin). 100×80 falls short at +2.75°C. Above 105×85 the MCU is asymptotic ~74°C (heat-spreading length scale reached). Sweep log saved to `sims/thermal-step4/runs/v11_sweep_2026-05-23.log`. Recommendation: adopt 105×85; LDO→buck NOT needed. |
 
 ## Tracked, non-blocking
 
