@@ -1,0 +1,27 @@
+{
+  "_comment": "Batch B6 — HSE crystal + GND stitch + +3V3A trace + +3V3 stitch leftovers from (A).",
+  "nets": [
+    "HSE_IN",
+    "HSE_OUT",
+    "GND"
+  ],
+  "trace_nets": [
+    {
+      "net": "+3V3A",
+      "source": {"ref": "FB1", "pad": "2"},
+      "targets": [
+        {"ref": "C19", "pad": "1"},
+        {"ref": "C20", "pad": "1"},
+        {"ref": "R1",  "pad": "1"}
+      ]
+    },
+    {
+      "net": "+3V3",
+      "source": {"ref": "U1", "pad": "100"},
+      "targets": [
+        {"ref": "R53", "pad": "1"},
+        {"ref": "R54", "pad": "1"}
+      ]
+    }
+  ]
+}
