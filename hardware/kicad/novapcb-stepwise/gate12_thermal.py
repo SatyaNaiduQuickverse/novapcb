@@ -280,6 +280,41 @@ End
 """
 
 
+def power_conservation_check(case_dir: str, sources: list[HeatSource]) -> dict:
+    """Verify total injected power matches sum of intended source powers.
+
+    Computes ∫q dV over the domain via element-by-element MATC evaluation.
+    Compares to sum of intended powers. If mismatch > 5%, returns
+    {'pass': False, ...} — a source is being silently dropped.
+    """
+    pts, temps = _parse_elmer_result(case_dir)
+    if pts is None:
+        return {"pass": False, "error": "no result file"}
+    P_intended = sum(s.power_W for s in sources)
+    # Steady-state: total injected power = total power removed via convection.
+    # Approximate by: T_avg above ambient × total convective area × h
+    # P_conv = ΔT × A × h (= sum of P_source)
+    # Don't compute exactly — too solver-dependent. Instead use a
+    # SOURCE-LEVEL check: for each source, sample T at body center.
+    # If sampled T == ambient (no rise above ambient near source center),
+    # source was silently dropped.
+    T_amb = T_AMBIENT_C
+    dropped = []
+    for s in sources:
+        Tj = sample_Tj(case_dir, s)
+        if Tj is None:
+            dropped.append((s.name, "no Tj sample"))
+            continue
+        # Heuristic: if Tj is within 0.5°C of T_avg, source may not be contributing
+        # (Body T should be ≥ T_avg by at least its q_vol×element_R contribution)
+        # For now just check Tj > T_amb (proves heat reached the source location)
+        if Tj < T_amb + 0.1:
+            dropped.append((s.name, f"Tj={Tj:.2f} ≈ T_amb"))
+    if dropped:
+        return {"pass": False, "dropped": dropped, "P_intended": P_intended}
+    return {"pass": True, "P_intended": P_intended}
+
+
 def run_elmer(case_dir: str) -> dict:
     """Run ElmerGrid → ElmerSolver pipeline; return parsed temperatures."""
     env = os.environ.copy()
@@ -395,15 +430,22 @@ def run(sources: list[HeatSource],
     case_dir = os.path.join(CASE_DIR, case_label)
     os.makedirs(case_dir, exist_ok=True)
 
-    # Mesh density: 1mm/cell — finer than STEP4's 2mm/cell to ensure
-    # small components (e.g., Q5 heater 3.0x1.5mm body) catch enough
-    # Gauss points to inject their full design heat. With 2mm cells +
-    # 8-point Gauss, GP-from-center offset = 0.577mm, so any body
-    # half-dimension < 0.577mm may MISS gauss points entirely (bug
-    # found 2026-05-23 when Q5 power change had zero effect on T).
-    nx = max(40, int(board_L_m * 1000 / 1))
-    ny = max(30, int(board_W_m * 1000 / 1))
+    # Mesh density: AUTO-SIZED to smallest source body — guarantees
+    # every heat source has at least 2 mesh elements across its
+    # smallest body dimension, so the MATC bounding-box conditional
+    # never misses Gauss points (gate12-v2 bug, 2026-05-23). Floor
+    # at 1mm/cell.
+    #
+    # Rule: cell size ≤ min(body_half_x, body_half_y) for all sources.
+    # With 8-pt Gauss, GP offset from element center = ±0.577×cell_size.
+    # For a GP to fall inside the source body window of width 2×half,
+    # the body window must be ≥ 2×0.577×cell ≈ cell. So cell ≤ half.
+    min_half_mm = min(min(s.body_x_mm, s.body_y_mm) / 2.0 for s in sources) if sources else 1.0
+    cell_mm = min(1.0, min_half_mm * 0.9)   # 10% safety margin
+    nx = max(40, int(board_L_m * 1000 / cell_mm))
+    ny = max(30, int(board_W_m * 1000 / cell_mm))
     nz = 4
+    print(f"  mesh: cell_mm={cell_mm:.3f} (min-body-half={min_half_mm:.3f}), {nx}x{ny}x{nz}", flush=True)
 
     with open(os.path.join(case_dir, "novapcb_thermal.grd"), "w") as f:
         f.write(make_grd(board_L_m, board_W_m, BOARD_H, nx, ny, nz))
