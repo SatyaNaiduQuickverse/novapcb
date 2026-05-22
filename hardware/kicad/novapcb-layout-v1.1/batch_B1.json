@@ -1,0 +1,11 @@
+{
+  "_comment": "Batch B1 — North edge (USB area + UART). Includes USB diff pair (controlled-impedance, 0.30/0.10 per CONTROLLED_IMPEDANCE.md §2.4).",
+  "nets": [
+    "USBC_D_M_PRE",
+    "USBC_D_P_PRE",
+    "USBC_CC1",
+    "USBC_CC2",
+    "GPS1_RX",
+    "USART6_TX"
+  ]
+}
