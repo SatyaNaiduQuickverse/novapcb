@@ -1,0 +1,42 @@
+{
+  "baseline": {
+    "err": 62,
+    "unc": 44
+  },
+  "final": {
+    "err": 62,
+    "unc": 44
+  },
+  "delta": 0,
+  "stats": {
+    "stitch_ok": 0,
+    "stitch_stuck": 0,
+    "net_ok": 0,
+    "net_stuck": 1
+  },
+  "results": [
+    {
+      "kind": "net",
+      "net": "+3V3A",
+      "trace": true,
+      "ok": false,
+      "legs": [
+        {
+          "tgt": "C19.1",
+          "ok": false,
+          "strat": "stuck"
+        },
+        {
+          "tgt": "C20.1",
+          "ok": false,
+          "strat": "stuck"
+        },
+        {
+          "tgt": "R1.1",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    }
+  ]
+}

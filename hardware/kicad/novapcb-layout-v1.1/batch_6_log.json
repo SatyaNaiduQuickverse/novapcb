@@ -1,0 +1,79 @@
+{
+  "baseline": {
+    "err": 62,
+    "unc": 44
+  },
+  "final": {
+    "err": 62,
+    "unc": 44
+  },
+  "delta": 0,
+  "stats": {
+    "stitch_ok": 0,
+    "stitch_stuck": 0,
+    "net_ok": 0,
+    "net_stuck": 5
+  },
+  "results": [
+    {
+      "kind": "net",
+      "net": "GPS1_RX",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "D6.1->U1.87",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "USART6_TX",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "D13.1->U1.63",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "USBC_CC1",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "J1.A5->R31.1",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "USBC_CC2",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "J1.B5->R32.1",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "GND",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.19->U1.74",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    }
+  ]
+}

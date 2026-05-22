@@ -1,0 +1,384 @@
+{
+  "baseline": {
+    "err": 62,
+    "unc": 44
+  },
+  "final": {
+    "err": 315,
+    "unc": 31
+  },
+  "delta_err": 253,
+  "delta_unc": -13,
+  "routed": 15,
+  "total": 31,
+  "results": [
+    {
+      "net": "USBC_CC1",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "J1.A5->R31.1",
+          "ok": true,
+          "tracks": 7,
+          "vias": 2
+        }
+      ]
+    },
+    {
+      "net": "USBC_CC2",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "J1.B5->R32.1",
+          "ok": true,
+          "tracks": 12,
+          "vias": 2
+        }
+      ]
+    },
+    {
+      "net": "USBC_D_M_PRE",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "J1.A7->J1.B7",
+          "ok": true,
+          "tracks": 1,
+          "vias": 2
+        },
+        {
+          "leg": "J1.A7->U5.3",
+          "ok": true,
+          "tracks": 6,
+          "vias": 4
+        }
+      ]
+    },
+    {
+      "net": "USBC_D_P_PRE",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "J1.A6->J1.B6",
+          "ok": true,
+          "tracks": 1,
+          "vias": 2
+        },
+        {
+          "leg": "J1.A6->U5.1",
+          "ok": true,
+          "tracks": 17,
+          "vias": 2
+        }
+      ]
+    },
+    {
+      "net": "GPS1_RX",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "D6.1->U1.87",
+          "ok": true,
+          "tracks": 19,
+          "vias": 4
+        }
+      ]
+    },
+    {
+      "net": "USART6_TX",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "D13.1->U1.63",
+          "ok": true,
+          "tracks": 12,
+          "vias": 2
+        }
+      ]
+    },
+    {
+      "net": "SDMMC1_CMD",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "R51.2->U1.83",
+          "ok": true,
+          "tracks": 24,
+          "vias": 3
+        }
+      ]
+    },
+    {
+      "net": "SDMMC1_D0",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "R52.2->U1.65",
+          "ok": true,
+          "tracks": 29,
+          "vias": 7
+        }
+      ]
+    },
+    {
+      "net": "SDMMC1_D3",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "R55.2->U1.79",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "SPI1_SCK",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "U1.29->U3.11",
+          "ok": true,
+          "tracks": 35,
+          "vias": 6
+        }
+      ]
+    },
+    {
+      "net": "SPI1_MISO",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "U1.30->U3.9",
+          "ok": true,
+          "tracks": 51,
+          "vias": 10
+        }
+      ]
+    },
+    {
+      "net": "SPI1_MOSI",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "U1.88->U3.12",
+          "ok": true,
+          "tracks": 73,
+          "vias": 12
+        }
+      ]
+    },
+    {
+      "net": "SPI3_SCK",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "U1.89->U9.13",
+          "ok": true,
+          "tracks": 51,
+          "vias": 8
+        }
+      ]
+    },
+    {
+      "net": "SPI3_MISO",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "U1.90->U9.1",
+          "ok": true,
+          "tracks": 79,
+          "vias": 6
+        }
+      ]
+    },
+    {
+      "net": "SPI3_MOSI",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.91->U9.14",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "IMU1_CS",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.9->U3.10",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "IMU2_GYR_CS",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.85->U8.5",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "IMU3_CS",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "U1.1->U9.12",
+          "ok": true,
+          "tracks": 36,
+          "vias": 8
+        }
+      ]
+    },
+    {
+      "net": "IMU2_GYR_INT3",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.5->U8.12",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "IMU3_INT1",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.41->U9.4",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "CAN1_RX",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.81->U14.4",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "CAN1_TX",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.82->U14.1",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "GPIO_CAN1_SILENT",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.84->U14.8",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "MOT1",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "J11.1->U1.34",
+          "ok": true,
+          "tracks": 46,
+          "vias": 8
+        }
+      ]
+    },
+    {
+      "net": "MOT2",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "J12.1->U1.35",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "MOT5",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "J15.1->U1.24",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "HEATER_PWM",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "Q5.1->U1.31",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "VCAP1",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "C17.1->U1.48",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "HSE_IN",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.12->Y1.1",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "HSE_OUT",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "C25.1->U1.13",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    },
+    {
+      "net": "GND",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.19->U1.74",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    }
+  ]
+}

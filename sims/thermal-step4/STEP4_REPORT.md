@@ -1,6 +1,54 @@
 # Step 4 thermal validation report (Sai Path B grown board)
 
-> **Status**: thermal FEA on the FEA-arbitrated 80×60 mm board: **LDO Tj = 69.0°C, MCU Tj = 75.2°C** at master's worst-case h=5 W/m²·K / 50°C ambient. **BOTH PASS the 80°C target.** Sai Path B (grow the board to PASS at h=5 still-air) is realized. Steps 3+4 done; Step 5 routing next.
+> ## ⚠ CORRECTION 2026-05-23 — original numbers were mesh-formulation artifacts
+>
+> The numbers reported in §1–§4 below were generated with a Body-Force
+> heat-source expressed as `MATC` bounding-box conditional. That
+> formulation is **mesh-divergent**: the total injected power depends
+> on how many Gauss points fall inside the bbox at the given cell size.
+> The reported 2 mm-cell results UNDER-INJECTED power.
+>
+> **Corrected results** (gate12 v3 with per-body Body Force assignment,
+> total injected power = design power EXACTLY, energy-balance gate +0.3%
+> on all meshes, T_MCU converged to ±0.6 °C across cell sizes
+> 2/1/0.675/0.5 mm):
+>
+> | Quantity | Old reported | Corrected | Δ | Target | Status (corrected) |
+> |---|---|---|---|---|---|
+> | T_avg | 71.5 | **77.6 °C** | +6.1 | n/a | informational |
+> | T_max | 76.8 | **84.7 °C** | +7.9 | n/a | informational |
+> | T_LDO | 69.0 | **79.7 °C** | +10.7 | ≤ 80 °C | **TIGHT (+0.3 °C)** |
+> | T_MCU | 75.2 | **84.0 °C** | +8.8 | ≤ 80 °C | **FAIL (−4.0 °C)** |
+>
+> Implication: the 80×60 mm Sai Path B board does NOT meet the 80 °C
+> target. Original "Path B PASS" conclusion is rescinded. v1.1 needs a
+> larger board to achieve the same ≥5 °C MCU margin. Determination of
+> the corrected smallest-board-with-margin is in progress under the
+> gate12 v3 architecture pass.
+>
+> **Root cause**: `Real MATC "if(abs(tx-x0)<w/2 & abs(ty-y0)<h/2) q=q+q_per_kg"`
+> in `run_thermal.py:make_sif` injects heat only at Gauss points
+> satisfying the inequality. With 8-pt Gauss per hex cell and a 2 mm
+> cell, sources smaller than ~1.15 mm in any dimension get under-counted
+> Gauss-point coverage. STEP4's Q2_PFET (3.0 × 1.5 mm) and U6_eFuse
+> (3.0 × 4.0 mm) both fall in the under-coverage zone; U1_MCU (14 × 14 mm)
+> was less affected but still skewed by element-edge alignment.
+>
+> **Fix**: `hardware/kicad/novapcb-stepwise/gate12_thermal.py` v3
+> (2026-05-23) replaces MATC with per-meshed-body assignment: each
+> heat source is its own body ID, element centers in source bbox →
+> body ID i, `Body Force i: Heat Source = P_i / (ρ × V_body_i_actual)`.
+> Total injected = P_design exactly, regardless of mesh refinement.
+> Energy-balance + min-mesh-density gate assertions added per master
+> 2026-05-23 directive.
+>
+> The §1–§4 numbers below are LEFT AS-RECORDED for traceability —
+> they document what the v2-formulation MATC model said. The corrected
+> values above are the authoritative thermal result.
+
+---
+
+> **Status (original — superseded by correction header above)**: thermal FEA on the FEA-arbitrated 80×60 mm board: **LDO Tj = 69.0°C, MCU Tj = 75.2°C** at master's worst-case h=5 W/m²·K / 50°C ambient. **BOTH PASS the 80°C target.** Sai Path B (grow the board to PASS at h=5 still-air) is realized. Steps 3+4 done; Step 5 routing next.
 >
 > Supersedes the Step 4 escalation in PR #59 (62×42 mm board FAIL'd; placement iteration shown to be ineffective in the convection-limited regime; Sai adjudicated Path B over Paths A/C/D).
 

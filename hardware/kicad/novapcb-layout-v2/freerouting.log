@@ -1,15 +1,56 @@
-2026-05-21 06:04:34.213 INFO   Freerouting v2.2.4 (build-date: 2026-05-13)
-2026-05-21 06:04:34.327 WARN   Couldn't get screen resolution. If you are running in a headless environment, disable the GUI by setting gui.enabled to false.
-2026-05-21 06:04:36.016 WARN   Analytics tracking: first delivery failure in this window - /v1/analytics/identify - IOException: Server returned HTTP response code: 501 for URL: https://api.freerouting.app/v1/analytics/identify | Server response: {"error":"The operation is not implemented."}. Further failures will be aggregated and reported every 60 minutes.
-2026-05-21 06:04:36.272 INFO   New version available: v2.2.4
-2026-05-21 06:04:36.526 INFO   [0913A7\1986EA] Job '0913A7\1986EA' started at 2026-05-21T00:34:36.526361744Z.
-2026-05-21 06:07:09.020 INFO   [0913A7\1986EA] Auto-router pass #1 on board '0cc12b6cefdfb4ea8104f91806bb04b7' was completed in 2 minutes 31.71 seconds with the score of 939.02 (36 unrouted), using 113.28 CPU seconds and the job allocated 18.51 GB of memory so far.
-2026-05-21 06:08:31.088 INFO   [0913A7\1986EA] Auto-router pass #2 on board '64c2f8af8af8c518df65efd0fbd2fd22' was completed in 1 minute 21.78 seconds with the score of 962.95 (22 unrouted), using 179.59 CPU seconds and the job allocated 28.17 GB of memory so far.
-2026-05-21 06:10:02.664 INFO   [0913A7\1986EA] Auto-router pass #3 on board '96fdd9c0bdcf0f6f7c739ed0e2c52231' was completed in 1 minute 31.38 seconds with the score of 986.40 (6 unrouted), using 267.03 CPU seconds and the job allocated 40.60 GB of memory so far.
-2026-05-21 06:10:44.938 INFO   [0913A7\1986EA] Auto-router pass #4 on board 'd4192328311d5585944253ae6d800336' was completed in 42.10 seconds with the score of 989.12 (4 unrouted), using 307.30 CPU seconds and the job allocated 47.45 GB of memory so far.
-2026-05-21 06:10:58.969 INFO   [0913A7\1986EA] Auto-router pass #5 on board 'f169f7ee5a1e19842f8533a38988fa05' was completed in 13.83 seconds with the score of 991.76 (2 unrouted), using 320.99 CPU seconds and the job allocated 49.38 GB of memory so far.
-2026-05-21 06:11:01.915 INFO   [0913A7\1986EA] Auto-router pass #6 on board '998307b409a9b75a349d45fd2df213a2' was completed in 2.65 seconds with the score of 991.75 (2 unrouted), using 323.86 CPU seconds and the job allocated 49.71 GB of memory so far.
-2026-05-21 06:11:05.424 INFO   [0913A7\1986EA] Auto-router pass #7 on board '5dfce7d182ed8a8f962d0744f52063c9' was completed in 3.32 seconds with the score of 993.03 (1 unrouted), using 327.76 CPU seconds and the job allocated 50.29 GB of memory so far.
-2026-05-21 06:11:08.722 INFO   [0913A7\1986EA] Auto-router pass #8 on board 'e52c2e535652a754a7243977060eef99' was completed in 3.12 seconds with the score of 994.31, using 330.39 CPU seconds and the job allocated 50.67 GB of memory so far.
-2026-05-21 06:11:09.115 INFO   [0913A7\1986EA] Auto-router pass #9 on board '7a46755b825210c075bb302d7c48255c' was completed in 0.12 seconds with the score of 994.31, using 330.39 CPU seconds and the job allocated 50.67 GB of memory so far.
-2026-05-21 06:11:09.288 INFO   [0913A7\1986EA] Auto-router session completed: started with 205 unrouted nets, completed in 6 minutes 32.50 seconds, final score: 994.31, using 330.39 total CPU seconds, 50.67 GB total allocated, and 1187.96 MB peak heap usage.
+2026-05-21 11:54:28.301 INFO   Freerouting v2.2.4 (build-date: 2026-05-13)
+2026-05-21 11:54:28.379 WARN   Couldn't get screen resolution. If you are running in a headless environment, disable the GUI by setting gui.enabled to false.
+2026-05-21 11:54:29.599 WARN   Shape.read_circle_scope: layer with name 'In1.Cu' not found in layer structure.
+2026-05-21 11:54:29.600 WARN   Circle.read_circle_scope: layer with name 'In1.Cu' not found in layer structure at ''
+2026-05-21 11:54:29.600 WARN   Shape.read_area_scope: could not read shape at ''
+2026-05-21 11:54:29.601 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.601 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.601 WARN   Shape.read_circle_scope: layer with name 'In2.Cu' not found in layer structure.
+2026-05-21 11:54:29.601 WARN   Circle.read_circle_scope: layer with name 'In2.Cu' not found in layer structure at ''
+2026-05-21 11:54:29.602 WARN   Shape.read_area_scope: could not read shape at ''
+2026-05-21 11:54:29.602 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.602 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.602 WARN   Shape.read_circle_scope: layer with name 'In3.Cu' not found in layer structure.
+2026-05-21 11:54:29.602 WARN   Circle.read_circle_scope: layer with name 'In3.Cu' not found in layer structure at ''
+2026-05-21 11:54:29.603 WARN   Shape.read_area_scope: could not read shape at ''
+2026-05-21 11:54:29.603 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.603 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.603 WARN   Shape.read_circle_scope: layer with name 'In4.Cu' not found in layer structure.
+2026-05-21 11:54:29.604 WARN   Circle.read_circle_scope: layer with name 'In4.Cu' not found in layer structure at ''
+2026-05-21 11:54:29.604 WARN   Shape.read_area_scope: could not read shape at ''
+2026-05-21 11:54:29.604 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.604 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.605 WARN   Shape.read_circle_scope: layer with name 'In1.Cu' not found in layer structure.
+2026-05-21 11:54:29.605 WARN   Circle.read_circle_scope: layer with name 'In1.Cu' not found in layer structure at ''
+2026-05-21 11:54:29.605 WARN   Shape.read_area_scope: could not read shape at ''
+2026-05-21 11:54:29.605 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.605 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.606 WARN   Shape.read_circle_scope: layer with name 'In2.Cu' not found in layer structure.
+2026-05-21 11:54:29.606 WARN   Circle.read_circle_scope: layer with name 'In2.Cu' not found in layer structure at ''
+2026-05-21 11:54:29.606 WARN   Shape.read_area_scope: could not read shape at ''
+2026-05-21 11:54:29.606 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.606 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.607 WARN   Shape.read_circle_scope: layer with name 'In3.Cu' not found in layer structure.
+2026-05-21 11:54:29.607 WARN   Circle.read_circle_scope: layer with name 'In3.Cu' not found in layer structure at ''
+2026-05-21 11:54:29.607 WARN   Shape.read_area_scope: could not read shape at ''
+2026-05-21 11:54:29.607 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.607 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.608 WARN   Shape.read_circle_scope: layer with name 'In4.Cu' not found in layer structure.
+2026-05-21 11:54:29.608 WARN   Circle.read_circle_scope: layer with name 'In4.Cu' not found in layer structure at ''
+2026-05-21 11:54:29.608 WARN   Shape.read_area_scope: could not read shape at ''
+2026-05-21 11:54:29.608 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.608 ERROR  Package.read_scope: could not read keepout area of package 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+2026-05-21 11:54:29.855 WARN   Analytics tracking: first delivery failure in this window - /v1/analytics/identify - IOException: Server returned HTTP response code: 501 for URL: https://api.freerouting.app/v1/analytics/identify | Server response: {"error":"The operation is not implemented."}. Further failures will be aggregated and reported every 60 minutes.
+2026-05-21 11:54:30.122 INFO   [3F230F\C6E693] Job '3F230F\C6E693' started at 2026-05-21T06:24:30.121751135Z.
+2026-05-21 11:54:30.135 INFO   New version available: v2.2.4
+2026-05-21 11:55:13.411 INFO   [3F230F\C6E693] Auto-router pass #1 on board 'a011d44771f35c419ac301930d8934ac' was completed in 42.69 seconds with the score of 649.23 (48 unrouted), using 33.93 CPU seconds and the job allocated 4.95 GB of memory so far.
+2026-05-21 11:55:49.879 INFO   [3F230F\C6E693] Auto-router pass #2 on board 'f9e1a3a7918ae87fdcf9e9ec9fb5014c' was completed in 36.37 seconds with the score of 877.24 (24 unrouted), using 63.86 CPU seconds and the job allocated 10.50 GB of memory so far.
+2026-05-21 11:56:19.378 INFO   [3F230F\C6E693] Auto-router pass #3 on board 'ae0c42c418899691f1953c2d57230414' was completed in 29.44 seconds with the score of 896.54 (21 unrouted), using 91.71 CPU seconds and the job allocated 16.19 GB of memory so far.
+2026-05-21 11:56:50.019 INFO   [3F230F\C6E693] Auto-router pass #4 on board 'e81a59f152c31c9a72304fada1b2c1e4' was completed in 30.58 seconds with the score of 906.09 (19 unrouted), using 120.86 CPU seconds and the job allocated 23.38 GB of memory so far.
+2026-05-21 11:57:13.839 INFO   [3F230F\C6E693] Auto-router pass #5 on board 'b9eb3287aa2b367f0f45a1a8ab0f93c0' was completed in 23.75 seconds with the score of 955.85 (10 unrouted), using 144.03 CPU seconds and the job allocated 29.08 GB of memory so far.
+2026-05-21 11:57:28.828 INFO   [3F230F\C6E693] Auto-router pass #6 on board '033bec5264f6d1f8454274e8e65dea58' was completed in 14.95 seconds with the score of 963.72 (8 unrouted), using 158.65 CPU seconds and the job allocated 33.23 GB of memory so far.
+2026-05-21 11:57:38.053 INFO   [3F230F\C6E693] Auto-router pass #7 on board 'bf98d1ad7dc15b007dbbda008096be73' was completed in 9.18 seconds with the score of 985.90 (2 unrouted), using 167.47 CPU seconds and the job allocated 35.74 GB of memory so far.
+2026-05-21 11:57:41.661 INFO   [3F230F\C6E693] Auto-router pass #8 on board 'a7f22b419d794e3a106987c0b8d95042' was completed in 3.56 seconds with the score of 988.95 (1 unrouted), using 171.39 CPU seconds and the job allocated 36.83 GB of memory so far.
+2026-05-21 11:57:43.246 INFO   [3F230F\C6E693] Auto-router pass #9 on board 'dbefa6607ca0ceedf31499ec98eeea62' was completed in 1.51 seconds with the score of 992.13, using 172.29 CPU seconds and the job allocated 36.96 GB of memory so far.
+2026-05-21 11:57:43.318 INFO   [3F230F\C6E693] Auto-router pass #10 on board '7c1447d34406a72fb366bc9bf947e5ae' was completed in 0.01 seconds with the score of 992.13, using 172.29 CPU seconds and the job allocated 36.96 GB of memory so far.
+2026-05-21 11:57:43.372 INFO   [3F230F\C6E693] Auto-router session completed: started with 76 unrouted nets, completed in 3 minutes 13.07 seconds, final score: 992.13, using 172.29 total CPU seconds, 36.96 GB total allocated, and 646.70 MB peak heap usage.

@@ -48,3 +48,10 @@ skidl_REPL.*
 
 # SKiDL symbol-library cache (regenerated each run; not source-of-truth)
 hardware/kicad/novapcb/generate_sklib.py
+hardware/kicad/novapcb-layout-v2/exports/
+
+# Task 9 validation — generated mesh artifacts (reproduce with gen_mesh.py)
+sims/validation/elmer_thermal/mesh/
+sims/validation/elmer_thermal/mesh2/
+sims/validation/elmer_thermal/mesh.grd
+sims/validation/elmer_beam/mesh/

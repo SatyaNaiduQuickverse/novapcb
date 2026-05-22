@@ -1,0 +1,7 @@
+# Generated thermal sim artifacts — reproducible via gate12_thermal_U1.py
+thermal_U1/
+# KiCad backups
+*-bak/
+*.kicad_pcb-bak
+# pcbnew session backups
+_autosave-*

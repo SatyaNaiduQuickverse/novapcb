@@ -1,0 +1,11 @@
+{
+  "_comment": "Batch B2 — MCU west microSD pull-ups + SPI1 (MCU west edge ↔ U3 IMU NW).",
+  "nets": [
+    "SDMMC1_CMD",
+    "SDMMC1_D0",
+    "SDMMC1_D3",
+    "SPI1_SCK",
+    "SPI1_MISO",
+    "SPI1_MOSI"
+  ]
+}

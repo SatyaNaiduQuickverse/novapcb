@@ -1,0 +1,91 @@
+{
+  "baseline": {
+    "err": 62,
+    "unc": 44
+  },
+  "final": {
+    "err": 61,
+    "unc": 44
+  },
+  "delta": -1,
+  "stats": {
+    "stitch_ok": 0,
+    "stitch_stuck": 0,
+    "net_ok": 0,
+    "net_stuck": 6
+  },
+  "results": [
+    {
+      "kind": "net",
+      "net": "SDMMC1_CMD",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "R51.2->U1.83",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "SDMMC1_D0",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "R52.2->U1.65",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "SDMMC1_D3",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "R55.2->U1.79",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "SPI1_SCK",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.29->U3.11",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "SPI1_MISO",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.30->U3.9",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "SPI1_MOSI",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.88->U3.12",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    }
+  ]
+}

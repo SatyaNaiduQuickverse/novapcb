@@ -2,6 +2,44 @@
 
 All v1 scoping decisions are in `DECISIONS.md`. Add new open questions here as they arise.
 
+## phase5-thermal-ldo-vs-buck. +3V3 LDO vs buck-switcher escalation — **CLOSED 2026-05-23**
+
+**Status:** **CLOSED — LDO retained**, no escalation to switching regulator.
+
+**Raised** as a contingent escalation path in `PLACEMENT_STRATEGY.md §6.4` (Round-N escalation criteria): "If Round 2 cannot bring Tj ≤ 80°C even with 150 mm² pour + maximum practical inner-copper area: ESCALATE TO SAI. The buck-converter question (THERMAL_BUDGET §2.3 Knob 4) becomes a real conversation, not a deferred v2 item." Re-flagged 2026-05-23 by master during gate12 v3 corrected thermal pass — on the un-grown 90×70 board with rigorous powers (MCU=0.700 W, U2=0.642 W), the LDO failed thermal margin and the buck escalation was on the table pending the corrected board-size determination.
+
+**Resolved by:** gate12 v3 + rigorous powers board-size sweep (2026-05-23, branch `sim/gate12-v3-perbody`, sweep log `sims/thermal-step4/runs/v11_sweep_2026-05-23.log`). At the master-approved 105×85 mm v1.1 outline, AP2112K-3.3 LDO operates at Tj=73.03°C (margin +6.97°C to 80°C), MCU at Tj=73.98°C (margin +6.02°C). Both thermally compliant with comfortable margin.
+
+**Why LDO retained over buck:**
+- Thermal margin is met at 105×85 — no thermal-driven need for a switcher.
+- An on-board buck switcher within 20-40 mm of the IMU island carries a measurable sensor-noise risk (per PLACEMENT_STRATEGY.md §6.3) — switching harmonics in 100s of kHz to MHz couple into the IMU's analog front-end. The LDO has no switching ripple to worry about.
+- BOM simpler: no inductor, no Schottky diode, no compensation network — fewer parts, fewer DFM risks, lower cost.
+- Efficiency penalty (LDO drops ~1.7 V × 0.36 A = 0.6 W as heat vs buck's ~0.05 W loss at 90% efficiency) is now budgeted thermally — the 105×85 board handles it.
+
+**Decision authority:** master sign-off 2026-05-23 of the v1.1 board outline implicitly confirms LDO retention. No Sai fork needed.
+
+**Reference:** `docs/MCU_POWER_BUDGET.md`, `docs/THERMAL_3V3_BUDGET.md`, `sims/thermal-step4/runs/v11_sweep_2026-05-23.log`, PR #71 commit log.
+
+## phase4-dfm-usb-fan. JLCPCB DFM gate (#11) — USB pair fan-region thin clearance
+
+**Raised 2026-05-23** (master flag at C↔F lock review).
+
+The USB post-ESD diff pair coupled section uses W=0.20/S=0.13 (openEMS-validated 87.4 Ω, see `docs/CONTROLLED_IMPEDANCE.md`). The custom DRU rule `usb-diff-pair-in-pair` allows 0.10mm in-pair clearance for this pair only. At the fan region where the pair diverges around U5's pin 2 (GND, Y=31 on corridor), the fan trace edge gap to the other pair member computes to ≈0.106mm — only 6 µm over the 0.10mm rule.
+
+Passes KiCad DRC. But **razor-thin vs the rule** AND must be inside JLCPCB's actual manufacturing capability for trace-to-trace.
+
+**Action (DFM gate #11):** before fab order, explicitly confirm JLCPCB's published process capability supports:
+- 0.10mm (4mil) trace-to-trace clearance on 6-layer 1oz outer copper
+- AND the actual 0.106mm fan-region gap with manufacturing tolerance band
+
+JLC's published 6-layer 1oz spec is 0.10mm (4mil) per Lite/Standard tier. The fan gap (0.106mm) is ABOVE this nominal spec, but tolerance bands can eat 1-2 mil. Confirm with JLC support if the order is borderline.
+
+**Reference:** routing committed in PR #69 (integ/C-F-usb), file `hardware/kicad/novapcb-stepwise/integ_C_F.py`. Fan-region geometry at X=69.50..71.862, Y=31.00..31.95 (post-pin-swap).
+
+**Not blocking** C↔F integration lock — passes DRC, just flag for the fab gate.
+
+
+
 ## v2-1. FMUv6X mechanical drop-in (deferred from `DECISIONS.md §2`)
 
 v1 is a functional drop-in only (single-PCB, Pixhawk-standard 30.5 × 30.5 mm M3, requires a new mounting tray on the airframe). v2 is the mechanical drop-in against the Holybro Pixhawk 6X — FMUv6X form factor, two-board (FMU + isolated IMU on vibration mounts), exact 6X connector pin-out and footprint so the existing airframe accepts novapcb in place of the 6X without any mechanical change.
@@ -160,7 +198,16 @@ Pad-edge gap in pitch direction = 0.5 - 0.25 = **0.25 mm** (clears the 0.2 mm ne
 
 ---
 
-## phase0.6-2. OpenEMS microstrip Z0-extraction — Phase 6b deep-dive required
+## phase0.6-2. OpenEMS microstrip Z0-extraction — Phase 6b deep-dive required (RESOLVED 2026-05-22)
+
+**RESOLVED 2026-05-22**: openEMS Z₀-extraction validated to 3.6% vs Hammerstad-Jensen 1980 (`sims/validation/VALIDATION_RESULTS.md` row 5 — Task 9). Three traps caught + documented:
+- `MSLPort.CalcPort(ref_impedance=…)` OVERWRITES measured Z₀ (ports.py:153). Don't pass `ref_impedance`.
+- `FeedShift` + `MeasPlaneShift` are absolute offsets from port start, not relative; both at the same offset → measurement probes see feed transient.
+- Without `Feed_R=50` on the un-excited port, energy bounces, no convergence; bound with `NrTS=` cap.
+
+openEMS is now the project's controlled-impedance ground truth. Subsequent C↔F integration USB diff-pair sign-off (2026-05-22) confirmed the value: the original analytical-only W=0.30/S=0.10 spec was 24 Ω off (70 Ω measured vs 94 Ω analytical) — `docs/CONTROLLED_IMPEDANCE.md` corrected to openEMS-validated W=0.20/S=0.13 (87 Ω). Original entry preserved below for traceability.
+
+— original entry —
 
 **Raised 2026-05-21** (Phase 0.6 PR #56 follow-up; convergence re-run after the one-line ref_impedance fix).
 
@@ -210,8 +257,8 @@ The dense 36×36 / 4-layer board is being set aside in favor of a deliberate, si
 1. **Board outline shape** — RECTANGLE. Aspect ratio is an OUTPUT of placement (Step 3), not pre-decided.
 2. **Board size** — sized to the placement. No fixed dim constraint. ✓
 3. **Layer count** — **OPEN**. 4 vs 6 to be decided in Step 3 based on whether 6-layer measurably reduces EMI/SI failure modes per the §10 reliability mandate.
-4. **Mounting pattern** — driven by the resulting board outline + the airframe envelope; new tray is acceptable per §2.
-5. **Airframe envelope** — **OPEN** (Sai will provide; not blocking Step 2 inrush mitigation or thermal-sim input prep).
+4. **Mounting pattern** — **RESOLVED 2026-05-23** (master, delegated from Sai). 4× M3 corner-inset holes on the 90×70 board; mid-long-edge +2 holes (6 total) gated on Phase 6 vibration sim (Task #10), placement reserves keep-out at mid-edge positions for later add-without-replace. See `pivot-2026-05-20-mounting-resolution` below for details.
+5. **Airframe envelope** — **RESOLVED 2026-05-23** (Sai). NO airframe size constraint — the 90×70 outline is final; no mechanical-fit check needed.
 
 ### What's locked
 - Schematic (Phase 3, in `hardware/kicad/novapcb/`) — unchanged
@@ -230,11 +277,37 @@ The Phase 6 P0 sim results surfaced real density-driven concerns: PDN anti-reson
 
 ---
 
+## pivot-2026-05-20-mounting-resolution. Mounting holes — RESOLVED 2026-05-23 (master, delegated by Sai)
+
+**RESOLVED 2026-05-23** (master, Sai-delegated decision). Supersedes earlier `Mounting-hole-pattern-90x70` open question and `pivot-2026-05-20` items 4 + 5.
+
+**Decision:**
+
+1. **4× M3 corner-inset holes**, 3mm edge inset on the 90×70 board. Positions: (3, 3), (87, 3), (3, 67), (87, 67) → **c-to-c = 84 × 64 mm**. Hole spec per `docs/PLACEMENT_STRATEGY.md §5.2`: 3.2mm drilled, through-plated, 5mm GND-pad land to chassis GND.
+
+   The Pixhawk-standard 30.5×30.5 pattern is formally **dropped for v1.1** (per `DECISIONS.md §2` post-pivot, no longer applicable). Per Sai 2026-05-23: **no airframe size constraint**, 90×70 is final, no mechanical-fit check needed.
+
+2. **+2 mid-long-edge holes (6 total)** — **gated on Phase 6 vibration sim** (Task #10), NOT pre-committed. BUT: **placement MUST reserve keep-out** at the two mid-long-edge hole positions NOW. When B/A/D/H subsystems get placed, do NOT fill those two spots. This makes a sim-driven add free and prevents a re-place. Mid-edge keep-out positions: (3, 35) west mid, (87, 35) east mid — each with 8mm-diameter circular keep-out (M3 hole + GND-pad land + tolerance).
+
+3. **Current placement** (Step-1 C only): H1=(5, 5), H2=(85, 5), H3=(5, 65), H4=(85, 65) = c-to-c 80×60. Will update to 3mm-inset / 84×64 c-to-c in next placement pass (does not block C↔F sign-off).
+
+**`docs/DECISIONS.md §2` updated**: airframe envelope no longer open; 90×70 final.
+
+**`docs/PLACEMENT_STRATEGY.md §5` updated**: corner-hole pattern decided; mid-edge keep-out reservation + sim-gated 4-vs-6 documented.
+
+---
+
 # Closed decisions (recorded here for traceability)
 
-## CLOSED phase3exit-can. CAN: novapcb v1 deliberately ships no CAN connector / transceiver
+## RE-OPENED phase3exit-can. CAN: novapcb v1.1 SHIPS 1× CAN port (RE-OPENED 2026-05-23)
+
+**RE-OPENED 2026-05-23** per master directive: this entry was originally CLOSED as "v1 ships no CAN"; the v1.1 re-spin re-introduced CAN at commit `13d26a8` ("hw: can_3j.py — 1× CAN port on FDCAN1 (R1.4)") for redundancy. The current ship-state is **1× CAN port populated** (U14 TJA1051 transceiver, U15 PESD2CAN ESD, J20 connector, R45 120Ω terminator). The "deliberately ships no CAN" reasoning below is from the earlier v1 scope decision and no longer applies. Original entry preserved for traceability.
 
 **Decided 2026-05-20** (Phase 3-exit A2 escalation; master adjudication).
+
+**SUPERSEDED 2026-05-22** by commit `13d26a8` ("hw: can_3j.py — 1× CAN port on FDCAN1 (R1.4)") in the v1.1 re-spin. The SKiDL netlist `hardware/kicad/novapcb/sheets/can_3j.py` now instantiates the full CAN front-end: **U14** (TJA1051TK/3 transceiver), **U15** (PESD2CAN ESD diode array), **J20** (CAN connector), **R45** (120 Ω terminator), **R46** (terminator jumper), **C83/C84** (U14 decoupling). v1.1 ships **1× CAN port** on FDCAN1 (PD0/PD1 + GPIO_CAN1_SILENT on PD3). The original entry below is preserved verbatim for traceability of the earlier decision; the current ship-state is per the R1.4 SKiDL netlist (immutable for v1.1).
+
+— original entry —
 
 novapcb v1 deliberately ships **no CAN connector / transceiver**. The Nova drone uses zero CAN peripherals (GPS via UART, power via analog Mauch, ESCs via DShot, mag via I²C). Adding CAN would require an external CAN transceiver IC + 120 Ω termination + connector + board area — an unvalidated sub-circuit for a feature the target drone doesn't use. Per Rule 4 (match scope) + don't-design-for-hypothetical-futures discipline.
 

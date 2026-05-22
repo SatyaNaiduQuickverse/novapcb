@@ -1,0 +1,503 @@
+{
+  "closed": [],
+  "residuals": [
+    {
+      "fp": "J1",
+      "pad": "A9",
+      "net": "+5V",
+      "pos": [
+        47.45,
+        52.085
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "J1",
+      "pad": "A12",
+      "net": "GND",
+      "pos": [
+        48.25,
+        52.085
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "J1",
+      "pad": "B1",
+      "net": "GND",
+      "pos": [
+        48.25,
+        52.085
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "J1",
+      "pad": "B4",
+      "net": "+5V",
+      "pos": [
+        47.45,
+        52.085
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "J1",
+      "pad": "B12",
+      "net": "GND",
+      "pos": [
+        41.75,
+        52.085
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "FB1",
+      "pad": "2",
+      "net": "+3V3A",
+      "pos": [
+        29.65,
+        29.515
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "U5",
+      "pad": "5",
+      "net": "+5V",
+      "pos": [
+        50.0775,
+        48.39
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "C20",
+      "pad": "1",
+      "net": "+3V3A",
+      "pos": [
+        29.17,
+        31.94
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "U1",
+      "pad": "11",
+      "net": "+3V3",
+      "pos": [
+        31.855,
+        29.0
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "U1",
+      "pad": "19",
+      "net": "GND",
+      "pos": [
+        31.855,
+        33.0
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "U1",
+      "pad": "26",
+      "net": "GND",
+      "pos": [
+        33.53,
+        37.675
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "U1",
+      "pad": "99",
+      "net": "GND",
+      "pos": [
+        34.03,
+        22.325
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "U1",
+      "pad": "100",
+      "net": "+3V3",
+      "pos": [
+        33.53,
+        22.325
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "C19",
+      "pad": "1",
+      "net": "+3V3A",
+      "pos": [
+        44.7,
+        20.81
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "C19",
+      "pad": "2",
+      "net": "GND",
+      "pos": [
+        45.66,
+        20.81
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "C43",
+      "pad": "2",
+      "net": "GND",
+      "pos": [
+        51.3,
+        35.81
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "C18",
+      "pad": "2",
+      "net": "GND",
+      "pos": [
+        31.54,
+        20.81
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "C22",
+      "pad": "2",
+      "net": "GND",
+      "pos": [
+        30.13,
+        28.06
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "R3",
+      "pad": "2",
+      "net": "GND",
+      "pos": [
+        30.16,
+        24.68
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "C23",
+      "pad": "2",
+      "net": "GND",
+      "pos": [
+        40.01,
+        20.81
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "U3",
+      "pad": "8",
+      "net": "+3V3",
+      "pos": [
+        71.1125,
+        30.75
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "C17",
+      "pad": "2",
+      "net": "GND",
+      "pos": [
+        34.36,
+        20.81
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "Y1",
+      "pad": "2",
+      "net": "GND",
+      "pos": [
+        51.92,
+        30.85
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "C15",
+      "pad": "1",
+      "net": "+3V3",
+      "pos": [
+        44.7,
+        39.19
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "C11",
+      "pad": "1",
+      "net": "+3V3",
+      "pos": [
+        33.4,
+        39.19
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "C11",
+      "pad": "2",
+      "net": "GND",
+      "pos": [
+        34.36,
+        39.19
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "C12",
+      "pad": "1",
+      "net": "+3V3",
+      "pos": [
+        36.23,
+        39.19
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "C12",
+      "pad": "2",
+      "net": "GND",
+      "pos": [
+        37.19,
+        39.19
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "R53",
+      "pad": "1",
+      "net": "+3V3",
+      "pos": [
+        47.96,
+        26.13
+      ],
+      "layer": "B.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "J2",
+      "pad": "3",
+      "net": "GND",
+      "pos": [
+        40.105,
+        37.725
+      ],
+      "layer": "B.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "J2",
+      "pad": "4",
+      "net": "+3V3",
+      "pos": [
+        39.005,
+        37.725
+      ],
+      "layer": "B.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "J2",
+      "pad": "6",
+      "net": "GND",
+      "pos": [
+        36.805,
+        37.725
+      ],
+      "layer": "B.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "R54",
+      "pad": "1",
+      "net": "+3V3",
+      "pos": [
+        47.96,
+        28.06
+      ],
+      "layer": "B.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "R52",
+      "pad": "1",
+      "net": "+3V3",
+      "pos": [
+        30.08,
+        28.06
+      ],
+      "layer": "B.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "R55",
+      "pad": "1",
+      "net": "+3V3",
+      "pos": [
+        30.08,
+        24.19
+      ],
+      "layer": "B.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "R51",
+      "pad": "1",
+      "net": "+3V3",
+      "pos": [
+        30.08,
+        26.13
+      ],
+      "layer": "B.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "J9",
+      "pad": "3",
+      "net": "GND",
+      "pos": [
+        38.05,
+        12.27
+      ],
+      "layer": "B.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "J9",
+      "pad": "5",
+      "net": "GND",
+      "pos": [
+        38.05,
+        11.0
+      ],
+      "layer": "B.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "U1",
+      "pad": "75",
+      "net": "+3V3",
+      "pos": [
+        47.205,
+        24.0
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "J1",
+      "pad": "B9",
+      "net": "+5V",
+      "pos": [
+        42.55,
+        52.085
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "U1",
+      "pad": "21",
+      "net": "+3V3A",
+      "pos": [
+        31.855,
+        34.0
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "U1",
+      "pad": "50",
+      "net": "+3V3",
+      "pos": [
+        45.53,
+        37.675
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "U1",
+      "pad": "27",
+      "net": "+3V3",
+      "pos": [
+        34.03,
+        37.675
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "U1",
+      "pad": "10",
+      "net": "GND",
+      "pos": [
+        31.855,
+        28.5
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    },
+    {
+      "fp": "U1",
+      "pad": "49",
+      "net": "GND",
+      "pos": [
+        45.03,
+        37.675
+      ],
+      "layer": "F.Cu",
+      "reason": "no clear or 1-conflict spot"
+    }
+  ],
+  "sensitive_proposed": [],
+  "drc_violations": 28,
+  "unconnected": 42
+}

@@ -1,0 +1,11 @@
+{
+  "_comment": "Batch 4 — CAN + IMU interrupts (5 nets, east side).",
+  "stitch_fails": [],
+  "nets": [
+    "CAN1_RX",
+    "CAN1_TX",
+    "GPIO_CAN1_SILENT",
+    "IMU2_GYR_INT3",
+    "IMU3_INT1"
+  ]
+}

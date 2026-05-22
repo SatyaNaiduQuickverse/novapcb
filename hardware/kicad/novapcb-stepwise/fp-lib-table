@@ -1,0 +1,13 @@
+(fp_lib_table
+	(version 7)
+	(lib (name novapcb_lib)(type KiCad)(uri /home/novatics64/novapcb/hardware/kicad/novapcb-layout-v1.1/lib/novapcb.pretty)(options "")(descr "v1.0 carry-forward: ESC_solder_pad, CRSF_solder_pad, ICM-42688-P_LGA-14"))
+	(lib (name bmi088)(type KiCad)(uri /home/novatics64/novapcb/hardware/kicad/novapcb/lib/bmi088.pretty)(options "")(descr "v1.1 BMI088 LGA-16 from easyeda2kicad C194919"))
+	(lib (name lsm6dsv16x)(type KiCad)(uri /home/novatics64/novapcb/hardware/kicad/novapcb/lib/lsm6dsv16x.pretty)(options "")(descr "v1.1 LSM6DSV16XTR LGA-14 from easyeda2kicad C5267406"))
+	(lib (name tja1051)(type KiCad)(uri /home/novatics64/novapcb/hardware/kicad/novapcb/lib/tja1051.pretty)(options "")(descr "v1.1 TJA1051TK/3 HVSON-8+EP from easyeda2kicad C124020"))
+	(lib (name lm74700)(type KiCad)(uri /home/novatics64/novapcb/hardware/kicad/novapcb/lib/lm74700.pretty)(options "")(descr "v1.1 LM74700QDBVTQ1 SOT-23-6 DBV from easyeda2kicad C2653623"))
+	(lib (name pesd2can)(type KiCad)(uri /home/novatics64/novapcb/hardware/kicad/novapcb/lib/pesd2can.pretty)(options "")(descr "v1.1 PESD2CAN,215 SOT-23-3 from easyeda2kicad C75176"))
+	(lib (name ao4262e)(type KiCad)(uri /home/novatics64/novapcb/hardware/kicad/novapcb/lib/ao4262e.pretty)(options "")(descr "v1.1 AO4262E SOIC-8 N-FET from easyeda2kicad C431178"))
+	(lib (name esd7l50)(type KiCad)(uri /home/novatics64/novapcb/hardware/kicad/novapcb/lib/esd7l50.pretty)(options "")(descr "v1.1 ESD7L5.0DT5G SOT-723 from easyeda2kicad C605398"))
+	(lib (name lps22hbtr)(type KiCad)(uri /home/novatics64/novapcb/hardware/kicad/novapcb/lib/lps22hbtr.pretty)(options "")(descr "v1.1 LPS22HBTR HLGA-10 from easyeda2kicad C94049"))
+	(lib (name lp5907)(type KiCad)(uri /home/novatics64/novapcb/hardware/kicad/novapcb/lib/lp5907.pretty)(options "")(descr "v1.1 LP5907MFX-3.3 SOT-23-5 from easyeda2kicad C80670"))
+)

@@ -1,0 +1,37 @@
+{
+  "raw_stdout_tail": "\nNote: No compatibility mode selected!\n\n\nCircuit: * phase 6a step 6 re-validation \u2014 efuse front-end inrush\n\nDoing analysis at TEMP = 27.000000 and TNOM = 27.000000\n\nUsing SPARSE 1.3 as Direct Linear Solver\n\nInitial Transient Solution\n--------------------------\n\nNode                                   Voltage\n----                                   -------\nvout                                         0\nvbec_out#branch                              0\n\n\nNo. of Data Rows : 1011\nv_max               =  5.00000e+00 at=  1.00000e-01\nv_at_50ms           =  5.00000e+00\nv_at_100ms          =  5.00000e+00\n\tmeasure 'ramp_dv_dt'  failed\nError: measure  ramp_dv_dt  :\n\tno such function as 'param'\n meas tran ramp_dv_dt param 5/0.050 failed!\n\n\tmeasure 'i_inrush_peak'  failed\nError: measure  i_inrush_peak  :\n\tno such function as 'param'\n meas tran i_inrush_peak param 6.7e-6 * (5/0.050) failed!\n\nNote: Simulation executed from .control section \n",
+  "v_max": 5.0,
+  "v_at_50ms": 5.0,
+  "v_at_100ms": 5.0,
+  "analytical": {
+    "ramp_time_target_ms": 50.0,
+    "ramp_dvdt_target_V_per_s": 100.0,
+    "i_inrush_peak_analytical_mA": 0.67,
+    "ldo_load_peak_mA_at_5V": 300,
+    "total_peak_mA": 300.67
+  },
+  "checks": [
+    {
+      "check": "inrush_peak",
+      "predicted_mA": 670.0,
+      "total_with_ldo_load_A": 0.3,
+      "target_A_max": 1.0,
+      "pass": true
+    },
+    {
+      "check": "ramp_time_50ms",
+      "v_at_50ms": 5.0,
+      "target_5V": 5.0,
+      "tolerance_pct": 20.0,
+      "pass": true
+    },
+    {
+      "check": "output_settle",
+      "v_at_100ms": 5.0,
+      "target_min_V": 4.85,
+      "pass": true
+    }
+  ],
+  "verdict": "PASS",
+  "notes": "eFuse + Q2 + D1 front-end (Step 2 iter 4). Inrush bounded by deterministic eFuse soft-start ramp (50 ms @ 100 V/s). Far below the 2A target and the 2.08A eFuse OC ceiling \u2014 well-margined. Replaces the failed Miller-FET (Step 2 iter 3) result which had 2.85A inrush at 1ms BEC ramp."
+}

@@ -155,7 +155,12 @@ setup()
 GND  = n("GND")
 P3V3 = n("+3V3")
 P5V  = n("+5V")          # post-MOSFET filtered 5V (feeds LDO + decoupling) — Step 2 pivot 2026-05-21
-P5V_BEC = n("+5V_BEC")   # raw 5V from Mauch BEC connector (input to inrush-limiter MOSFET in 3b)
+P5V_BEC = n("+5V_BEC")   # raw 5V (post-OR-ing in 3b) → input to eFuse front-end
+# v1.1 redundancy re-spin: J4 now feeds +5V_BEC_A (post-J4, pre-OR-ing FET);
+# J19 (new 2nd input) feeds +5V_BEC_B. The LM74700 OR-ing in power_3b.py
+# combines both into +5V_BEC.
+P5V_BEC_A = n("+5V_BEC_A")
+P5V_BEC_B = n("+5V_BEC_B")
 NRST = n("NRST")   # shared with mcu_3a.py (Net.fetch returns existing)
 
 
@@ -182,14 +187,70 @@ mauch_conn = Part(
 mauch_conn.ref = "J4"   # J4 reserved per Phase 2.5 sketch (power 6P)
 
 # Pin map per Pixhawk DS-009 6-pin power-module standard.
-# Step 2 pivot 2026-05-21: BEC connector feeds +5V_BEC (raw). The MOSFET soft-start
-# in sheets/power_3b.py limits inrush + produces +5V (filtered) downstream.
-P5V_BEC         += mauch_conn[1]   # VCC (+5V_BEC raw from Mauch BEC)
-P5V_BEC         += mauch_conn[2]   # VCC (paralleled)
+# v1.1 redundancy re-spin 2026-05-21: J4 now feeds +5V_BEC_A (input A to
+# the LM74700 OR-ing in power_3b.py). The OR-ing FET drain feeds +5V_BEC
+# (shared) which feeds the existing Q2/D1/U6 eFuse front-end downstream.
+P5V_BEC_A       += mauch_conn[1]   # VCC (+5V_BEC_A raw from Mauch BEC, input A)
+P5V_BEC_A       += mauch_conn[2]   # VCC (paralleled)
 MAUCH_VBAT_PRE  += mauch_conn[3]   # VBAT analog (post 9:1 divider)
 MAUCH_CURR_PRE  += mauch_conn[4]   # Current analog (Hall sensor)
 GND             += mauch_conn[5]   # GND
 GND             += mauch_conn[6]   # GND (paralleled)
+
+
+# =====================================================================
+# Block 1b (v1.1): 2nd power-monitor connector — J19, mirror of J4
+# =====================================================================
+# Per docs/RESPIN_SCOPE.md + master adjudication 2026-05-21:
+#   - 2nd JST-GH 6P input for power-input redundancy
+#   - Same pinout as J4 (Pixhawk DS-009)
+#   - VCC feeds +5V_BEC_B (input B to LM74700 OR-ing in power_3b.py)
+#   - Independent VBAT2/CURR2 ADC sense → MCU PC2/PC3 (free per hwdef
+#     pin survey — PC2 = ADC123_IN12, PC3 = ADC123_IN13). hwdef revision
+#     adds these as BATT2_VOLTAGE_SENS / BATT2_CURRENT_SENS lines.
+
+BATT2_V_SENSE = n("BATT2_VOLTAGE_SENS")
+BATT2_I_SENSE = n("BATT2_CURRENT_SENS")
+BATT2_V_SENSE += mcu["PC2_C"]   # STM32H743 "direct" PC2 (KiCad symbol pin name)
+BATT2_I_SENSE += mcu["PC3_C"]   # STM32H743 "direct" PC3 (KiCad symbol pin name)
+
+MAUCH2_VBAT_PRE = Net("MAUCH2_VBAT_PRE")
+MAUCH2_CURR_PRE = Net("MAUCH2_CURR_PRE")
+
+mauch2_conn = Part(
+    "Connector_Generic", "Conn_01x06",
+    footprint="Connector_JST:JST_GH_SM06B-GHS-TB_1x06-1MP_P1.25mm_Horizontal",
+    value="MAUCH2_6P",
+)
+mauch2_conn.ref = "J19"
+
+P5V_BEC_B       += mauch2_conn[1]   # VCC (+5V_BEC_B raw, input B)
+P5V_BEC_B       += mauch2_conn[2]   # VCC (paralleled)
+MAUCH2_VBAT_PRE += mauch2_conn[3]   # VBAT analog
+MAUCH2_CURR_PRE += mauch2_conn[4]   # Current analog
+GND             += mauch2_conn[5]   # GND
+GND             += mauch2_conn[6]   # GND (paralleled)
+
+# ADC RC filters for J19 — identical topology to J4.
+r_vbat2 = Part("Device", "R", value="1k", footprint=FP_R_0402)
+r_vbat2.ref = "R43"
+MAUCH2_VBAT_PRE += r_vbat2[1]
+BATT2_V_SENSE   += r_vbat2[2]
+
+c_vbat2 = Part("Device", "C", value="100nF", footprint=FP_C_0402)
+c_vbat2.ref = "C81"
+BATT2_V_SENSE += c_vbat2[1]
+GND           += c_vbat2[2]
+
+r_curr2 = Part("Device", "R", value="1k", footprint=FP_R_0402)
+r_curr2.ref = "R44"
+MAUCH2_CURR_PRE += r_curr2[1]
+BATT2_I_SENSE   += r_curr2[2]
+
+c_curr2 = Part("Device", "C", value="100nF", footprint=FP_C_0402)
+c_curr2.ref = "C82"
+BATT2_I_SENSE += c_curr2[1]
+GND           += c_curr2[2]
 
 
 # ---- ADC RC filters on VBAT + CURRENT (1 kΩ + 100 nF, ~1.6 kHz LPF) ----

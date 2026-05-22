@@ -1,0 +1,18 @@
+{
+  "_comment": "All 36 residual nets for A* routing (master 2026-05-22). Nets only; +3V3A trace-net handled separately if needed.",
+  "nets": [
+    "USBC_CC1", "USBC_CC2",
+    "USBC_D_M_PRE", "USBC_D_P_PRE",
+    "GPS1_RX", "USART6_TX",
+    "SDMMC1_CMD", "SDMMC1_D0", "SDMMC1_D3",
+    "SPI1_SCK", "SPI1_MISO", "SPI1_MOSI",
+    "SPI3_SCK", "SPI3_MISO", "SPI3_MOSI",
+    "IMU1_CS", "IMU2_GYR_CS", "IMU3_CS",
+    "IMU2_GYR_INT3", "IMU3_INT1",
+    "CAN1_RX", "CAN1_TX", "GPIO_CAN1_SILENT",
+    "MOT1", "MOT2", "MOT5",
+    "HEATER_PWM", "VCAP1",
+    "HSE_IN", "HSE_OUT",
+    "GND"
+  ]
+}

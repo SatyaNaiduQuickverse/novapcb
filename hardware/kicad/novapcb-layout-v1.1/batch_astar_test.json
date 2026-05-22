@@ -1,0 +1,8 @@
+{
+  "_comment": "A* router sanity test — 3 short residual nets first per master 2026-05-22.",
+  "nets": [
+    "USBC_CC1",
+    "USBC_CC2",
+    "VCAP1"
+  ]
+}

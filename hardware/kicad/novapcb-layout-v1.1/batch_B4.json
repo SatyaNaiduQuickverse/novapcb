@@ -1,0 +1,10 @@
+{
+  "_comment": "Batch B4 — CAN + IMU interrupts (east side ↔ U14 CAN, U8/U9 INTs).",
+  "nets": [
+    "CAN1_RX",
+    "CAN1_TX",
+    "GPIO_CAN1_SILENT",
+    "IMU2_GYR_INT3",
+    "IMU3_INT1"
+  ]
+}
