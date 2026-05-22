@@ -558,10 +558,12 @@ GND      += c_u13_out[2]
 HEATER_PWM   = n("HEATER_PWM")
 HEATER_DRAIN = Net("HEATER_DRAIN")
 
-# Wire PWM control net to MCU PA7 (TIM14_CH1). hwdef revision adds the
-# PA7 HEATER_PWM line; for the netlist topology this is correct now.
+# Wire PWM control net to MCU PA15 (TIM2_CH1 AF1). Was PA7 (TIM14_CH1)
+# but PA7 was re-muxed to SPI1_MOSI per master 2026-05-22 placement
+# strategy (SPI1_MOSI: PD7→PA7 to bring it to S side near U3 IMU1).
+# PA15 has TIM2_CH1 AF1 — valid timer for HEATER_PWM low-frequency PWM.
 from sheets.mcu_3a import mcu as _mcu_ref
-HEATER_PWM += _mcu_ref["PA7"]
+HEATER_PWM += _mcu_ref["PA15"]
 
 q5 = Part(
     "Transistor_FET", "AO3400A",

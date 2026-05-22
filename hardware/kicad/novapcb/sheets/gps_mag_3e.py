@@ -137,8 +137,11 @@ GPS1_RX  += mcu["PD6"]
 # hwdef.dat:60-61 — I²C1
 I2C1_SCL += mcu["PB6"]
 I2C1_SDA += mcu["PB7"]
-# hwdef.dat:179 — BUZZER GPIO
-BUZZER   += mcu["PA15"]
+# hwdef.dat:179 — BUZZER GPIO. Was PA15 but PA15 was re-muxed to
+# HEATER_PWM per master 2026-05-22 (HEATER_PWM had to vacate PA7 since
+# SPI1_MOSI moved there). BUZZER is plain digital output — any free
+# GPIO works. PD7 (pin 88, N) is freed by SPI1_MOSI's departure.
+BUZZER   += mcu["PD7"]
 
 
 # ---- testpoints (hwdef-unassigned safety pins) ----

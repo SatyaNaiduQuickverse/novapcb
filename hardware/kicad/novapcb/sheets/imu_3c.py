@@ -98,7 +98,7 @@ IMU1_CS   = n("IMU1_CS")
 # nets is electrically connected to the MCU.
 SPI1_SCK  += mcu["PA5"]
 SPI1_MISO += mcu["PA6"]
-SPI1_MOSI += mcu["PD7"]
+SPI1_MOSI += mcu["PA7"]   # was PD7 (pin 88, N); re-muxed to PA7 (pin 31, S) per master 2026-05-22
 IMU1_CS   += mcu["PC15"]
 
 
