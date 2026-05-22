@@ -211,7 +211,14 @@ Solver 1
   Equation = Heat Equation
   Procedure = "HeatSolve" "HeatSolver"
   Variable = Temperature
-  Linear System Solver = Direct
+  ! Iterative solver for the heat equation (SPD system) — direct solver
+  ! becomes slow above ~50k DOF on single thread. CG + ILU(0) converges
+  ! reliably for steady-state heat with strong diagonal dominance.
+  Linear System Solver = Iterative
+  Linear System Iterative Method = CG
+  Linear System Preconditioning = ILU0
+  Linear System Convergence Tolerance = 1e-10
+  Linear System Max Iterations = 1000
   Steady State Convergence Tolerance = 1e-08
 End
 
@@ -296,7 +303,7 @@ def main():
     # ---- (b) Elmer 3D FE (bare FR4) ----
     print("\n[2/3] Elmer 3D thin-slab FE (bare FR4, no copper plane)", flush=True)
     fe_results = []
-    for (nx, ny, nz) in [(30, 24, 3), (60, 48, 5), (90, 72, 7)]:
+    for (nx, ny, nz) in [(60, 48, 5), (90, 72, 7), (120, 96, 9)]:
         os.makedirs(CASE_DIR, exist_ok=True)
         import shutil
         mesh_dir = os.path.join(CASE_DIR, "mesh")
@@ -326,17 +333,25 @@ def main():
 
     # ---- (c) Verdict ----
     print(f"\n[3/3] Verdict", flush=True)
-    Tj_for_verdict = max(Tj_FE_bare, Tj_an_max)  # worst case of the two
-    margin_v = Tj_max_spec - Tj_for_verdict
-    if margin_v > 30:
-        verdict = "GREEN — T_j worst-case has ample margin to spec"
-    elif margin_v > 10:
+    # PRIMARY: analytical with planes (ship-state). Bare-FR4 FE is a
+    # transient intermediate state — the cross-subsystem +3V3 + GND
+    # planes are guaranteed by the design and bring T_j to the analytical
+    # value. Master 2026-05-22: "47.5°C with planes (JESD51-7), 57.5°C
+    # margin — the realistic ship-state, gate passes. The bare-FR4 ...
+    # is just the no-planes intermediate state — ... not a problem."
+    margin_ship = Tj_max_spec - Tj_an_max
+    margin_bare = Tj_max_spec - Tj_FE_bare
+    if margin_ship > 30:
+        verdict = "GREEN — T_j (with-planes ship-state) has ample margin"
+    elif margin_ship > 10:
         verdict = "YELLOW — T_j margin tight"
     else:
-        verdict = "RED — T_j marginal"
-    print(f"  Worst-case T_j (FE-bare or analytical-planes) = {Tj_for_verdict:.1f} °C", flush=True)
-    print(f"  Spec max T_j = {Tj_max_spec} °C  →  margin = {margin_v:.1f} °C", flush=True)
+        verdict = "RED — T_j marginal even with planes"
+    print(f"  Ship-state T_j (with planes, JESD51-7)  = {Tj_an_max:.1f} °C  →  margin {margin_ship:.1f} °C", flush=True)
+    print(f"  Bare-FR4 FE T_j (no-planes worst-case)  = {Tj_FE_bare:.1f} °C  →  margin {margin_bare:.1f} °C", flush=True)
     print(f"  Gate 12: {verdict}", flush=True)
+    print(f"  Note: bare-FR4 margin is tight by design — confirms +3V3/GND", flush=True)
+    print(f"        planes are thermally load-bearing (cross-subsystem PR).", flush=True)
     print(f"\nGate 13 cite — Elmer thermal tool VALIDATED:", flush=True)
     print(f"  • Row 3 (1D linear T): 0.00% vs analytical", flush=True)
     print(f"  • 3D body-source convention (HS = W/kg, NOT W/m³): "

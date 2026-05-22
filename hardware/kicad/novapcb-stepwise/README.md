@@ -6,14 +6,17 @@ The single `.kicad_pcb` that grows subsystem by subsystem per
 
 ## Status
 
-- **Step 1 (C — MCU_CORE):** in-progress on this PR.
-- Steps 2-10: future PRs (one per subsystem / integration step).
+- **Step 1 (C — MCU_CORE):** placed + gates 1/3/4/12 GREEN.
+- **Step 2 (E — BARO_I2C):** placed (U4, U7, C51, C52, C71, C72, R11, R12).
+- Steps 3-10: future PRs (one per subsystem / integration step).
 
 ## How to regenerate
 
 ```bash
 # Step 1 — place C only
 python3 step1_place_C.py
+# Step 2 — add E (BARO_I2C) on top of the Step-1 board
+python3 step2_place_E.py
 
 # Run the gates (each returns 0 = green, 1 = fail)
 python3 gate1_bbox_overlap.py    # bbox-overlap + self-test
@@ -33,6 +36,7 @@ kicad-cli pcb render --side bottom --output render_bot.png novapcb-stepwise.kica
 | `novapcb-stepwise.kicad_pcb` | the growing board (committed) |
 | `fp-lib-table`               | absolute-path footprint libs (KiCad 9 KIPRJMOD workaround) |
 | `step1_place_C.py`           | Step-1 placer: U1, Y1, FB1, 16 caps, 3 resistors |
+| `step2_place_E.py`           | Step-2 placer: U4 (DPS310), U7 (BMP388), C51/52/71/72, R11/12 |
 | `gate1_bbox_overlap.py`      | Gate 1 verifier (with deliberate-bad self-test) |
 | `gate3_uniqueness.py`        | Gate 3: every netlist refdes in .kicad_pcb exactly once |
 | `gate4_artifact_trust.py`    | Gate 4: parse the actual .kicad_pcb, don't trust placer's "OK" |
