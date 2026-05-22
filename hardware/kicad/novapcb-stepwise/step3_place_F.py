@@ -78,11 +78,21 @@ def main():
     print("=== Step 3 — place F (USB_INTERFACE) ===", flush=True)
     brd = pcbnew.LoadBoard(PCB)
 
+    # Idempotent: park any pre-existing F refs before snapshotting.
+    # Otherwise re-running this script sees old F positions as "placed"
+    # obstacles and refuses to re-place over itself.
+    park_x = 110.0
+    for ref in F_REFDES:
+        fp = find_fp(brd, ref)
+        if fp:
+            fp.SetPosition(pcbnew.VECTOR2I(_mm(park_x), _mm(5.0)))
+            park_x += 5.0
+
     placed = []
     for fp in brd.GetFootprints():
         if fp.GetPosition().x/1e6 < 100.0:
             placed.append((fp, _courtyard_bbox(fp)))
-    print(f"  already-placed on-board: {len(placed)} footprints", flush=True)
+    print(f"  already-placed on-board (excl F): {len(placed)} footprints", flush=True)
 
     import math
     placed_F = []
@@ -127,9 +137,11 @@ def main():
     try_place("R31", 78.5, 26.0)
     try_place("R32", 78.5, 27.0)
 
-    # U5 ESD diode — between J1 pads (X≈80) and U1 east edge (X≈53).
-    # Place ~X=72, Y=30 (midway, same Y as USB pair).
-    try_place("U5", 72.0, 30.0)
+    # U5 ESD diode — placed close to J1 (within ~4mm of D+/D- pads, per
+    # textbook ESD-at-connector-entry rule, master directive 2026-05-22).
+    # J1 D+/D- pads at X≈79.74. U5 footprint ~4.16mm wide. With center
+    # at X=76, U5 east edge at ~78.08 → 1.66mm gap to J1 pads.
+    try_place("U5", 76.0, 30.0)
 
     pcbnew.SaveBoard(PCB, brd)
     print(f"\n  Placed {len(placed_F)} of {len(F_REFDES)} F components", flush=True)
