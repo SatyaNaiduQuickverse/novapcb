@@ -29,6 +29,7 @@
 ### 3. Elmer FEM thermal — `elmer_thermal/case.sif`
 - **Mesh-construction trap caught**: ElmerGrid native `.grd` syntax for a single-body rectangle generates ZERO boundary elements unless the boundary block is set up correctly. Solver runs, reports "Result Norm = 0", silently no BC applied. Fixed by hand-writing `mesh.boundary` with 4 distinct boundary IDs (bottom/right/top/left). Now matches analytical T(x)=x exactly (linear field exact for Q1 bilinear elements).
 - Tool is trusted for Phase 6j thermal sims.
+- **3D body-source convention caught 2026-05-22** (during Step-1 Gate-12 setup): Elmer's `HeatSolver` interprets `Heat Source` as **W/kg** (per unit MASS), NOT W/m³ (volumetric). The solver internally multiplies by `Density`. Setting raw W/m³ over-sources by exactly the density factor (1850× for FR4). Verified empirically: with `Heat Source = q_vol / density`, a 3D thin-slab cube (10×10×1 mm, q_vol = 1e6 W/m³, k=0.3, all 6 Dirichlet) returns T_max = 25.42 °C vs analytical thin-slab `q*(t/2)²/(2k) = 0.417 K` above ambient → **1.00× match**. This is the validated 3D body-source recipe for novapcb sims.
 
 ### 4. Elmer FEM structural — `elmer_beam/case.sif`
 - Q1 bilinear shear-locking observed on coarse mesh (NX=100, NY=5 → 2.0% error vs Timoshenko, just above 2% bar).

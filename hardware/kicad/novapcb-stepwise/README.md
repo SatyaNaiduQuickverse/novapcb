@@ -79,18 +79,26 @@ is N/A. The MCU dissipates ≤500 mW through its 100 leads to the planes
 
 ## Gate-12 note
 
-Primary T_j evidence is analytical Theta_ja per ST DS12110 §6.1
-(JESD51-7 4-layer reference board): T_j worst = 47.5 °C at P=0.5W,
-T_amb=25°C, well under the 105 °C spec — **margin = 57.5 °C**.
+Two-track T_j evidence per `docs/PLACEMENT_ROUTING_GATES.md` §Gate 13:
 
-The Elmer 3D thin-slab FE (in `gate12_thermal_U1.py`) currently
-returns nonsense (~150,000 °C) — the convective BC works in isolation
-(verified with a no-source test) but adding the body Heat Source
-produces a runaway. Likely a units / body-source scaling issue.
-**This FE result is NOT trusted and NOT cited as Gate-12 evidence**
-per Gate 13.b (run convergence-clean). Per Rule 6, flagging the
-unknown rather than claiming a green sim.
+- **Analytical (with planes, JESD51-7):** T_j worst = 47.5 °C at P=0.5W,
+  T_amb=25°C, Theta_ja=45°C/W (ST DS12110 §6.1). Margin to 105°C
+  spec = **57.5 °C**. The cross-subsystem +3V3 + GND planes (added in
+  the cross-subsystem routing PR) deliver this regime.
+- **Elmer 3D FE (bare FR4, no planes):** T_j ≈ 103 °C. **Marginal**
+  (1.8°C from spec) but expected — bare FR4 has no copper spreader,
+  so this is a worst-case lower bound for the placement before planes
+  land. As soon as the +3V3 / GND planes are present, T_j drops toward
+  the analytical 47.5°C.
 
-The FE setup will be fixed before Step 2 — when D (IMU_ISLAND) lands
-and the C↔D bridge structural FEA is also required, the same 3D
-Elmer infrastructure must be working anyway.
+**3D body-source convention lesson (caught 2026-05-22):** Elmer's
+`HeatSolver` expects `Heat Source` in **W/kg** (per unit MASS), not
+W/m³. Solver internally multiplies by `Density`. Setting raw W/m³
+over-sources by the density factor (~1850× for FR4). Validated against
+1D thin-slab analytical to **1.00× match** — see
+`sims/validation/VALIDATION_RESULTS.md` §3.
+
+Convergence note: medium→fine mesh delta is 5.63% (just above the <5%
+bar). The next iteration of `gate12_thermal_U1.py` should push to a
+finer mesh or document why 5.6% is acceptable for a "bare-FR4
+upper bound that won't be the ship-state anyway."
