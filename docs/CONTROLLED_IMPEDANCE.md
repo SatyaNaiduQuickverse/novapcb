@@ -103,6 +103,8 @@ Always validate with the 3D field solver.
 ### 2.4 Recommendation — W = 0.20 mm, S = 0.13 mm (CORRECTED 2026-05-22)
 
 **Z_diff = 87.41 Ω per openEMS 3D FDTD** (validated tool, Task 9 row 5).
+
+**Coupled-pair SETUP validation (Task #75, 2026-05-23):** the openEMS coupled-pair setup itself was validated via limit-case sweep — at large S (S/h=9.52), Z_diff converges to within **−2.9%** of 2×openEMS-single-line (131.0 Ω). The coupled-setup is correctly modeling decoupled-pair physics, isolating the setup question from the solver-vs-formula question. The 87.41 Ω at S=0.13 (USB design geometry) is the trustworthy controlled-impedance ground truth. See `sims/validation/VALIDATION_RESULTS.md` "Update 2026-05-23" section.
 Cross-checks:
 - Hammerstad-Jensen analytical: 98.96 Ω (within ±10%)
 - scikit-rf MLine + coupling: 100.76 Ω (within USB-2 ±15%)
