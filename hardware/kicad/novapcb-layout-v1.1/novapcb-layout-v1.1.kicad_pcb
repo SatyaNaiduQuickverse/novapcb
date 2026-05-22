@@ -19734,7 +19734,6 @@
 			(size 1.6 0.3)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 57 "MOT3")
 			(uuid "2af381a8-0181-47e6-a794-7f222dba4ae6")
 		)
 		(pad "23" smd roundrect
@@ -19742,7 +19741,6 @@
 			(size 1.6 0.3)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 58 "MOT4")
 			(uuid "cf4a6de9-454f-4080-af3b-571782a44b35")
 		)
 		(pad "24" smd roundrect
@@ -19750,7 +19748,6 @@
 			(size 1.6 0.3)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 59 "MOT5")
 			(uuid "747c54b3-a19b-478a-b131-fb2838384aa1")
 		)
 		(pad "25" smd roundrect
@@ -19758,7 +19755,6 @@
 			(size 1.6 0.3)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 60 "MOT6")
 			(uuid "10c6823c-f3a8-4a04-b28e-ffd5984a4bcc")
 		)
 		(pad "26" smd roundrect
@@ -19784,6 +19780,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 84 "SPI3_SCK")
 			(uuid "9def1961-ade6-4a3b-9236-60b92e5cd51c")
 		)
 		(pad "29" smd roundrect
@@ -19807,7 +19804,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 34 "HEATER_PWM")
+			(net 77 "SPI1_MOSI")
 			(uuid "0e3bd9c1-fca2-40de-8b80-8a3a2a4234b4")
 		)
 		(pad "32" smd roundrect
@@ -19815,6 +19812,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 82 "SPI3_MISO")
 			(uuid "fee405f2-5474-402c-850b-1aa952bb0751")
 		)
 		(pad "33" smd roundrect
@@ -19822,6 +19820,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 83 "SPI3_MOSI")
 			(uuid "dcf7401c-7e4c-4adb-b48d-07127532c5b2")
 		)
 		(pad "34" smd roundrect
@@ -19829,7 +19828,6 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 55 "MOT1")
 			(uuid "164bdf7a-f171-425e-9e42-8faa591a5bba")
 		)
 		(pad "35" smd roundrect
@@ -19837,7 +19835,6 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 56 "MOT2")
 			(uuid "073c11ae-9f59-4edf-883a-d12a8576c4be")
 		)
 		(pad "36" smd roundrect
@@ -19845,6 +19842,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 37 "I2C1_SCL")
 			(uuid "5d5769b5-7213-4fe9-97c9-49ded70bd3dc")
 		)
 		(pad "37" smd roundrect
@@ -19852,6 +19850,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 38 "I2C1_SDA")
 			(uuid "b42b405a-93c3-4104-81a8-958317f284f9")
 		)
 		(pad "38" smd roundrect
@@ -20004,6 +20003,7 @@
 			(size 1.6 0.3)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 32 "GPS1_TX")
 			(uuid "9bf96ab2-ca01-40a0-8423-75a43c56924a")
 		)
 		(pad "58" smd roundrect
@@ -20011,6 +20011,7 @@
 			(size 1.6 0.3)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 31 "GPS1_RX")
 			(uuid "220b2391-d4d4-4cf9-99f0-2e734fef31d5")
 		)
 		(pad "59" smd roundrect
@@ -20018,7 +20019,6 @@
 			(size 1.6 0.3)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 61 "MOT7")
 			(uuid "a6550adc-50c3-47ad-baf4-22f00edf0c1c")
 		)
 		(pad "60" smd roundrect
@@ -20026,7 +20026,6 @@
 			(size 1.6 0.3)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 62 "MOT8")
 			(uuid "63dbe54f-f593-498c-81d7-a1c599ebce61")
 		)
 		(pad "61" smd roundrect
@@ -20233,7 +20232,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 32 "GPS1_TX")
+			(net 55 "MOT1")
 			(uuid "ae314be8-6f83-40fc-bb39-187e04e38d43")
 		)
 		(pad "87" smd roundrect
@@ -20241,7 +20240,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 31 "GPS1_RX")
+			(net 56 "MOT2")
 			(uuid "897e315d-d940-4cf6-8c4d-25713abeefb7")
 		)
 		(pad "88" smd roundrect
@@ -20249,7 +20248,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 77 "SPI1_MOSI")
+			(net 34 "HEATER_PWM")
 			(uuid "083634a4-34dc-43af-be99-009737586124")
 		)
 		(pad "89" smd roundrect
@@ -20257,7 +20256,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 84 "SPI3_SCK")
+			(net 57 "MOT3")
 			(uuid "39d54b42-a66d-46f5-ba24-519ca52b4595")
 		)
 		(pad "90" smd roundrect
@@ -20265,7 +20264,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 82 "SPI3_MISO")
+			(net 58 "MOT4")
 			(uuid "352d34c7-96d1-41bd-ac4f-0cebfbf46148")
 		)
 		(pad "91" smd roundrect
@@ -20273,7 +20272,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 83 "SPI3_MOSI")
+			(net 59 "MOT5")
 			(uuid "e7b9d662-b15d-434a-a820-e282e40c2e6a")
 		)
 		(pad "92" smd roundrect
@@ -20281,7 +20280,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 37 "I2C1_SCL")
+			(net 60 "MOT6")
 			(uuid "0e4d3d0d-528b-4e4b-b498-1c53d71ffb3b")
 		)
 		(pad "93" smd roundrect
@@ -20289,7 +20288,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 38 "I2C1_SDA")
+			(net 61 "MOT7")
 			(uuid "586ce48f-61c3-4cca-9442-cb6f69f55658")
 		)
 		(pad "94" smd roundrect
@@ -20305,6 +20304,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 62 "MOT8")
 			(uuid "844a3ecc-1f49-47c4-a996-e103e8db477d")
 		)
 		(pad "96" smd roundrect
