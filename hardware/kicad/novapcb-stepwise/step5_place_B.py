@@ -57,31 +57,67 @@ MID_HOLE_KEEPOUT = [
     (87.0, 35.0, 8.0),   # east mid
 ]
 
-# Strategy: U2 north (Y=24..28), U6 south (Y=15..20), U13 + FB2 on
-# north edge (Y≈26..28) along the path to D zone.
-
-# Anchor positions for the major components (target X, Y, rot)
+# Constraint analysis 2026-05-23 (master directive: full analysis up
+# front before placement to avoid multi-iteration sagas like U5):
+#
+# 1. Power flow (south → north, A is south of B):
+#    A.+5V_BEC → U6 eFuse (south) → P5V (filtered)
+#    P5V → Q2 (rev-pol FET) → U2 LDO (north) → +3V3 (to C+E+F+G plane)
+#    +3V3 → FB2 (ferrite) → U13 LDO → +3V3_IMU (to D only)
+#    Linear power flow placement: input south, output north.
+#
+# 2. Heat: U2 (595mW) is the first major added heat source. U1 (700mW)
+#    is at (45, 35) — heat halo centered there. To avoid heat stacking,
+#    U2 placed at WEST END of B zone (X=24, Y=25) — ~21mm lateral
+#    separation from U1 center. Matches STEP4's validated layout
+#    (U2_LDO was at X=10, U1_MCU at X=39.53 — 30mm apart).
+#
+# 3. Mid-edge keep-out per master 2026-05-23 (sim-gated 4→6 holes):
+#    (3, 35) west mid + (87, 35) east mid, 8mm circular each. B zone
+#    X=20..70, Y=15..28 doesn't overlap either. Rule still enforced
+#    in _bbox_within_keepout() as a board-wide constraint.
+#
+# 4. C boundary: U1 body at Y=28..42 (centered 35, 14mm). B zone
+#    upper bound Y=28 keeps B clear of C body — no encroachment.
+#
+# 5. Heat-dissipation summary (post-placement gate12 v2 run):
+#    U1 (45, 35) 700mW + U2 (24, 25) 595mW + U6 (28, 18) 18mW.
+#    Predicted Tj_MCU/Tj_LDO similar to STEP4 (within ~75°C) on
+#    larger 90×70 board with anisotropic k=33.5/0.316 + h=5 + Tamb=50°C.
 ANCHORS = {
-    "U6":  (35.0, 18.0, 0.0),    # eFuse, south
-    "D1":  (40.0, 19.0, 0.0),    # TVS diode, near U6 input
-    "U2":  (45.0, 26.0, 0.0),    # main LDO, north (near MCU)
-    "Q2":  (32.0, 25.0, 0.0),    # auxiliary FET
-    "FB2": (50.0, 27.0, 0.0),    # ferrite bead, exits north
-    "U13": (55.0, 26.0, 0.0),    # IMU LDO, near FB2 exit
-    "R7":  (38.0, 21.0, 0.0),
-    "R8":  (40.0, 21.0, 0.0),
-    "R9":  (42.0, 21.0, 0.0),
-    "R10": (44.0, 21.0, 0.0),
-    "R13": (46.0, 21.0, 0.0),
-    "C7":  (32.0, 19.0, 0.0),
-    "C8":  (34.0, 19.0, 0.0),
-    "C9":  (33.0, 17.0, 0.0),
-    "C31": (43.0, 27.0, 0.0),
-    "C32": (45.0, 27.0, 90.0),   # U2 input cap, vertical
-    "C33": (47.0, 27.0, 90.0),   # U2 output cap, vertical
-    "C34": (43.0, 24.0, 0.0),
-    "C77": (53.0, 27.0, 0.0),    # U13 input cap
-    "C78": (57.0, 27.0, 0.0),    # U13 output cap
+    # POWER INPUT SOUTH (Y=15..20)
+    "U6":  (28.0, 18.0, 0.0),    # eFuse — input side, south
+    "D1":  (35.0, 18.0, 0.0),    # TVS post-eFuse
+    "C7":  (24.0, 19.0, 0.0),    # U6 input bulk cap
+    "C8":  (32.0, 19.0, 0.0),    # U6 output cap
+    "C9":  (28.0, 16.0, 0.0),    # secondary bulk
+
+    # AUXILIARY FET MID (Y=21..23)
+    "Q2":  (24.0, 22.0, 0.0),    # reverse-polarity FET
+
+    # eFuse PROGRAMMING RESISTORS — small 0402, row at Y=22
+    "R7":  (35.0, 22.0, 0.0),
+    "R8":  (37.0, 22.0, 0.0),
+    "R9":  (39.0, 22.0, 0.0),
+    "R10": (41.0, 22.0, 0.0),
+    "R13": (43.0, 22.0, 0.0),
+
+    # LDO NORTH — WEST OFFSET FROM U1 (heat stacking mitigation)
+    # Iteration: tested U2 at X=22 (max west) → MCU margin shrank to
+    # +0.9°C (heat funneled east by adiabatic west edge). U2 at X=24
+    # gives MCU +2.1°C — best balance. STEP4 had ~30mm U2↔U1 separation;
+    # mine is 23mm (B zone limit; can't push U2 further away from U1).
+    "U2":  (24.0, 25.0, 0.0),    # AP2112K main LDO, west-offset
+    "C31": (28.0, 25.0, 0.0),    # U2 input cap
+    "C32": (26.0, 27.0, 90.0),   # U2 output cap (vertical)
+    "C33": (22.0, 27.0, 90.0),   # U2 output decap (vertical)
+    "C34": (30.0, 27.0, 0.0),    # decap, east of others
+
+    # FERRITE + IMU LDO EAST (along path to D)
+    "FB2": (50.0, 27.0, 0.0),    # ferrite, +3V3 → +3V3_IMU_PRE
+    "U13": (60.0, 26.0, 0.0),    # LP5907 IMU LDO
+    "C77": (58.0, 27.0, 0.0),    # U13 input cap (pre)
+    "C78": (63.0, 27.0, 0.0),    # U13 output cap (+3V3_IMU)
 }
 
 
