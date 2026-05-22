@@ -112,34 +112,50 @@ Three options to pick for gate12 input:
 | Option | Value | Basis |
 |---|---|---|
 | (A) Datasheet abs-max | 0.924 W | I_DD = 280 mA — unreachable stress test, NOT defensible |
-| (B) STEP4 assumption | 0.700 W | unstated derivation; turned out near-correct |
-| (C) AN4365 derivation + 25% margin | **0.700 W** | this doc §4 = 0.449 W sustained × ~1.55 margin |
+| (B) Rigorous sustained-worst | **0.449 W** | This doc §4 — AN4365 + peripheral adders + workload margin |
+| (C) Design input | **0.700 W** | (B) + explicit conservative design margin (~1.5×) |
 
-**Selected: 0.700 W** for gate12 thermal input.
+**Selected design input: 0.700 W** for gate12 thermal sims.
 
-Rationale: AN4365-derived sustained-worst is 0.449 W. Apply ~55%
-additional margin (covers: hot-spot inside the package — the AN4365
-numbers are averaged over the die area, but Tj is measured at the
-hottest point near the core; under-reported workload spikes; and
-silicon process variation up to +20% per DS12110 §6.3.1).
-0.449 × 1.55 = 0.696 ≈ **0.700 W**.
+The 0.700 W input is NOT a derived rigorous number. The rigorous
+sustained worst is 0.449 W per §4 (and §5 spot bursts are
+thermally irrelevant due to die time-constant). The 0.700 W input
+is **0.449 W × 1.56 ≈ 0.700 W** — an explicit ~1.5× **design margin**
+applied on top of the rigorous derivation, covering:
 
-Coincidentally matches STEP4's 0.700 W assumption. STEP4 was therefore
-on-target without explicit derivation — this doc retrofits the
-rigorous basis for it.
+- **Silicon process spread** (DS12110 §6.3.1 allows ±20% I_DD spread
+  between parts of the same family).
+- **Workload headroom** for future firmware (e.g. higher-rate IMU
+  fusion, additional protocols) that would push I_DD above the
+  current ArduCopter baseline without re-spinning the board.
+- **Doc-vs-silicon error band** — AN4365 peripheral adders are
+  averages, real production may run 10–15% higher per peripheral
+  under DMA-dense workloads.
+
+The 1.5× factor is a design choice, not a derivation. It is
+deliberately conservative so a v1.1 board built to this input
+remains thermally compliant even if real silicon comes in at the
+upper edge of all three uncertainties.
+
+This input happens to match STEP4's 0.700 W estimate, which was
+unstated in origin. STEP4 was conservative-correct without explicit
+derivation — this doc retrofits an explicit basis for it.
 
 ## 7. What this swings
 
 In gate12 thermal, P_MCU is the dominant heat source on novapcb. A
-shift from 0.924 W (abs-max) to 0.700 W (realistic-worst) reduces
-total board dissipation by ~12% and reduces local MCU Tj rise by ~25%.
+shift from 0.924 W (abs-max) to 0.700 W (rigorous + 1.5× design margin)
+reduces total board dissipation by ~12% and reduces local MCU Tj rise
+by ~25%.
 
 Using 0.924 W would force a substantially larger board for the same
 ≥5°C MCU margin to the 80°C target — likely 120×100 mm or larger.
 Using 0.700 W gives the architecturally-reasonable 90-105 mm range.
 
-The 0.700 W input is defensible per this derivation; the 0.924 W
-input is not.
+The 0.700 W design input is justifiable as the rigorous sustained
+0.449 W plus an explicit conservative 1.5× design margin (see §6).
+The 0.924 W datasheet abs-max is a stress-test combination and is not
+a defensible design operating point.
 
 ## 8. Verification path
 
