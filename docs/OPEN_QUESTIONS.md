@@ -2,6 +2,26 @@
 
 All v1 scoping decisions are in `DECISIONS.md`. Add new open questions here as they arise.
 
+## phase4-dfm-usb-fan. JLCPCB DFM gate (#11) — USB pair fan-region thin clearance
+
+**Raised 2026-05-23** (master flag at C↔F lock review).
+
+The USB post-ESD diff pair coupled section uses W=0.20/S=0.13 (openEMS-validated 87.4 Ω, see `docs/CONTROLLED_IMPEDANCE.md`). The custom DRU rule `usb-diff-pair-in-pair` allows 0.10mm in-pair clearance for this pair only. At the fan region where the pair diverges around U5's pin 2 (GND, Y=31 on corridor), the fan trace edge gap to the other pair member computes to ≈0.106mm — only 6 µm over the 0.10mm rule.
+
+Passes KiCad DRC. But **razor-thin vs the rule** AND must be inside JLCPCB's actual manufacturing capability for trace-to-trace.
+
+**Action (DFM gate #11):** before fab order, explicitly confirm JLCPCB's published process capability supports:
+- 0.10mm (4mil) trace-to-trace clearance on 6-layer 1oz outer copper
+- AND the actual 0.106mm fan-region gap with manufacturing tolerance band
+
+JLC's published 6-layer 1oz spec is 0.10mm (4mil) per Lite/Standard tier. The fan gap (0.106mm) is ABOVE this nominal spec, but tolerance bands can eat 1-2 mil. Confirm with JLC support if the order is borderline.
+
+**Reference:** routing committed in PR #69 (integ/C-F-usb), file `hardware/kicad/novapcb-stepwise/integ_C_F.py`. Fan-region geometry at X=69.50..71.862, Y=31.00..31.95 (post-pin-swap).
+
+**Not blocking** C↔F integration lock — passes DRC, just flag for the fab gate.
+
+
+
 ## v2-1. FMUv6X mechanical drop-in (deferred from `DECISIONS.md §2`)
 
 v1 is a functional drop-in only (single-PCB, Pixhawk-standard 30.5 × 30.5 mm M3, requires a new mounting tray on the airframe). v2 is the mechanical drop-in against the Holybro Pixhawk 6X — FMUv6X form factor, two-board (FMU + isolated IMU on vibration mounts), exact 6X connector pin-out and footprint so the existing airframe accepts novapcb in place of the 6X without any mechanical change.
