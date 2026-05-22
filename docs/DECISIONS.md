@@ -19,17 +19,44 @@ All 9 scoping decisions for the v1 FC, signed off 2026-05-18. Each section shows
 
 **SUPERSEDED 2026-05-20 (Sai pivot, mid-Phase-4)**: the 36×36 / 30.5×30.5 M3 v1 spec is set aside. New direction:
 
-**v1.1 = 90 × 70 mm RECTANGULAR** (LOCKED 2026-05-23 by Sai: "no airframe size constraint, 90×70 is final, no mechanical-fit check needed"). Mounting pattern follows; a new airframe tray is required (v1 is functional drop-in, not mechanical).
+**v1.1 = 105 × 85 mm RECTANGULAR** (LOCKED 2026-05-23 by master after corrected gate12 v3 + rigorous-powers thermal sweep). A new airframe tray is required (v1 is functional drop-in, not mechanical).
+
+**v1.1 outline evolution (kept for full traceability):**
+
+| Iteration | Outline | Driver | Status |
+|---|---|---|---|
+| Original v1 | 36 × 36 mm | Pixhawk mini-FC standard | Superseded 2026-05-20 (Sai pivot — density drove Phase 6 P0 failures) |
+| STEP4 Path B | 80 × 60 mm | First Elmer-arbitrated grown size | Superseded 2026-05-23 (gate12 v3 finding — MATC bbox formulation was mesh-divergent → Path B 75.2°C was a sim artifact; corrected MCU = 84°C → FAILS 80°C) |
+| Interim v1.1 | 90 × 70 mm | Sai 2026-05-23 ("90×70 is final, no mechanical-fit check") | Superseded same-day (gate12 v3 + rigorous powers showed MCU=83.86°C on this size → FAILS 80°C target by 3.86°C) |
+| **v1.1 final** | **105 × 85 mm** | **gate12 v3 board-size sweep, master sign-off 2026-05-23** | **LOCKED** |
 
 **Reliability mandate** (Sai 2026-05-20, verbatim: "it working 100% is the priority", "strong resilient stuff that won't fail"): use the freed board area for generous spacing, clean subsystem separation, robust margins — design so EMI/EMC/thermal failure modes simply don't arise. Quality + real workability over time-to-build.
 
-**v1.1 dimensions — all RESOLVED 2026-05-23:**
-- Board outline: 90 × 70 mm (locked)
-- Aspect ratio: 9:7 (consequence of outline)
+**v1.1 final dimensions (105 × 85 mm — locked 2026-05-23):**
+- Board outline: 105 × 85 mm
+- Aspect ratio: 21:17 (consequence of outline)
 - Layer count: 4 vs 6 — still OPEN (Phase 0.6 pivot Step 3 assesses, see `OPEN_QUESTIONS.md pivot-2026-05-20` items 1-3)
-- **Mounting pattern: 4× M3 corner-inset holes** (master decision 2026-05-23, Sai-delegated): 3mm edge inset, c-to-c **84 × 64 mm**, positions (3, 3), (87, 3), (3, 67), (87, 67). Hole spec per `PLACEMENT_STRATEGY.md §5.2`: 3.2mm drilled, through-plated, 5mm GND-pad land to chassis GND.
-  - +2 mid-long-edge holes (6 total) gated on Phase 6 vibration sim (Task #10). Placement RESERVES keep-out at mid-edge positions (3, 35) and (87, 35) — 8mm circular keep-out for free sim-driven add later.
+- **Mounting pattern: 4× M3 corner-inset holes** (master decision 2026-05-23): 3mm edge inset, c-to-c **99 × 79 mm**, positions (3, 3), (102, 3), (3, 82), (102, 82). Hole spec per `PLACEMENT_STRATEGY.md §5.2`: 3.2mm drilled, through-plated, 5mm GND-pad land to chassis GND.
+  - +2 mid-long-edge holes (6 total) gated on Phase 6 vibration sim. Placement RESERVES keep-out at mid-edge positions (3, 42.5) and (102, 42.5) — 8mm circular keep-out for free sim-driven add later.
   - Pixhawk-standard 30.5×30.5 M3 pattern formally dropped.
+
+**v1.1 thermal verification (the basis for the 105 × 85 sizing):**
+
+Board-size sweep with gate12 v3 (per-body Body Force assignment + energy-balance gate + min-mesh-density gate — see `hardware/kicad/novapcb-stepwise/gate12_thermal.py` commit `3f80f3b`) + rigorous powers (MCU = 0.700 W realistic-worst per `docs/MCU_POWER_BUDGET.md`; U2 LDO = 0.642 W absolute-worst per `docs/THERMAL_3V3_BUDGET.md`; Q5 IMU heater = 0 W hot-case thermostatic; all v1.1 sources):
+
+| Board | Area mm² | Tj_MCU °C | Margin to 80°C |
+|-------|----------|-----------|-----------------|
+| 90 × 70   | 6300  | 83.86 | -3.86 FAIL |
+| 95 × 75   | 7125  | 81.72 | -1.72 FAIL |
+| 100 × 80  | 8000  | 77.25 | +2.75 TIGHT |
+| **105 × 85** | **8925** | **73.98** | **+6.02 LOCK ≥5°C ✓** |
+| 110 × 90  | 9900  | 74.52 | +5.48 LOCK |
+| 115 × 95  | 10925 | 75.23 | +4.77 (sampling noise) |
+| 120 × 100 | 12000 | 74.04 | +5.96 LOCK |
+
+MCU asymptote ~74°C reached at ~9000 mm² (heat-spreading length scale of MCU at given k_xy reached). Sweep log: `sims/thermal-step4/runs/v11_sweep_2026-05-23.log`.
+
+**LDO survives at 105 × 85**: U2 Tj = 73.03°C (margin +6.97°C to 80°C). LDO → buck escalation **CLOSED** (see `OPEN_QUESTIONS.md phase5-thermal-ldo-vs-buck`).
 
 **v2 = FMUv6X mechanical drop-in** — still deferred (separate FMU + isolated-IMU boards, exact 6X mechanical match); see OPEN_QUESTIONS.
 

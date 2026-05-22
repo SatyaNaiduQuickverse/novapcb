@@ -2,6 +2,24 @@
 
 All v1 scoping decisions are in `DECISIONS.md`. Add new open questions here as they arise.
 
+## phase5-thermal-ldo-vs-buck. +3V3 LDO vs buck-switcher escalation — **CLOSED 2026-05-23**
+
+**Status:** **CLOSED — LDO retained**, no escalation to switching regulator.
+
+**Raised** as a contingent escalation path in `PLACEMENT_STRATEGY.md §6.4` (Round-N escalation criteria): "If Round 2 cannot bring Tj ≤ 80°C even with 150 mm² pour + maximum practical inner-copper area: ESCALATE TO SAI. The buck-converter question (THERMAL_BUDGET §2.3 Knob 4) becomes a real conversation, not a deferred v2 item." Re-flagged 2026-05-23 by master during gate12 v3 corrected thermal pass — on the un-grown 90×70 board with rigorous powers (MCU=0.700 W, U2=0.642 W), the LDO failed thermal margin and the buck escalation was on the table pending the corrected board-size determination.
+
+**Resolved by:** gate12 v3 + rigorous powers board-size sweep (2026-05-23, branch `sim/gate12-v3-perbody`, sweep log `sims/thermal-step4/runs/v11_sweep_2026-05-23.log`). At the master-approved 105×85 mm v1.1 outline, AP2112K-3.3 LDO operates at Tj=73.03°C (margin +6.97°C to 80°C), MCU at Tj=73.98°C (margin +6.02°C). Both thermally compliant with comfortable margin.
+
+**Why LDO retained over buck:**
+- Thermal margin is met at 105×85 — no thermal-driven need for a switcher.
+- An on-board buck switcher within 20-40 mm of the IMU island carries a measurable sensor-noise risk (per PLACEMENT_STRATEGY.md §6.3) — switching harmonics in 100s of kHz to MHz couple into the IMU's analog front-end. The LDO has no switching ripple to worry about.
+- BOM simpler: no inductor, no Schottky diode, no compensation network — fewer parts, fewer DFM risks, lower cost.
+- Efficiency penalty (LDO drops ~1.7 V × 0.36 A = 0.6 W as heat vs buck's ~0.05 W loss at 90% efficiency) is now budgeted thermally — the 105×85 board handles it.
+
+**Decision authority:** master sign-off 2026-05-23 of the v1.1 board outline implicitly confirms LDO retention. No Sai fork needed.
+
+**Reference:** `docs/MCU_POWER_BUDGET.md`, `docs/THERMAL_3V3_BUDGET.md`, `sims/thermal-step4/runs/v11_sweep_2026-05-23.log`, PR #71 commit log.
+
 ## phase4-dfm-usb-fan. JLCPCB DFM gate (#11) — USB pair fan-region thin clearance
 
 **Raised 2026-05-23** (master flag at C↔F lock review).

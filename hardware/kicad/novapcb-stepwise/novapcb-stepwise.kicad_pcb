@@ -1645,7 +1645,7 @@
 	(footprint ""
 		(layer "F.Cu")
 		(uuid "12ad0a3d-c2f5-469b-a1bb-3c34f8ad6bc9")
-		(at 85 65)
+		(at 102 82)
 		(property "Reference" "H4"
 			(at 0 0 0)
 			(layer "F.SilkS")
@@ -6534,7 +6534,7 @@
 	(footprint ""
 		(layer "F.Cu")
 		(uuid "3b4cc1dd-8441-4d7b-aa3c-366b37576ddc")
-		(at 85 5)
+		(at 102 3)
 		(property "Reference" "H2"
 			(at 0 0 0)
 			(layer "F.SilkS")
@@ -9913,7 +9913,7 @@
 	(footprint ""
 		(layer "F.Cu")
 		(uuid "4ef5452c-9790-4109-abfb-649e7d7bde72")
-		(at 5 5)
+		(at 3 3)
 		(property "Reference" "H1"
 			(at 0 0 0)
 			(layer "F.SilkS")
@@ -24253,7 +24253,7 @@
 	(footprint ""
 		(layer "F.Cu")
 		(uuid "e9221c87-c1e0-4643-ade7-ad963f99ea2d")
-		(at 5 65)
+		(at 3 82)
 		(property "Reference" "H3"
 			(at 0 0 0)
 			(layer "F.SilkS")
@@ -29172,7 +29172,7 @@
 	)
 	(gr_rect
 		(start 0 0)
-		(end 90 70)
+		(end 105 85)
 		(stroke
 			(width 0.15)
 			(type default)
