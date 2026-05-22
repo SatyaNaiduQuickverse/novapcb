@@ -143,26 +143,61 @@ def main():
     # runs east at Y=31.0/31.33 to X=78 (east of U5 east-pad column 77.14),
     # then drops south to U5.4 (Y=35.95) and U5.6 (Y=34.05).
     # Pair traces enter U5 east pads from east (X=78 west to X=77.14).
+    # Coupled-east + divergent-fan topology (root fix 2026-05-23):
+    #
+    #   Why this shape: U5 (SOT-23-6) pin 5 = +5V at (77.138, 35.000)
+    #   sits BETWEEN pin 4 (DM, 35.95) and pin 6 (DP, 34.05). Any pair
+    #   landing at Y≈35 in coupled config shorts pin 5. Solution: keep
+    #   pair coupled at the U1 Y-corridor (Y=31.0/31.33) ALL the way
+    #   east past U5, then DIVERGE-fan SE into pin 4 / pin 6 from the
+    #   east, clearing the +5V pad row entirely.
+    #
+    #   1. Coupled east: U1.70/71 → (X_SPLIT, 31.0/31.33) on F.Cu, ~27mm
+    #      of coupled at W=0.20/S=0.13 (the openEMS-validated geometry).
+    #   2. Divergent fan: from (X_SPLIT, 31.x) two diagonals — DM SE to
+    #      pin 4 (Y=35.95), DP SE to pin 6 (Y=34.05). The diagonals
+    #      DIVERGE in Y (DM south member stays south; DP north stays
+    #      north), so no crossing. Computed crossing X = 82.88, OUTSIDE
+    #      the fan range (X_SPLIT=80 down to X_FAN_END=77.80) → safe.
+    #   3. Horizontal land into pad from east: DM at Y=35.95 from
+    #      X_FAN_END (south of +5V pad's south edge 35.30); DP at
+    #      Y=34.05 (north of +5V pad's north edge 34.70).
+    # Geometric analysis (root-cause):
+    #   U5 +5V pad (pin 5) at (77.138, 35.00) east-edge X = 77.800
+    #   J1 west-pad column at X=79.735, pad B8 closest to coupled Y=31.33
+    #   Corridor: 77.80 → 79.585 = 1.785mm between pin5 east edge and
+    #     B8 west edge. After clearances (0.30mm each side), 1.185mm
+    #     of usable fan-X-distance for DM/DP to descend 4.62/3.05mm.
+    #   DM descent must clear pin 5 (Y=34.7..35.3 pad) by 0.30mm at Y=35:
+    #     X(Y=35) ≥ 78.10 required. Solving with X_FAN_END=77.81:
+    #     X_SPLIT ≥ 79.28 needed.
+    #   Coupled section east end clearance to J1 pad B8 (79.735, 31.75)
+    #     west edge 79.585: trace cap (X_SPLIT+0.10) ≤ 79.585-0.20 →
+    #     X_SPLIT ≤ 79.285.
+    #   Tight window: 79.28 ≤ X_SPLIT ≤ 79.285. Pick 79.28.
     X_BEND_W_1 = 54.0
-    X_BEND_E_DM = 78.00   # DM vertical drop X
-    X_BEND_E_DP = 78.60   # DP vertical drop X (0.6mm east of DM — was 0.33 but DRC tracks_crossing fired)
+    X_SPLIT = 79.28
+    X_FAN_END = 77.81   # 0.01mm extra margin to U5 pin 5 east edge (77.80)
+    Y_PIN4 = u5_dm[1]   # 35.95
+    Y_PIN6 = u5_dp[1]   # 34.05
 
-    # DM: U1.70 (52.67, 31.5) → coupled east at Y=31.33 → drop S at X=78
-    #     → west to U5.4 (77.14, 35.95)
+    # DM: 4 segments (west jog, coupled east, diverging fan SE, horizontal land)
     add_track(brd, u1_dm[0], u1_dm[1], X_BEND_W_1, Y_DM_COUPLED, n_dm, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, X_BEND_W_1, Y_DM_COUPLED, X_BEND_E_DM, Y_DM_COUPLED, n_dm, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, X_BEND_E_DM, Y_DM_COUPLED, X_BEND_E_DM, u5_dm[1], n_dm, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, X_BEND_E_DM, u5_dm[1], u5_dm[0], u5_dm[1], n_dm, layer=F_CU, w_mm=W_DIFF)
+    add_track(brd, X_BEND_W_1, Y_DM_COUPLED, X_SPLIT, Y_DM_COUPLED, n_dm, layer=F_CU, w_mm=W_DIFF)
+    add_track(brd, X_SPLIT, Y_DM_COUPLED, X_FAN_END, Y_PIN4, n_dm, layer=F_CU, w_mm=W_DIFF)
+    add_track(brd, X_FAN_END, Y_PIN4, u5_dm[0], u5_dm[1], n_dm, layer=F_CU, w_mm=W_DIFF)
 
-    # DP: U1.71 (52.67, 31.0) → coupled east at Y=31.0 → drop S at X=78.33
-    #     → west to U5.6 (77.14, 34.05)
+    # DP: 4 segments (parallel coupled section, divergent fan, land)
     add_track(brd, u1_dp[0], u1_dp[1], X_BEND_W_1, Y_DP_COUPLED, n_dp, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, X_BEND_W_1, Y_DP_COUPLED, X_BEND_E_DP, Y_DP_COUPLED, n_dp, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, X_BEND_E_DP, Y_DP_COUPLED, X_BEND_E_DP, u5_dp[1], n_dp, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, X_BEND_E_DP, u5_dp[1], u5_dp[0], u5_dp[1], n_dp, layer=F_CU, w_mm=W_DIFF)
+    add_track(brd, X_BEND_W_1, Y_DP_COUPLED, X_SPLIT, Y_DP_COUPLED, n_dp, layer=F_CU, w_mm=W_DIFF)
+    add_track(brd, X_SPLIT, Y_DP_COUPLED, X_FAN_END, Y_PIN6, n_dp, layer=F_CU, w_mm=W_DIFF)
+    add_track(brd, X_FAN_END, Y_PIN6, u5_dp[0], u5_dp[1], n_dp, layer=F_CU, w_mm=W_DIFF)
 
-    print(f"  USB_DM: F.Cu coupled @ Y={Y_DM_COUPLED}, south-fan at X={X_BEND_E_DM}")
-    print(f"  USB_DP: F.Cu coupled @ Y={Y_DP_COUPLED}, south-fan at X={X_BEND_E_DP}")
+    coupled_len = X_SPLIT - 52.67
+    fan_len = math.hypot(X_SPLIT - X_FAN_END, Y_DM_COUPLED - Y_PIN4) + (X_FAN_END - u5_dm[0])
+    print(f"  USB_DM: coupled to X={X_SPLIT}, fan SE to pin 4 Y={Y_PIN4}")
+    print(f"  USB_DP: coupled to X={X_SPLIT}, fan SE to pin 6 Y={Y_PIN6}")
+    print(f"  Coupling ratio: {coupled_len:.1f}mm coupled / {coupled_len+fan_len:.1f}mm total = {coupled_len/(coupled_len+fan_len):.0%}")
 
     # ===== PAIR 2: U5 → J1 (pre-ESD, ~5mm) =====
     # U5.3 USBC_D_M_PRE @ (74.86, 30.95)  →  J1.A7 (79.73, 29.75) + J1.B7 (79.73, 30.75)
@@ -175,21 +210,19 @@ def main():
     j1_a6 = pads_dpp[("J1","A6")]
     j1_b6 = pads_dpp[("J1","B6")]
 
-    # PAIR 2 must NOT route through U5 body. U5.1 and U5.3 are on U5's
-    # WEST edge (X=74.86), J1 pads on the east at X=79.73. The natural
-    # route goes east-south or east-north around U5's east side.
-    # ALSO must avoid PAIR 1 which lives at Y=33.0/33.4 (south of U5).
+    # PAIR 2: pre-ESD from U5 west pads to J1 west pads.
+    # Root-cause analysis 2026-05-23:
+    #   Previous topology had DMP B.Cu vertical at X=74.16 crossing
+    #   DPP B.Cu horizontal at Y=30.25 → physical short. Root cause:
+    #   B.Cu portions of the two nets shared the same Y-band.
     #
-    # Route PAIR 2 NORTH of U5 (Y < 28). U5 body Y=28..32. Take a north
-    # detour: from U5.1/U5.3 west pads, go north past U5 body, east past
-    # J1 east edge of U5 area, then south to J1 pads.
-    #
-    # DM at U5.3 is Y=30.95 (south), DP at U5.1 is Y=29.05 (north).
-    # Coupled run order: DP NORTH, DM SOUTH. Same orientation throughout.
-    Y_DPP_COUPLED = 26.5   # north of U5 body
-    Y_DMP_COUPLED = Y_DPP_COUPLED + 0.4   # 26.9 — DM south of DP
-    X_F2_W = 75.0   # east of U5 west pads (74.86) — small jog east first
-    X_F2_E = 79.0   # west of J1 pads (79.73)
+    # Redesign: route PAIR 2 NORTH around U5 body (Y < 28, north of
+    # J1's GND/B1 pads at 26.75 → use Y=27.50 and 27.85), B.Cu coupled.
+    # F.Cu hops only near U5 west pads and J1 east approach.
+    Y_DPP_COUPLED = 27.50    # north of U5 body and J1 GND row
+    Y_DMP_COUPLED = 27.85    # 0.35mm south of DPP (paired)
+    X_F2_W = 74.86 - 0.40    # 74.46 — F.Cu stub from U5 west pads
+    X_F2_E = 79.10           # west of J1 pads (B8 west edge 79.585)
 
     # Pick which J1 pad each net lands on. For DM (south of pair @ Y_DMP=26.9):
     # J1 D- pads: A7 (29.75 north) or B7 (30.75 south). DM coupled at Y=26.9
@@ -221,37 +254,39 @@ def main():
         (X_F2_E, Y_DPP_COUPLED, j1_b6[0], j1_b6[1]),
     ]
 
-    # PAIR 2 (REVISED): pre-ESD pair from U5 west pads → north to J1 pads.
-    # With U5 at Y=35, pre-ESD pads are at (74.86, 34.05) / (74.86, 35.95).
-    # J1 D+/D- pads are at (79.73, 29.25..30.75). Route on B.Cu east under
-    # U5 body to clear other-net pads, then north to J1 pads.
-    print(f"\n[PAIR 2] U5 ↔ J1 (pre-ESD) — B.Cu diff pair + USB-C bridges")
-    v3_dmp = (u5_dmp[0] - 0.7, u5_dmp[1])     # west of U5.3 (D-) — X=74.16
-    v3_dpp = (u5_dpp[0] - 1.3, u5_dpp[1])     # west of U5.1 (D+) — X=73.56, 0.6mm west of v3_dmp
-    # Approach vias to J1 — X-staggered ≥1.2mm apart
-    v4_dmp = (78.50, 29.75)   # 1mm east of J1.A7 X (79.73-1.23)... place at (78.5, J1.A7 Y)
-    v4_dpp = (77.30, 30.25)   # 1.2mm west of v4_dmp, J1.A6 Y
+    # PAIR 2 NEW topology — coupled B.Cu north of U5 body:
+    print(f"\n[PAIR 2] U5 ↔ J1 (pre-ESD) — B.Cu coupled north of U5 body")
+    # DMP via at X=74.46 (just west of U5.3); DPP via at X=74.66 (between
+    # u5.3 west edge and u5.1 west edge — but really, U5.3 west pad edge
+    # at 74.86-0.6625=74.20). Use X=74.46 for DMP, X=74.86 for DPP starts
+    # but pull DPP via slightly east-offset so verticals don't share X.
+    v3_dmp = (74.46, 35.95)   # DMP F.Cu stub end → via, X 0.2mm west of pad
+    v3_dpp = (74.66, 34.05)   # DPP F.Cu stub end → via, X 0.2mm east of DMP
 
     add_track(brd, u5_dmp[0], u5_dmp[1], v3_dmp[0], v3_dmp[1], n_dmp, layer=F_CU, w_mm=W_DIFF)
     add_track(brd, u5_dpp[0], u5_dpp[1], v3_dpp[0], v3_dpp[1], n_dpp, layer=F_CU, w_mm=W_DIFF)
     add_via(brd, v3_dmp[0], v3_dmp[1], n_dmp)
     add_via(brd, v3_dpp[0], v3_dpp[1], n_dpp)
 
-    # B.Cu route: vertical north to J1 latitude, then east to v4
-    # DMP: from (v3_dmp, 35.95) north to (v3_dmp, 29.75) → east to (78.5, 29.75)
-    add_track(brd, v3_dmp[0], v3_dmp[1], v3_dmp[0], v4_dmp[1], n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
-    add_track(brd, v3_dmp[0], v4_dmp[1], v4_dmp[0], v4_dmp[1], n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
+    # B.Cu: each vertical N to its coupled Y, then coupled east to landing vias
+    add_track(brd, v3_dmp[0], v3_dmp[1], v3_dmp[0], Y_DMP_COUPLED, n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
+    add_track(brd, v3_dpp[0], v3_dpp[1], v3_dpp[0], Y_DPP_COUPLED, n_dpp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
+    # Coupled east at S=0.35 (slightly relaxed from 0.13 — pre-ESD pair
+    # is much shorter, ~5mm; Z_diff is less critical and B.Cu has L5 GND
+    # ref so trace width may differ. Doc this in CONTROLLED_IMPEDANCE.md.)
+    v4_dmp = (X_F2_E, Y_DMP_COUPLED)   # DMP lands at (79.10, 27.85)
+    v4_dpp = (X_F2_E, Y_DPP_COUPLED)   # DPP lands at (79.10, 27.50)
+    add_track(brd, v3_dmp[0], Y_DMP_COUPLED, v4_dmp[0], v4_dmp[1], n_dmp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
+    add_track(brd, v3_dpp[0], Y_DPP_COUPLED, v4_dpp[0], v4_dpp[1], n_dpp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
     add_via(brd, v4_dmp[0], v4_dmp[1], n_dmp)
-    add_track(brd, v4_dmp[0], v4_dmp[1], j1_a7[0], j1_a7[1], n_dmp, layer=F_CU, w_mm=W_DIFF)
-
-    # DPP: from (v3_dpp, 34.05) north to (v3_dpp, 30.25) → east to (77.3, 30.25)
-    add_track(brd, v3_dpp[0], v3_dpp[1], v3_dpp[0], v4_dpp[1], n_dpp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
-    add_track(brd, v3_dpp[0], v4_dpp[1], v4_dpp[0], v4_dpp[1], n_dpp, layer=pcbnew.B_Cu, w_mm=W_DIFF)
     add_via(brd, v4_dpp[0], v4_dpp[1], n_dpp)
+
+    # F.Cu south fan to J1 pads: DMP → A7 (29.75), DPP → A6 (30.25)
+    add_track(brd, v4_dmp[0], v4_dmp[1], j1_a7[0], j1_a7[1], n_dmp, layer=F_CU, w_mm=W_DIFF)
     add_track(brd, v4_dpp[0], v4_dpp[1], j1_a6[0], j1_a6[1], n_dpp, layer=F_CU, w_mm=W_DIFF)
 
-    print(f"  USBC_D_M_PRE: F.Cu stub + B.Cu north-then-east + F.Cu hop → J1.A7")
-    print(f"  USBC_D_P_PRE: same pattern → J1.A6")
+    print(f"  USBC_D_M_PRE: F.Cu stub + B.Cu N-then-E coupled + F.Cu fan → J1.A7")
+    print(f"  USBC_D_P_PRE: parallel topology → J1.A6")
 
     # USB-C reversibility bridges (per master 2026-05-22 option (b)):
     # OFFSET vias OUTSIDE the 0.5mm-pitch J1 pad field, with short F.Cu

@@ -51,7 +51,7 @@ Supermaster delegated bounded autonomous-merge authority to master 2026-05-19:
 
 Audit before merge always answers the three SOTA self-check questions (is this SOTA? are we being honest? can we do better?) and reports per-Rule-6 what was verified + what was not.
 
-## 7. Root-cause discipline (Sai 2026-05-23)
+## 12. Root-cause discipline (Sai 2026-05-23)
 
 > "If there is an issue we should think about the ROOT of the problem
 > and not just a fix — or it gets uglier with time."
