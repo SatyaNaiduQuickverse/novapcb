@@ -197,8 +197,26 @@ def main():
     # Pin5 margin: DM at Y=35 at X = 78.65 - 2.980 = 75.67 → 0.87mm
     # east of pin5 east edge 74.80 (below master's 1mm soft, but
     # ≥0.30mm hard; trade-off forced by A5 pad X=79.010 constraint).
-    X_M_H = 78.65   # DM coupled-H east end (J1 A5 clearance)
-    X_P_H = 77.37   # DP coupled-H end (parallel-diag stagger, see below)
+    # Master 2026-05-23: pair order at U1 (PA11/DM south, PA12/DP north)
+    # MATCHES pair order at U5 (U5.4/DM south, U5.6/DP north). NO
+    # topological crossover needed.
+    #
+    # Geometric finding: with pair coupled S=0.13mm pitch=0.33mm, descent
+    # at angle θ has perpendicular trace-trace distance = 0.33*cos(θ).
+    # For θ=51° (single straight diag from X=78.65 to X=74.90 with 4.62mm Y
+    # descent), perp distance = 0.21mm → edge gap 0.01mm (BELOW 0.10mm
+    # USB_diffpair). Fundamental constraint.
+    #
+    # FIX: SHORT Y-jog "wings" widen pair before the diagonal:
+    #   - DM coupled-H to X=77.69, vertical SOUTH to Y=31.53, diag to (74.90, 35.95)
+    #   - DP coupled-H to X=78.65, vertical NORTH to Y=30.80, diag to (74.90, 34.05)
+    # Wings widen pair Y separation from 0.33mm to 0.73mm before diag.
+    # Stagger DP 0.96mm east of DM so DP diag's Y=31.33 crossing X=78.04
+    # is EAST of DM coupled-H end (X=77.69) → no physical crossing.
+    X_M_H = 77.69   # DM coupled-H east end (stagger for no-crossing)
+    X_P_H = 78.65   # DP coupled-H end (more east; wing is at this X)
+    Y_DM_WING = 31.53  # DM wing south end (0.20mm S of coupled Y=31.33)
+    Y_DP_WING = 30.80  # DP wing north end (0.20mm N of coupled Y=31.00)
 
     X_FAN_END = 74.90   # 0.10mm east of pin5 east edge 74.80
     Y_DIAG_END_DM = 33.33   # DM ends coupled-diag at this Y
@@ -206,16 +224,18 @@ def main():
     Y_PIN4 = u5_dm[1]   # 35.95
     Y_PIN6 = u5_dp[1]   # 34.05
 
-    # DM: stays on F.Cu — 4 segments (west jog, coupled-H, single diag, land)
+    # DM: 5 segments (west jog, coupled-H, south wing, diag, land)
     add_track(brd, u1_dm[0], u1_dm[1], X_BEND_W_1, Y_DM_COUPLED, n_dm, layer=F_CU, w_mm=W_DIFF)
     add_track(brd, X_BEND_W_1, Y_DM_COUPLED, X_M_H, Y_DM_COUPLED, n_dm, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, X_M_H, Y_DM_COUPLED, X_FAN_END, Y_PIN4, n_dm, layer=F_CU, w_mm=W_DIFF)
+    add_track(brd, X_M_H, Y_DM_COUPLED, X_M_H, Y_DM_WING, n_dm, layer=F_CU, w_mm=W_DIFF)
+    add_track(brd, X_M_H, Y_DM_WING, X_FAN_END, Y_PIN4, n_dm, layer=F_CU, w_mm=W_DIFF)
     add_track(brd, X_FAN_END, Y_PIN4, u5_dm[0], u5_dm[1], n_dm, layer=F_CU, w_mm=W_DIFF)
 
-    # DP: 4 segments (parallel coupled-H, single diagonal, land)
+    # DP: 5 segments (west jog, coupled-H, north wing, diag, land)
     add_track(brd, u1_dp[0], u1_dp[1], X_BEND_W_1, Y_DP_COUPLED, n_dp, layer=F_CU, w_mm=W_DIFF)
     add_track(brd, X_BEND_W_1, Y_DP_COUPLED, X_P_H, Y_DP_COUPLED, n_dp, layer=F_CU, w_mm=W_DIFF)
-    add_track(brd, X_P_H, Y_DP_COUPLED, X_FAN_END, Y_PIN6, n_dp, layer=F_CU, w_mm=W_DIFF)
+    add_track(brd, X_P_H, Y_DP_COUPLED, X_P_H, Y_DP_WING, n_dp, layer=F_CU, w_mm=W_DIFF)
+    add_track(brd, X_P_H, Y_DP_WING, X_FAN_END, Y_PIN6, n_dp, layer=F_CU, w_mm=W_DIFF)
     add_track(brd, X_FAN_END, Y_PIN6, u5_dp[0], u5_dp[1], n_dp, layer=F_CU, w_mm=W_DIFF)
 
     print(f"  USB_DM: H to X={X_M_H} → single diag → pin 4 Y={Y_PIN4}")
@@ -276,8 +296,9 @@ def main():
     v3_dmp = (70.10, 35.95)
     # B.Cu landing vias just west of J1 pad column (X=79.585 west edge)
     v4_dpp = (78.50, 29.25)   # west of B6 (X=79.010 west edge)
-    v4_dmp = (78.70, 30.75)   # west of B7; offset east of v4_dpp to
-                               # clear DP coupled east end (X=77.95)
+    v4_dmp = (78.00, 30.50)   # offset west+north of B7 to clear
+                               # USB_DP coupled-H east cap at (78.65, 31.00).
+                               # F.Cu lands diagonal to B7 (79.735, 30.75).
 
     # F.Cu west stubs from U5 pads to vias
     add_track(brd, u5_dpp[0], u5_dpp[1], v3_dpp[0], v3_dpp[1], n_dpp, layer=F_CU, w_mm=W_DIFF)
