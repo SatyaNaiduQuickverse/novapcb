@@ -7,8 +7,20 @@
 >
 > **Board outline (per `docs/DECISIONS.md §2` pivot 2026-05-20):**
 > 90 × 70 mm rectangle, 6-layer JLC06161H-7628 (cf. v1 36×36 mm
-> superseded). All zone coordinates in this doc are in mm relative to
-> board origin (0,0) at SW corner, X=east, Y=north.
+> superseded).
+>
+> **Coordinate convention (RECONCILED 2026-05-22 per master directive)**:
+> all zones use **pcbnew-native Y-DOWN** — origin (0, 0) at the **NW
+> (top-left) corner**, X increases east, **Y increases SOUTH (down in
+> the render)**. So Y=0 is the top edge, Y=70 is the bottom edge. This
+> matches `pcbnew` Python API, KiCad's GUI, all `kicad-cli pcb render`
+> outputs, and every `step*_place_*.py` script in
+> `hardware/kicad/novapcb-stepwise/`. The earlier draft used math
+> (Y-up) for some descriptions which caused E to be mis-placed in
+> Step 2 — see Step-2 PR audit. Never mixing conventions again.
+>
+> All zone coordinates below: `X = column (mm, east-positive)`,
+> `Y = row (mm, south-positive)`, both starting at NW corner (0, 0).
 >
 > **Source of truth for component list:** `hardware/kicad/novapcb/sheets/`
 > SKiDL netlist (immutable for v1.1, including the 3-swap re-mux
@@ -59,18 +71,22 @@ These are the cross-cutting constraints. Each subsystem inherits them.
 
 ## 1. Subsystem index
 
-| # | Subsystem | Refdes (primary) | Zone (mm) | Conflict | Adjacent to |
+All zones in **pcbnew Y-down** (Y=0 = top edge, Y=70 = bottom edge):
+
+| # | Subsystem | Refdes (primary) | Zone (mm, pcbnew Y-down) | Conflict | Adjacent to |
 |---|---|---|---|---|---|
-| A | POWER_INPUT | J4, J19, Q3, Q4, U11, U12 + caps | south edge Y=0..15, X=20..70 | **HIGH** | B (immediately north of A) |
-| B | POWER_REG_3V3 | U2, U6, U13, FB2, D1, Q2 + LDO caps | mid-south Y=15..28, X=20..70 | **HIGH** | A (south), C (north), D (east) |
-| C | MCU_CORE | U1, Y1, R1, R2, R3 + MCU decap (C16..C26) | center Y=28..50, X=20..70 | **HIGH (hub)** | B, D, E, F (surrounds) |
-| D | IMU_ISLAND | U3, U8, U9, Q5 (IMU heater FET), R_heater (R61), FB2-downstream caps (C41..C96) | north stress-relief island Y=51..63, X=33..63 | **HIGH (victim)** | C (south), bridge only |
-| E | BARO_I2C | U4, U7, R11, R12 + decap (C51, C52, C71, C72) | small block adjacent to C, NW Y=42..50, X=20..32 | LOW | C (east) |
-| F | USB_INTERFACE | J1, R31, R32, U5 | east edge X=75..90, Y=20..38 | LOW | C (west) |
-| G | EXTERNAL_IO | J2, J3, J5, J9, J10, J20, U14, U15, D11..D14, R45, R46 + decap | east edge X=75..90, Y=38..70 + north corners | **MIXED** | C, D (depends on connector) |
-| H | ESC_OUTPUTS | J11..J18 (motor pads) | west edge X=0..18, Y=8..62 | **HIGH (aggressor)** | C (east of H, signals enter from MCU center) |
+| A | POWER_INPUT | J4, J19, Q3, Q4, U11, U12 + caps | **bottom edge** Y=55..70, X=20..70 | **HIGH** | B (immediately above) |
+| B | POWER_REG_3V3 | U2, U6, U13, FB2, D1, Q2 + LDO caps | **bottom band** Y=44..55, X=20..70 (south of MCU) | **HIGH** | A (below), C (above) |
+| C | MCU_CORE | U1, Y1, R1, R2, R3 + MCU decap (C11..C26) | **center** roughly X=33..58, Y=23..44 (U1 body centered at (45, 35)) | **HIGH (hub)** | E (south, on PB10/PB11), D (north, on bridge), F (east, on PA11/PA12), H (west, on PA0..3) |
+| D | IMU_ISLAND | U3, U8, U9, Q5 (IMU heater FET), R_heater (R61), FB-downstream caps (C41..C96) | **top stress-relief island** Y=7..19, X=33..63; mechanical bridge to C at Y=19..21 (10mm wide, X=40..50) | **HIGH (victim)** | C (below, via bridge only) |
+| E | BARO_I2C | U4, U7, R11, R12 + decap (C51, C52, C71, C72) | **small block south of U1**, adjacent to PB10/PB11 pins on U1's S edge: Y=44..52, X=42..58 | LOW | C (above; R11/R12 sit at the seam) |
+| F | USB_INTERFACE | J1, R31, R32, U5 | **east edge** X=75..90, Y=24..38 (near PA11/PA12 = pins 71/72 on E edge NE quadrant) | LOW | C (west; ≤30mm USB diff pair) |
+| G | EXTERNAL_IO | J2, J3, J5, J9, J10, J20, U14, U15, D11..D14, R45, R46 + decap | **east edge** X=75..90, Y=38..70 + **top edge** corners for GPS connector | **MIXED** | C (depending on connector pin) |
+| H | ESC_OUTPUTS | J11..J18 (motor pads) | **west edge** X=0..18, Y=10..60 (vertical strip; PWM signals route from MCU PA0..3 W edge, PB0/1 S edge, PD12/13 E edge — H's pads are W edge regardless) | **HIGH (aggressor)** | C (east; PWM routes cross the board) |
 
 Subsystem labels A..H are placement-PR identifiers. Each gets one PR.
+
+**Convention note:** in this doc, terms like "north / south / top / bottom" refer to the **render-frame** (top = Y=0 = pcbnew "north" = math-y "south"). Subsystems are described relative to U1's position (center at X=45, Y=35) and the actual STM32H743VIT6 LQFP-100 pinout (which dictates *which side of U1* a given signal exits). This is the source of truth — not any abstract "north"/"south" notion.
 
 ### Conflict-risk rationale (drives integration order per `PLACEMENT_ROUTING_GATES.md` §0)
 
@@ -304,11 +320,13 @@ External GPS-mounted compass on I2C1 (compass IC is OFF-board).
 
 **Output nets:** (none — sensor only)
 
-**Zone:** Y=42..50, X=20..32 (NW corner of MCU zone). Small footprint;
-sits adjacent to U1's I2C2 pins. NOT in D — barometer is acoustic-noise
-sensitive, NOT vibration sensitive, so it doesn't need the slot.
+**Zone:** Y=44..52, X=42..58 (south of U1, adjacent to PB10/PB11 on U1's
+S edge). PB10 = pin 46 at (49.00, 42.67), PB11 = pin 47 at (49.50, 42.67)
+on the placed U1. E sits just below U1's S edge for the shortest possible
+I2C2 trace. NOT in D — barometer is acoustic-noise sensitive, NOT
+vibration sensitive, so it doesn't need the slot.
 
-**Adjacency:** C (immediately east)
+**Adjacency:** C (immediately above; R11/R12 pullups sit at the seam)
 
 **Reference teardowns:** Pixhawk 6X has BMP388 separate from IMU stack; Matek H743-Slim has DPS310 adjacent to MCU.
 
