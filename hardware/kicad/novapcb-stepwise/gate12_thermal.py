@@ -1,31 +1,44 @@
 #!/usr/bin/env python3
 """Gate 12 — per-step thermal sim, PARAMETERIZED v1.1 heat-source set.
 
-Replaces the U1-only gate12_thermal_U1.py per master RF-2 directive
-2026-05-23 (HARD GATE before B integration PR): gate12 must accept a
-parameterized heat-source list so each step adds the components that
-have been placed.
+REWRITTEN 2026-05-23 (master red-flag on prior 104°C result):
 
-For Steps 1-4 the active set is U1-only (same as the old script). For
-Step 5 (B integration) U2 (AP2112K-3.3 main LDO) is added — first
-real new heat source. Per-step list:
+Prior version inherited from gate12_thermal_U1.py used scalar bare-FR4
+k=0.3 W/m·K, BC h=10 on all 6 boundaries, T_amb=25°C, threshold=105°C
+(silicon abs-max). That model is WRONG for novapcb because:
 
-  Step 1 (C only):       U1 (STM32H743)              0.5 W
-  Step 2 (E added):      U1                          0.5 W
-  Step 3 (F added):      U1                          0.5 W (U5 ESD: ~10mW, ignored)
-  Step 4 (G added):      U1, U14 (CAN xcvr TJA1051)  ~0.6 W
-  Step 5 (B added):      + U2 (AP2112K LDO)          + 0.5 W
-  Step 6 (A added):      + U6 (eFuse), Q3/Q4 (OR-FETs), U11/U12 (BEC inputs)
-  Step 7 (D added):      + U13 (LP5907 IMU LDO), Q5 (IMU heater dissipator)
+  (a) Real board has 6-layer copper stackup — anisotropic effective k
+      (33.5 in-plane, 0.316 through-plane per THERMAL_BUDGET §3.1
+      parallel-paths/series-rule), NOT bare-FR4.
+  (b) Real worst case is sealed enclosure → only top + bottom convect,
+      EDGES ARE ADIABATIC. h=5 W/m²·K master worst case.
+  (c) Real worst-case ambient is drone-bay sealed = 50°C, NOT 25°C.
+  (d) Design target per `sims/thermal-step4/STEP4_REPORT.md` is
+      Tj ≤ 80°C with 5°C margin, NOT 105°C silicon abs-max.
+
+Per master directive 2026-05-23:
+  - Use STEP4-equivalent model (anisotropic k, h=5 top+bot only,
+    adiabatic edges, T_amb=50°C).
+  - Threshold = 80°C (design target with margin), not silicon abs-max.
+  - VALIDATE the rewrite by reproducing STEP4 result on the same
+    inputs (80×60 board, 4 heat sources) — MCU=75.2°C, LDO=69°C.
+
+Per-step heat-source registry (auto-discovered from .kicad_pcb by
+refdes; only on-board components contribute, parked = X >= 100):
+
+  Step 1 (C only):       U1 (STM32H743) 0.7 W
+  Step 2 (E added):      U1
+  Step 3 (F added):      U1 (U5 ESD ~10mW, ignored)
+  Step 4 (G added):      U1, U14 (CAN xcvr ~100mW)
+  Step 5 (B added):      + U2 (AP2112K LDO ~595mW), U6 (eFuse ~18mW)
+  Step 6 (A added):      + Q2 (P-FET ~6.5mW), Q3/Q4 (OR-FETs)
+  Step 7 (D added):      + U13 (LP5907 IMU LDO ~50mW), Q5 (IMU heater)
   Step 8 (H added):      no new significant sources
 
-Same Elmer 3D thin-slab FE (90 × 70 × 1.6 mm FR4 bare board, no copper
-planes) used for the U1-only version — validated 1.00× vs 1D analytical
-in commit 71 (`sims/validation/VALIDATION_RESULTS.md` row #3).
-
-Heat Source convention: W/kg (per unit MASS). Elmer multiplies by
-Density. Setting raw W/m³ over-sources by the density factor. See the
-1.00× validation reference for the lesson.
+`regression_step4` mode: runs against STEP4_REPORT.md inputs and
+asserts MCU 75.2 / LDO 69 reproduce within ±2°C (mesh discretization
+allowance). This is the Gate 13 validation requirement for the
+rewrite — gate12 v2 isn't usable until regression passes.
 """
 import os
 import sys
@@ -37,56 +50,65 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 ELMER = os.path.join(os.path.expanduser("~"), "local", "elmer", "bin", "ElmerSolver")
 
-CASE = os.path.join(HERE, "thermal", "case.sif")
 CASE_DIR = os.path.join(HERE, "thermal")
+CASE = os.path.join(CASE_DIR, "case.sif")
+
+
+# ---------------------------------------------------------------
+# STEP4-equivalent model parameters (master 2026-05-23)
+# ---------------------------------------------------------------
+# Material — anisotropic k per THERMAL_BUDGET §3.1:
+#   in-plane k_xy = 33.5 W/m·K  (parallel-paths Cu + FR4)
+#   through-plane k_z = 0.316 W/m·K (series Cu + FR4)
+# Elmer "Heat Conductivity(3) = K_XY K_XY K_Z" tensor form.
+K_XY = 33.5
+K_Z = 0.316
+RHO = 2500   # kg/m³, board average
+CP = 800     # J/kg·K, board average
+
+# BC — STEP4 worst case:
+H_CONV = 5.0          # W/m²·K, top + bottom (sealed enclosure)
+T_AMBIENT_C = 50.0    # °C, drone-bay worst case
+# Edges (X-/X+/Y-/Y+) are ADIABATIC (no h_conv).
+
+# Design target (NOT silicon abs-max):
+T_J_TARGET_C = 80.0   # per STEP4_REPORT, Sai resilience mandate
+
+# Board thickness
+BOARD_H = 1.6e-3      # 1.6mm, JLC06161H stackup
 
 
 @dataclass
 class HeatSource:
-    """A discrete heat-source volume on the board."""
-    name: str       # e.g. "U1", "U2"
-    x_mm: float     # body center X (mm)
-    y_mm: float     # body center Y (mm)
-    body_x_mm: float  # body extent X (mm)
-    body_y_mm: float  # body extent Y (mm)
+    name: str
+    x_mm: float
+    y_mm: float
+    body_x_mm: float
+    body_y_mm: float
     power_W: float
 
 
 # ---------------------------------------------------------------
-# Per-component thermal profile registry — single source of truth.
-# All numbers traceable to:
-#   - U1 STM32H743VIT6 LQFP-100: ST DS12110, body 14x14mm, P_max 0.5W at 480MHz
-#   - U2 AP2112K-3.3 SOT-25: Diodes datasheet, body 2.9x1.6mm,
-#     worst-case 1.7V drop × ~300mA = 0.51W → use 0.5W
-#   - U13 LP5907MFX-3.3 SOT-23-5: TI datasheet, body 2.9x1.6mm,
-#     IMU rail ~20mA × 1.7V drop = 0.034W → use 0.05W (rounded up)
-#   - U14 TJA1051TK/3 VSON-8: NXP datasheet, body 3x3mm, typ 100mW
-#   - U6 TPS25946 (eFuse, ~SOT-23-6): TI, normal-mode ~50mW
-#   - Q3/Q4 OR-FETs: standard SO-8 MOSFET, ~50mW each typical
-#   - Q5 IMU heater: TBD (heater is the SIM PURPOSE — sized by output)
+# Per-component thermal profile registry
+# Powers match STEP4 + master's RF-2 v1.1 set.
 # ---------------------------------------------------------------
 COMPONENT_PROFILES = {
-    "U1":  dict(body_x=14.0, body_y=14.0, power_W=0.50),   # STM32H743 LQFP-100
-    "U2":  dict(body_x=2.9,  body_y=1.6,  power_W=0.50),   # AP2112K main LDO
-    "U6":  dict(body_x=2.9,  body_y=1.6,  power_W=0.05),   # eFuse normal mode
-    "U11": dict(body_x=3.0,  body_y=3.0,  power_W=0.05),   # OR-ing FET / BEC input
+    "U1":  dict(body_x=14.0, body_y=14.0, power_W=0.700),  # STM32H743 worst case (STEP4 uses 0.700, not 0.500)
+    "U2":  dict(body_x=2.5,  body_y=3.0,  power_W=0.595),  # AP2112K LDO (STEP4)
+    "U6":  dict(body_x=3.0,  body_y=4.0,  power_W=0.018),  # eFuse TPS25922 (STEP4)
+    "U11": dict(body_x=3.0,  body_y=3.0,  power_W=0.05),
     "U12": dict(body_x=3.0,  body_y=3.0,  power_W=0.05),
     "U13": dict(body_x=2.9,  body_y=1.6,  power_W=0.05),   # LP5907 IMU LDO
     "U14": dict(body_x=3.0,  body_y=3.0,  power_W=0.10),   # TJA1051 CAN xcvr
-    "Q3":  dict(body_x=5.0,  body_y=4.0,  power_W=0.05),   # OR-FET SO-8
+    "Q2":  dict(body_x=3.0,  body_y=1.5,  power_W=0.0065), # P-FET (STEP4)
+    "Q3":  dict(body_x=5.0,  body_y=4.0,  power_W=0.05),
     "Q4":  dict(body_x=5.0,  body_y=4.0,  power_W=0.05),
-    "Q5":  dict(body_x=3.0,  body_y=1.5,  power_W=0.30),   # IMU heater (initial estimate)
+    "Q5":  dict(body_x=3.0,  body_y=1.5,  power_W=0.30),   # IMU heater
 }
 
 
 def get_active_heat_sources(brd) -> list[HeatSource]:
-    """Read PCB, return heat sources for currently-placed components.
-
-    Components are only included if their refdes is in COMPONENT_PROFILES
-    AND the footprint is placed on the visible board area (X < 100mm —
-    the parking convention in step* scripts puts un-placed parts at X >= 100).
-    """
-    import pcbnew  # local import — only needed at runtime, not at module load
+    """Read PCB, return HeatSource list for currently-placed components."""
     sources = []
     for fp in brd.GetFootprints():
         ref = fp.GetReference()
@@ -94,7 +116,7 @@ def get_active_heat_sources(brd) -> list[HeatSource]:
             continue
         p = fp.GetPosition()
         x_mm, y_mm = p.x / 1e6, p.y / 1e6
-        if x_mm >= 100:   # parked / not yet placed on visible board
+        if x_mm >= 100:
             continue
         prof = COMPONENT_PROFILES[ref]
         sources.append(HeatSource(
@@ -107,237 +129,347 @@ def get_active_heat_sources(brd) -> list[HeatSource]:
 
 
 # ---------------------------------------------------------------
-# Mesh + .sif generation (parameterized over heat-source list)
+# .grd (ElmerGrid input) — STEP4-style: 1 body, 6 boundary IDs
 # ---------------------------------------------------------------
-def gen_mesh(sources: list[HeatSource], nx: int, ny: int, nz: int = 3) -> None:
-    """Hex mesh, NX × NY × NZ. Each heat-source gets its own body ID
-    (body 1, 2, 3, ...). The rest of the board is body 0 (last+1).
+def make_grd(board_L_m: float, board_W_m: float, board_H_m: float,
+             nx: int, ny: int, nz: int) -> str:
+    return f"""\
+##### ElmerGrid input: novapcb thermal #####
+Version = 210903
+Coordinate System = Cartesian 3D
+Subcell Divisions in 3D = 1 1 1
+Subcell Sizes 1 = {board_L_m}
+Subcell Sizes 2 = {board_W_m}
+Subcell Sizes 3 = {board_H_m}
+Material Structure in 2D
+  1
+End
+Materials Interval = 1 1
+Boundary Definitions
+# type     out      int     edge
+  1        -1        1        1
+  2        -2        1        1
+  3        -3        1        1
+  4        -4        1        1
+End
+Numbering = Horizontal
+Element Degree = 1
+Element Innernodes = False
+Triangles = False
+Element Divisions 1 = {nx}
+Element Divisions 2 = {ny}
+Element Divisions 3 = {nz}
+"""
 
-    The mesh assigns each hex element to the body whose footprint
-    bounding box contains the element's center. If multiple footprints
-    overlap an element (placement collision), the LATER one in the list
-    wins — placement gates 1/2 should prevent overlap.
+
+# ---------------------------------------------------------------
+# .sif (Elmer Solver Input File)
+# ---------------------------------------------------------------
+def make_sif(sources: list[HeatSource]) -> str:
+    """Generate Elmer SIF. Heat sources via MATC bounding-box expression.
+
+    Elmer Heat Equation expects Heat Source in W/kg (per unit MASS).
+    q_mass = q_vol / RHO where q_vol = P / (body_x * body_y * board_H).
     """
-    out = os.path.join(CASE_DIR, "mesh")
-    os.makedirs(out, exist_ok=True)
-    LX, LY, LZ = 90.0e-3, 70.0e-3, 1.6e-3
+    src_pieces = []
+    for src in sources:
+        x = src.x_mm / 1000.0
+        y = src.y_mm / 1000.0
+        w_x = src.body_x_mm / 1000.0
+        w_y = src.body_y_mm / 1000.0
+        vol = w_x * w_y * BOARD_H
+        q_vol = src.power_W / vol
+        q_mass = q_vol / RHO
+        cond = (f"if (abs(tx(0)-{x:.5f})<{w_x/2:.5f} & "
+                f"abs(tx(1)-{y:.5f})<{w_y/2:.5f}) q=q+{q_mass:.3e};")
+        src_pieces.append(cond)
+    matc = "q=0; " + " ".join(src_pieces) + " q"
 
-    nxp1, nyp1, nzp1 = nx + 1, ny + 1, nz + 1
-    n_nodes = nxp1 * nyp1 * nzp1
-
-    def nid(i, j, k):
-        return k * (nxp1 * nyp1) + j * nxp1 + i + 1
-
-    bg_body = len(sources) + 1   # background = last body ID
-
-    # Nodes
-    with open(f"{out}/mesh.nodes", "w") as f:
-        for k in range(nzp1):
-            for j in range(nyp1):
-                for i in range(nxp1):
-                    x = i * LX / nx
-                    y = j * LY / ny
-                    z = k * LZ / nz
-                    f.write(f"{nid(i,j,k)} -1 {x:.8f} {y:.8f} {z:.8f}\n")
-
-    # Hex elements (type 808). Body assignment per element center.
-    with open(f"{out}/mesh.elements", "w") as f:
-        eid = 1
-        for k in range(nz):
-            for j in range(ny):
-                for i in range(nx):
-                    cx = (i + 0.5) * LX / nx
-                    cy = (j + 0.5) * LY / ny
-                    body = bg_body  # default to background
-                    for idx, src in enumerate(sources, start=1):
-                        x0 = (src.x_mm - src.body_x_mm/2) * 1e-3
-                        x1 = (src.x_mm + src.body_x_mm/2) * 1e-3
-                        y0 = (src.y_mm - src.body_y_mm/2) * 1e-3
-                        y1 = (src.y_mm + src.body_y_mm/2) * 1e-3
-                        if x0 <= cx <= x1 and y0 <= cy <= y1:
-                            body = idx
-                            break
-                    n0 = nid(i,   j,   k);    n1 = nid(i+1, j,   k)
-                    n2 = nid(i+1, j+1, k);    n3 = nid(i,   j+1, k)
-                    n4 = nid(i,   j,   k+1);  n5 = nid(i+1, j,   k+1)
-                    n6 = nid(i+1, j+1, k+1);  n7 = nid(i,   j+1, k+1)
-                    f.write(f"{eid} {body} 808 {n0} {n1} {n2} {n3} {n4} {n5} {n6} {n7}\n")
-                    eid += 1
-
-    # Boundary faces — same as U1-only version (all 6 sides with same h)
-    bnd_lines = []
-    bid = 1
-    # bnd 1: z=0 (bottom)
-    for j in range(ny):
-        for i in range(nx):
-            n0 = nid(i,   j,   0); n1 = nid(i+1, j,   0)
-            n2 = nid(i+1, j+1, 0); n3 = nid(i,   j+1, 0)
-            bnd_lines.append(f"{bid} 1 {j*nx + i + 1} 0 404 {n0} {n1} {n2} {n3}"); bid += 1
-    # bnd 2: z=t (top)
-    base = (nz-1) * nx * ny
-    for j in range(ny):
-        for i in range(nx):
-            n0 = nid(i,   j,   nz); n1 = nid(i+1, j,   nz)
-            n2 = nid(i+1, j+1, nz); n3 = nid(i,   j+1, nz)
-            bnd_lines.append(f"{bid} 2 {base + j*nx + i + 1} 0 404 {n3} {n2} {n1} {n0}"); bid += 1
-    # bnd 3, 4: x=0 (W), x=L (E)
-    for k in range(nz):
-        for j in range(ny):
-            parent_w = k*nx*ny + j*nx + 1
-            n0 = nid(0, j,   k); n1 = nid(0, j+1, k)
-            n2 = nid(0, j+1, k+1); n3 = nid(0, j,   k+1)
-            bnd_lines.append(f"{bid} 3 {parent_w} 0 404 {n0} {n1} {n2} {n3}"); bid += 1
-            parent_e = k*nx*ny + j*nx + nx
-            n0 = nid(nx, j,   k); n1 = nid(nx, j+1, k)
-            n2 = nid(nx, j+1, k+1); n3 = nid(nx, j,   k+1)
-            bnd_lines.append(f"{bid} 4 {parent_e} 0 404 {n3} {n2} {n1} {n0}"); bid += 1
-    # bnd 5, 6: y=0 (S), y=W (N)
-    for k in range(nz):
-        for i in range(nx):
-            parent_s = k*nx*ny + i + 1
-            n0 = nid(i,   0, k);   n1 = nid(i+1, 0, k)
-            n2 = nid(i+1, 0, k+1); n3 = nid(i,   0, k+1)
-            bnd_lines.append(f"{bid} 5 {parent_s} 0 404 {n3} {n2} {n1} {n0}"); bid += 1
-            parent_n = k*nx*ny + (ny-1)*nx + i + 1
-            n0 = nid(i,   ny, k);   n1 = nid(i+1, ny, k)
-            n2 = nid(i+1, ny, k+1); n3 = nid(i,   ny, k+1)
-            bnd_lines.append(f"{bid} 6 {parent_n} 0 404 {n0} {n1} {n2} {n3}"); bid += 1
-
-    with open(f"{out}/mesh.boundary", "w") as f:
-        for line in bnd_lines: f.write(line + "\n")
-    with open(f"{out}/mesh.header", "w") as f:
-        f.write(f"{n_nodes} {nx*ny*nz} {len(bnd_lines)}\n2\n404 {len(bnd_lines)}\n808 {nx*ny*nz}\n")
-    print(f"  mesh: {nx}x{ny}x{nz} = {nx*ny*nz} hex, {n_nodes} nodes, "
-          f"{len(bnd_lines)} bnd quads, {len(sources)} source bodies + 1 bg", flush=True)
-
-
-def gen_sif(sources: list[HeatSource]) -> None:
-    """Generate .sif with one Body Force per heat source.
-
-    Heat Source = W/kg per Elmer convention. q_HS_per_kg = q_vol / density.
-    """
-    t_board = 1.6e-3
-    k_FR4 = 0.3
-    rho_FR4 = 1850.0
-    h_conv = 10.0
-    T_amb = 298.15
-
-    # Bodies: 1..N for sources, N+1 = background. All same material (FR4).
-    body_sections = []
-    body_force_sections = []
-    for idx, src in enumerate(sources, start=1):
-        A = (src.body_x_mm * 1e-3) * (src.body_y_mm * 1e-3)
-        q_vol = src.power_W / (A * t_board)   # W/m³
-        q_HS_per_kg = q_vol / rho_FR4
-        body_sections.append(
-            f"Body {idx}\n"
-            f"  Equation = 1\n"
-            f"  Material = 1\n"
-            f"  Body Force = {idx}\n"
-            f"End\n"
-        )
-        body_force_sections.append(
-            f"Body Force {idx}\n"
-            f"  Heat Source = {q_HS_per_kg:.6e}  ! W/kg — Elmer multiplies by Density\n"
-            f"End\n"
-        )
-    bg_body = len(sources) + 1
-    body_sections.append(
-        f"Body {bg_body}\n"
-        f"  Equation = 1\n"
-        f"  Material = 1\n"
-        f"End\n"
-    )
-
-    sif = f"""Header
-  Mesh DB "." "mesh"
+    return f"""\
+Header
+  Mesh DB "." "novapcb_thermal"
 End
 
 Simulation
-  Coordinate System = Cartesian 3D
+  Coordinate System = "Cartesian 3D"
   Simulation Type = Steady State
-  Steady State Max Iterations = 1
+  Steady State Max Iterations = 30
+  Output File = "novapcb_thermal.result"
+  Post File = "novapcb_thermal.vtu"
   Output Intervals = 1
-  Output File = "case.result"
 End
 
-{''.join(body_sections)}
-
-Material 1
-  Heat Conductivity = {k_FR4}
-  Density = {rho_FR4}
-  Heat Capacity = 1000.0
+Body 1
+  Equation = 1
+  Material = 1
+  Body Force = 1
 End
-
-{''.join(body_force_sections)}
 
 Equation 1
   Active Solvers(2) = 1 2
 End
 
 Solver 1
-  Equation = Heat Equation
+  Equation = "Heat Equation"
+  Variable = "Temperature"
   Procedure = "HeatSolve" "HeatSolver"
-  Variable = Temperature
-  Linear System Solver = Iterative
-  Linear System Iterative Method = CG
-  Linear System Preconditioning = ILU0
-  Linear System Convergence Tolerance = 1e-10
-  Linear System Max Iterations = 1000
-  Steady State Convergence Tolerance = 1e-08
+  Linear System Solver = "Iterative"
+  Linear System Iterative Method = "BiCGStab"
+  Linear System Max Iterations = 500
+  Linear System Convergence Tolerance = 1.0e-9
+  Linear System Preconditioning = "ILU0"
+  Steady State Convergence Tolerance = 1.0e-7
 End
 
 Solver 2
   Exec Solver = After Simulation
   Equation = "result output"
   Procedure = "ResultOutputSolve" "ResultOutputSolver"
-  Output File Name = "case"
+  Output File Name = "novapcb_thermal"
   Output Format = "vtu"
   Binary Output = Logical False
   Ascii Output = Logical True
 End
 
-Boundary Condition 1
-  Target Boundaries(6) = 1 2 3 4 5 6
-  Heat Flux BC = Logical True
-  Heat Transfer Coefficient = {h_conv}
-  External Temperature = {T_amb:.4f}
+Material 1
+  Density = {RHO}
+  Heat Conductivity(3) = {K_XY} {K_XY} {K_Z}
+  Heat Capacity = {CP}
 End
 
-Initial Condition 1
-  Temperature = {T_amb:.4f}
+Body Force 1
+  Heat Source = Variable Coordinate
+    Real MATC "{matc}"
+End
+
+! Edges 1-4: ADIABATIC (no h_conv)
+Boundary Condition 1
+  Name = "X- edge (adiabatic)"
+  Target Boundaries(1) = 1
+End
+
+Boundary Condition 2
+  Name = "X+ edge (adiabatic)"
+  Target Boundaries(1) = 2
+End
+
+Boundary Condition 3
+  Name = "Y- edge (adiabatic)"
+  Target Boundaries(1) = 3
+End
+
+Boundary Condition 4
+  Name = "Y+ edge (adiabatic)"
+  Target Boundaries(1) = 4
+End
+
+! Faces 5 (bottom), 6 (top): convection
+Boundary Condition 5
+  Name = "Z- bottom (convection)"
+  Target Boundaries(1) = 5
+  Heat Transfer Coefficient = {H_CONV}
+  External Temperature = {T_AMBIENT_C}
+End
+
+Boundary Condition 6
+  Name = "Z+ top (convection)"
+  Target Boundaries(1) = 6
+  Heat Transfer Coefficient = {H_CONV}
+  External Temperature = {T_AMBIENT_C}
 End
 """
-    os.makedirs(CASE_DIR, exist_ok=True)
-    with open(CASE, "w") as f:
-        f.write(sif)
 
 
-def run() -> float:
-    """Run ElmerSolver, return max T (Kelvin) from VTU."""
-    r = subprocess.run([ELMER, "case.sif"], cwd=CASE_DIR,
-                       capture_output=True, text=True, timeout=600)
+def run_elmer(case_dir: str) -> dict:
+    """Run ElmerGrid → ElmerSolver pipeline; return parsed temperatures."""
+    env = os.environ.copy()
+    bin_dir = os.path.join(os.path.expanduser("~"), "local", "elmer", "bin")
+    env["PATH"] = f"{bin_dir}:{env.get('PATH', '')}"
+    elmer_lib = os.path.join(os.path.expanduser("~"), "local", "elmer", "lib")
+    env["LD_LIBRARY_PATH"] = f"{elmer_lib}:{env.get('LD_LIBRARY_PATH', '')}"
+
+    # Run ElmerGrid: .grd → mesh
+    r = subprocess.run(
+        [os.path.join(bin_dir, "ElmerGrid"), "1", "2", "novapcb_thermal.grd", "-autoclean"],
+        cwd=case_dir, capture_output=True, text=True, timeout=120, env=env,
+    )
+    if r.returncode != 0:
+        return {"error": f"ElmerGrid failed: {r.stderr[-500:]}"}
+
+    # Run ElmerSolver
+    (open(os.path.join(case_dir, "ELMERSOLVER_STARTINFO"), "w")
+     .write("novapcb_thermal.sif\n"))
+    r = subprocess.run(
+        [os.path.join(bin_dir, "ElmerSolver")],
+        cwd=case_dir, capture_output=True, text=True, timeout=600, env=env,
+    )
     if "Result Norm" not in r.stdout:
-        print("  ElmerSolver tail:")
-        print(r.stdout[-1500:])
-        return None
-    vtu = os.path.join(CASE_DIR, "mesh", "case_t0001.vtu")
-    if not os.path.exists(vtu):
-        print(f"  WARN: no VTU at {vtu}")
-        return None
-    with open(vtu) as f: txt = f.read()
-    m = re.search(r'<DataArray[^>]*Name="temperature"[^>]*>([\d\s\.\-eE+]+)</DataArray>', txt)
-    if not m: return None
-    temps = list(map(float, m.group(1).split()))
-    return max(temps)
+        return {"error": f"ElmerSolver failed: {r.stdout[-1500:]}"}
+
+    # Parse Elmer .result + mesh.nodes (NOT the VTU — Elmer's VTU writer
+    # outputs Points in node-id order but DataArrays in perm-index order,
+    # which mismatches standard VTK convention. .result + perm map is
+    # reliable; STEP4's parser uses this and it round-trips correctly).
+    pts, temps = _parse_elmer_result(case_dir)
+    if pts is None:
+        return {"error": "failed to parse Elmer .result"}
+    return {
+        "T_max_C": max(temps), "T_min_C": min(temps),
+        "T_avg_C": sum(temps)/len(temps),
+        "_points": pts, "_temps": temps,
+    }
+
+
+def _parse_elmer_result(case_dir: str):
+    """Parse mesh.nodes + .result and return (points, temps) lists.
+
+    Returns (None, None) on failure.
+    """
+    mesh_dir = os.path.join(case_dir, "novapcb_thermal")
+    nodes_path = os.path.join(mesh_dir, "mesh.nodes")
+    result_path = os.path.join(mesh_dir, "novapcb_thermal.result")
+    if not os.path.exists(nodes_path) or not os.path.exists(result_path):
+        return None, None
+    nodes = {}
+    for line in open(nodes_path):
+        parts = line.split()
+        if len(parts) >= 5:
+            nodes[int(parts[0])] = (float(parts[2]), float(parts[3]), float(parts[4]))
+    lines = open(result_path).read().splitlines()
+    perm_idx = None
+    for i, ln in enumerate(lines):
+        if ln.strip().startswith("Perm:"):
+            perm_idx = i
+            break
+    if perm_idx is None: return None, None
+    perm_count = int(lines[perm_idx].split()[1])
+    node_to_perm = {}
+    for k in range(perm_count):
+        toks = lines[perm_idx + 1 + k].split()
+        if len(toks) >= 2:
+            node_to_perm[int(toks[0])] = int(toks[1])
+    val_start = perm_idx + 1 + perm_count
+    values = []
+    for ln in lines[val_start:]:
+        ln = ln.strip()
+        if not ln: continue
+        try: values.append(float(ln))
+        except ValueError: break
+    pts, temps = [], []
+    for nid, (x, y, z) in nodes.items():
+        pidx = node_to_perm.get(nid)
+        if pidx is None or pidx > len(values): continue
+        pts.append((x, y, z))
+        temps.append(values[pidx - 1])
+    return pts, temps
+
+
+def sample_Tj(case_dir: str, src: HeatSource) -> float:
+    """Sample junction T at a component — MAX temp within footprint at top surface.
+
+    Matches STEP4 sampling convention: filter nodes within component
+    footprint bounding box AND at top face (z ≈ BOARD_H), take MAX.
+    Uses Elmer .result file (NOT VTU — Elmer's VTU writer has a
+    point-order vs perm-order mismatch bug).
+    """
+    pts, temps = _parse_elmer_result(case_dir)
+    if pts is None: return None
+    x_m = src.x_mm / 1000.0
+    y_m = src.y_mm / 1000.0
+    w_x_m = src.body_x_mm / 1000.0
+    w_y_m = src.body_y_mm / 1000.0
+    Tj_max = None
+    for i, (px, py, pz) in enumerate(pts):
+        if abs(pz - BOARD_H) > 1e-5: continue
+        if abs(px - x_m) > w_x_m / 2: continue
+        if abs(py - y_m) > w_y_m / 2: continue
+        if Tj_max is None or temps[i] > Tj_max:
+            Tj_max = temps[i]
+    return Tj_max
+
+
+def run(sources: list[HeatSource],
+        board_L_m: float = 0.080, board_W_m: float = 0.060,
+        case_label: str = "default") -> dict:
+    """Top-level: generate mesh + sif, run solver, return temperature dict."""
+    case_dir = os.path.join(CASE_DIR, case_label)
+    os.makedirs(case_dir, exist_ok=True)
+
+    # Match STEP4 mesh density (~2mm/cell)
+    nx = max(20, int(board_L_m * 1000 / 2))
+    ny = max(15, int(board_W_m * 1000 / 2))
+    nz = 4
+
+    with open(os.path.join(case_dir, "novapcb_thermal.grd"), "w") as f:
+        f.write(make_grd(board_L_m, board_W_m, BOARD_H, nx, ny, nz))
+    with open(os.path.join(case_dir, "novapcb_thermal.sif"), "w") as f:
+        f.write(make_sif(sources))
+
+    return run_elmer(case_dir)
+
+
+def regression_step4():
+    """REGRESSION TEST: reproduce STEP4_REPORT.md numbers.
+
+    Inputs: 80×60 board, 4 heat sources at the STEP4 positions/powers.
+    Expected: MCU Tj ≈ 75.2°C, LDO Tj ≈ 69.0°C, Board Tavg ≈ 71.5°C, Tmax ≈ 76.8°C.
+    Tolerance: ±2°C (mesh discretization + parameterization differences).
+    """
+    print("=== Gate 12 REGRESSION — reproduce STEP4_REPORT ===\n")
+    STEP4_INPUTS = [
+        HeatSource("U2_LDO",  10.0,   33.5, 2.5,  3.0,  0.595),
+        HeatSource("U1_MCU",  39.53,  30.0, 14.0, 14.0, 0.700),
+        HeatSource("U6_eFuse", 12.24, 21.29, 3.0,  4.0,  0.018),
+        HeatSource("Q2_PFET",  10.35, 13.55, 3.0,  1.5,  0.0065),
+    ]
+    print("STEP4 inputs: 80×60 board, h=5 top+bot, T_amb=50°C, k_xy=33.5, k_z=0.316")
+    for s in STEP4_INPUTS:
+        print(f"  {s.name}: ({s.x_mm}, {s.y_mm}) {s.body_x_mm}x{s.body_y_mm}mm @ {s.power_W*1000:.1f}mW")
+
+    result = run(STEP4_INPUTS, board_L_m=0.080, board_W_m=0.060, case_label="regression_step4")
+    if "error" in result:
+        print(f"\n  REGRESSION FAILED: {result['error']}")
+        return 1
+
+    case_dir = os.path.join(CASE_DIR, "regression_step4")
+    T_LDO = sample_Tj(case_dir, STEP4_INPUTS[0])  # U2_LDO
+    T_MCU = sample_Tj(case_dir, STEP4_INPUTS[1])  # U1_MCU
+    T_avg = result["T_avg_C"]
+    T_max = result["T_max_C"]
+
+    print(f"\nResults:")
+    print(f"  T_avg = {T_avg:.2f}°C  (STEP4 71.5°C, tol ±2°C)")
+    print(f"  T_max = {T_max:.2f}°C  (STEP4 76.8°C, tol ±2°C)")
+    print(f"  T_LDO = {T_LDO:.2f}°C  (STEP4 69.0°C, tol ±2°C)")
+    print(f"  T_MCU = {T_MCU:.2f}°C  (STEP4 75.2°C, tol ±2°C)")
+
+    targets = [("T_avg", T_avg, 71.5), ("T_max", T_max, 76.8),
+               ("T_LDO", T_LDO, 69.0), ("T_MCU", T_MCU, 75.2)]
+    fails = []
+    for name, got, expected in targets:
+        err = got - expected
+        if abs(err) > 2.0:
+            fails.append((name, got, expected, err))
+
+    if fails:
+        print(f"\nREGRESSION FAILED:")
+        for name, got, expected, err in fails:
+            print(f"  {name}: got {got:.2f} vs expected {expected:.2f} (err {err:+.2f}°C, > ±2°C)")
+        return 1
+    print(f"\nREGRESSION PASS: gate12 v2 reproduces STEP4 within ±2°C.")
+    return 0
 
 
 def main(pcb_path: str = None):
+    """Default mode: run on current PCB."""
     import pcbnew
     if pcb_path is None:
         pcb_path = os.path.join(HERE, "novapcb-stepwise.kicad_pcb")
-    print(f"=== Gate 12 — per-step thermal sim (v1.1 parameterized) ===\n")
-    print(f"PCB: {pcb_path}", flush=True)
+    print(f"=== Gate 12 — per-step thermal sim (v2, STEP4-model) ===\n")
+    print(f"PCB: {pcb_path}")
+    print(f"Model: anisotropic k=({K_XY}, {K_XY}, {K_Z}) W/m·K,")
+    print(f"       h=5 top+bot (adiabatic edges), T_amb=50°C")
+    print(f"Target: Tj ≤ {T_J_TARGET_C}°C (design target, not silicon abs-max)\n")
 
     brd = pcbnew.LoadBoard(pcb_path)
     sources = get_active_heat_sources(brd)
@@ -346,37 +478,47 @@ def main(pcb_path: str = None):
         print("  no heat sources detected — skipping FE run")
         return 0
 
-    print(f"\nActive heat sources for this step:")
+    print(f"Active heat sources for this step:")
     P_tot = 0.0
     for s in sources:
         print(f"  {s.name:<6} @ ({s.x_mm:.2f}, {s.y_mm:.2f})  body={s.body_x_mm}x{s.body_y_mm}mm  P={s.power_W*1000:.0f}mW")
         P_tot += s.power_W
-    print(f"  total P = {P_tot*1000:.0f} mW\n", flush=True)
+    print(f"  total P = {P_tot*1000:.0f} mW\n")
 
-    print(f"[1/2] Generate mesh + .sif", flush=True)
-    NX, NY, NZ = 90, 70, 3
-    gen_mesh(sources, NX, NY, NZ)
-    gen_sif(sources)
-
-    print(f"[2/2] Run ElmerSolver", flush=True)
-    T_max_K = run()
-    if T_max_K is None:
-        print(f"  Gate 12: RED — FE run failed")
+    # Use current board size (read from edge cuts) or default 90×70
+    board_L_m, board_W_m = 0.090, 0.070  # will derive from board outline in future
+    result = run(sources, board_L_m=board_L_m, board_W_m=board_W_m, case_label="current_step")
+    if "error" in result:
+        print(f"Gate 12 ERROR: {result['error']}")
         return 1
 
-    T_max_C = T_max_K - 273.15
-    Tj_spec = 105.0   # STM32H7 industrial T_j max (most-constrained component)
-    margin = Tj_spec - T_max_C
-    print(f"  T_max  = {T_max_C:.2f} °C")
-    print(f"  T_spec = {Tj_spec} °C")
-    print(f"  margin = {margin:.1f} °C")
-    if margin > 0:
-        print(f"  Gate 12: GREEN")
-        return 0
-    else:
-        print(f"  Gate 12: RED — T_max exceeds spec")
+    case_dir = os.path.join(CASE_DIR, "current_step")
+    T_max = result["T_max_C"]
+    T_avg = result["T_avg_C"]
+
+    # Per-component Tj
+    print(f"\nResults (k_eff anisotropic, plane-equivalent):")
+    print(f"  T_avg = {T_avg:.2f}°C")
+    print(f"  T_max = {T_max:.2f}°C")
+    fails = []
+    for s in sources:
+        Tj = sample_Tj(case_dir, s)
+        margin = T_J_TARGET_C - Tj
+        status = "PASS" if margin > 0 else "FAIL"
+        print(f"  Tj_{s.name:<6} = {Tj:.2f}°C  (target {T_J_TARGET_C}°C, margin {margin:+.1f}°C)  {status}")
+        if margin <= 0:
+            fails.append((s.name, Tj))
+
+    if fails:
+        print(f"\nGate 12: RED — {len(fails)} component(s) exceed Tj target")
+        for name, Tj in fails:
+            print(f"  {name}: {Tj:.2f}°C > {T_J_TARGET_C}°C")
         return 1
+    print(f"\nGate 12: GREEN — all Tj ≤ {T_J_TARGET_C}°C target")
+    return 0
 
 
 if __name__ == "__main__":
+    if "--regression-step4" in sys.argv:
+        sys.exit(regression_step4())
     sys.exit(main())
