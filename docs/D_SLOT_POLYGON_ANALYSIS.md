@@ -366,3 +366,129 @@ def check_imu_slot():
 - Audit gate update
 - PR doc
 
+---
+
+# Second amendment — (β) move slot south to Y=45..46 (master 2026-05-24)
+
+## Why (β) over (α)
+
+First layout attempt at Y=32.5..33.5 → DRC 10 → 45 (35 new violations).
+Root causes:
+- 22 copper_edge_clearance from PR #76 stitching vias at Y=32 (too close to slot top Y=32.5)
+- SPI3_SCK pre-existing via at (58, 33) sat ON slot edge (0.0mm)
+- 4 invalid_outline from KiCad complaining about overlapping Edge.Cuts rectangles at corners
+- My 3 detour intermediates at (62, 33), (58, 33), (68, 33) touched slot rectangle corners
+
+Master 2026-05-24: pick **(β) move slot south to Y=45..46** for the
+same principle as (D) over (B) — **preserve merged work**. (α) would
+have required deleting PR #76 stitching vias + re-routing PR #77
+SPI3_SCK, exactly the regression risk we avoided last round.
+
+(β) preserves PR #76/#77/#78 routes intact. Trades ~12mm of slot
+vertical reach (Y=33..63 → Y=45..63) for zero re-touch of merged
+subsystems.
+
+## (β) Final slot geometry
+
+```
+Slot lines (Edge.Cuts polygons, 1mm width, FLUSH corners — no overlap):
+- N span W-half: rect X=53..58, Y=45..46 (5mm × 1mm)
+- N span E-half: rect X=68..87, Y=45..46 (19mm × 1mm)
+- E cut:         rect X=87..88, Y=45..65 (1mm × 20mm)
+- S span:        rect X=53..87, Y=64..65 (34mm × 1mm)
+
+Bridge: X=58..68, Y=45..46 (10mm wide unchanged)
+Open west: X=53 west edge has no slot cut (preserved from (D) decision)
+
+Total slot perimeter cut: 5 + 19 + 20 + 34 = 78mm
+(vs Y=33 plan: ~85mm — comparable, both significantly isolate D)
+```
+
+Corners FLUSH (no overlap):
+- N-E ends at (87, 45..46); E starts at (87, 45..65) — meet at X=87 Y=45..46
+- E ends at (87..88, 65); S ends at (87, 64..65) — meet at X=87..88 Y=64..65
+- N-W ends at (58, 45..46); bridge gap X=58..68; N-E starts at (68, 45..46)
+
+## (β) latitude crossings survey (per master discipline check)
+
+Per the new latitude Y=45.5:
+
+| Net | Layer | Crossing X | Bridge gap (X=58..68)? | Plan |
+|---|---|---|---|---|
+| IMU2_GYR_CS | B.Cu | X=54.69 | NO (in N-W) | Detour via bridge mid (62, 45) |
+| IMU3_INT1 | F.Cu | X=57.45 | NO (in N-W) | Detour via bridge mid (62, 45) |
+| SPI3_SCK | B.Cu | X=68.84 | NO (in N-E, barely) | Detour via bridge mid (62, 45) — but the +0.84mm east overshoot may allow shift to X=68 (just inside bridge); per-net judgment |
+| +3V3_IMU | B.Cu | X=75.00 | NO (in N-E) | Detour via bridge mid (62, 45) |
+
+**4 crossings** (vs 3 at Y=33 attempt). Each needs manual detour via
+bridge center. Same per-net pattern as before, just 1 more net.
+
+## Vias in slot keepout zone (Y=44..47, slot ±1mm margin)
+
+Survey of vias in Y=44..47 X=53..88:
+
+- VIA at (57.02, 47.00) on +3V3 — Y=47 is 1mm south of slot bottom
+  Y=46. Clearance: 1mm gap − via radius 0.25mm = 0.75mm edge-to-edge.
+  Passes 0.5mm board-edge-clearance rule. **No action needed.**
+
+No other vias in slot keepout zone. (β) latitude avoids the
+~12 stitching vias that were within 0.5mm of the Y=33 slot.
+
+## Polygon closure fix
+
+First attempt used (gr_rect ...) with overlapping corners:
+- N-E ended at X=88; E started at X=87.5 → overlap X=87.5..88 (small)
+- E ended at Y=65; S ended at Y=65.5 → overlap
+
+Fix: FLUSH corners (geometry above). Each rectangle ENDS where the
+next BEGINS, no overlap. May resolve invalid_outline (4 errors).
+
+If invalid_outline persists after FLUSH, fallback: use single
+continuous closed-polygon (gr_poly) for entire ⊏ slot perimeter
+(more complex vertex list, but KiCad recognizes as 1 valid outline).
+
+## Per-net detour plan (using bridge center X=62, Y=45)
+
+| Net | Layer | Original segment | Detour |
+|---|---|---|---|
+| IMU2_GYR_CS | B.Cu | (find via re-survey) | start → (62, 45) → end |
+| IMU3_INT1 | F.Cu | (find via re-survey) | start → (62, 45) → end |
+| SPI3_SCK | B.Cu | (find via re-survey) | start → (62, 45) → end |
+| +3V3_IMU | B.Cu | (find via re-survey) | start → (62, 45) → end |
+
+Exact original-segment coordinates resolved in layout-execution step
+(scan tracks crossing Y=45.5 in non-bridge X range, extract endpoints).
+
+## Audit gate STRICT criteria (updated for (β))
+
+```python
+def check_imu_slot():
+    SLOT_RECTS = [
+        (53, 45, 58, 46),    # N-W
+        (68, 45, 87, 46),    # N-E
+        (87, 45, 88, 65),    # E
+        (53, 64, 87, 65),    # S
+    ]
+    BRIDGE_X = (58, 68)      # bridge gap on N-span at Y=45..46
+    # 1. All 4 slot rects present on Edge.Cuts
+    # 2. No signal trace crosses Y=45..46 at X outside BRIDGE_X
+    # 3. No signal trace crosses X=87..88 at Y=45..65
+    # 4. No signal trace crosses Y=64..65 at X=53..87
+    # 5. Bridge width (X=68-58=10mm) >= 3mm
+    # 6. In1.Cu GND zone covers bridge footprint (X=58..68 Y=44..47)
+```
+
+## 5 master merge gates (carry over from amendment 1)
+
+1. DRC ≤ baseline 10 (target: 0 net new this attempt)
+2. STACKUP-SPEC-MATCH PASS
+3. MIRROR_PAIRS 11/11 PASS
+4. DECOUPLING unchanged (no D-zone caps touched)
+5. NEW: IMU-SLOT ACTIVE PASS (6 criteria above)
+
+---
+
+**Ready for layout execution after master sign-off on (β) latitude +
+4-net detour plan + FLUSH-corner polygon closure.**
+
+
