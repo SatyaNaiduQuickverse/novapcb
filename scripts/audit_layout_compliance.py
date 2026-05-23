@@ -729,6 +729,46 @@ def check_fab_exceptions():
 # Catches the failure-mode that lied about +5V_BEC plane connectivity
 # in earlier A↔B-3 verification: pads logically on +5V_BEC net showed
 # 0 unconnected in DRC, but the plane was empty → no physical connection.
+# ----- stackup-spec-match gate (master 2026-05-23 stackup-fix PR) -----
+# Rule 9 codified for stackup: the locked spec in docs/DECISIONS.md §8 says
+# each plane net lives on a specific layer. Catches the half-applied
+# stackup change defect (2026-05-23: +3V3 was moved to In3 but never
+# removed from In4; In1/In4 GND zones were never created).
+#
+# Gate asserts:
+#   - Each (layer, net) in EXPECTED_PLANES has ≥1 zone
+#   - No (layer, net) outside EXPECTED_PLANES (catch leftover wrong-net zones)
+EXPECTED_PLANES = {
+    ("In1.Cu", "GND"),       # primary GND plane (master 2026-05-23)
+    ("In2.Cu", "+5V_BEC"),
+    ("In3.Cu", "+3V3"),
+    ("In4.Cu", "GND"),       # secondary GND plane (master 2026-05-23)
+}
+
+
+def check_stackup_spec_match():
+    seen = set()
+    for z in board.Zones():
+        if not hasattr(z, "GetNetname"): continue
+        l = board.GetLayerName(z.GetLayer())
+        n = z.GetNetname()
+        if not l.startswith("In"):
+            continue   # only check internal plane layers
+        seen.add((l, n))
+    missing = EXPECTED_PLANES - seen
+    unexpected = seen - EXPECTED_PLANES
+    if missing:
+        fails.append(f"STACKUP-SPEC-MATCH: {len(missing)} expected plane(s) MISSING per DECISIONS.md §8")
+        for l, n in sorted(missing):
+            fails.append(f"  expected {l} \"{n}\": NOT FOUND")
+    if unexpected:
+        fails.append(f"STACKUP-SPEC-MATCH: {len(unexpected)} unexpected plane(s) — check for half-applied stackup change")
+        for l, n in sorted(unexpected):
+            fails.append(f"  unexpected {l} \"{n}\": not in DECISIONS.md §8")
+    if not missing and not unexpected:
+        info.append(f"STACKUP-SPEC-MATCH: PASS — 4 plane (layer,net) pairs match DECISIONS.md §8")
+
+
 def check_zone_fill():
     empty_zones = []
     filled_zones = []
@@ -767,6 +807,7 @@ check_decoupling(items)
 check_imu_slot()
 check_usb_pair()
 check_mid_edge_keepout(items)
+check_stackup_spec_match()
 check_zone_fill()
 check_fab_exceptions()
 check_fanout_exit_corridor(items)
