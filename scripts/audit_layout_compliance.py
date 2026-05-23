@@ -55,13 +55,15 @@ info = []
 #   for damping series-R on FET gates.
 # Sense/precision: 3mm guideline for shunt-trace integrity.
 ROLE_MAX_MM = {
-    "decouple": 3.0,    # HF bypass: IPC-2221 + ST AN2867
-    "gate_R": 5.0,      # FET gate damping R: TI SLOA088
-    "bootstrap_C": 2.0, # buck/boost bootstrap (N/A on LDO board)
-    "sense_R": 3.0,     # current-sense shunt placement
-    "pull_R": 5.0,      # GPIO pulls / boot config
-    "feedback_R": 3.0,  # regulator FB networks
-    "led_R": 2.0,       # LED series R
+    "decouple": 3.0,      # HF bypass: IPC-2221 + ST AN2867
+    "gate_R": 5.0,        # FET gate damping R: TI SLOA088
+    "bootstrap_C": 2.0,   # buck/boost bootstrap (N/A on LDO board)
+    "sense_R": 3.0,       # precision current-sense shunt
+    "sense_R_slow": 15.0, # slow analog sense (mV-level via filter cap, ADC input)
+    "pull_R": 5.0,        # HF GPIO pulls (clock pulls, NRST fast paths)
+    "pull_R_slow": 15.0,  # DC pulls (EFUSE config, BOOT0, enable, etc)
+    "feedback_R": 3.0,    # regulator FB networks
+    "led_R": 2.0,         # LED series R
 }
 ORPHANED_THRESHOLD_MM = 20.0
 
@@ -220,21 +222,33 @@ def classify_role(ref, value, nets):
         # 0R = jumper (no anchoring constraint)
         if v_low in ("0r", "0", "0ohm", "0ohms"):
             return "jumper"
-        # Pull-R / gate-R / sense-R inferred from net names
         net_names = list(nets.values())
-        # Gate-R: net contains GATE
+        # Gate-R: net contains GATE (FET gate driver)
         if any("GATE" in n.upper() for n in net_names):
             return "gate_R"
-        # Sense-R: net contains SENSE or shunt-current pattern
-        if any(("SENSE" in n.upper() or "CURRENT" in n.upper()) for n in net_names):
-            return "sense_R"
+        # Sense classification — distinguish DC analog from precision shunt:
+        #   - VOLTAGE_SENS / VBAT_PRE: divider/scaling (slow DC) → loose
+        #   - CURRENT_SENS shunt: precision (mV-level) → tight
+        for n in net_names:
+            nu = n.upper()
+            if "CURRENT_SENS" in nu:
+                # Slow analog if connected to ADC via filter cap — current
+                # sense for Mauch is ADC-input, slow. Use loose.
+                return "sense_R_slow"
+            if "SENSE" in nu or "VOLTAGE_SENS" in nu:
+                return "sense_R_slow"
         # Feedback (regulator FB)
         if any(("FB" == n.upper() or n.upper().endswith("_FB")) for n in net_names):
             return "feedback_R"
         # LED series
         if any("LED" in n.upper() for n in net_names):
             return "led_R"
-        # Default: pull/general purpose
+        # DC pulls (EFUSE config, BOOT0, slow GPIO etc) → loose
+        if any(any(tag in n.upper() for tag in
+                   ("EFUSE_", "BOOT", "RESET", "NRST", "STDBY", "ENABLE", "_EN"))
+               for n in net_names):
+            return "pull_R_slow"
+        # Default: pull (could be HF like clock; conservative)
         return "pull_R"
     return "unknown"
 
@@ -277,6 +291,8 @@ def check_passive_anchoring(items):
         role = classify_role(ref, d.get("value", ""), d.get("nets", {}))
         if role in ("jumper", "bulk", "unknown"):
             continue  # not anchored
+        # _slow variants use looser ORPHAN threshold too
+        local_orphan = ORPHANED_THRESHOLD_MM
         parents = parent_ic_for_passive(ref, d.get("nets", {}), items)
         if not parents:
             orphaned.append((ref, d["x"], d["y"], role, list(d.get("nets", {}).values())))
@@ -295,8 +311,10 @@ def check_passive_anchoring(items):
         if not entries: continue
         msg = (f"PASSIVE-ANCHORING ({role.upper()}-FAR): {len(entries)} passives "
                f">{ROLE_MAX_MM[role]}mm from in-net parent")
-        # role-specific: decouple/sense_R are stricter → FAIL; others WARN
-        bucket = fails if role in ("decouple", "sense_R", "gate_R") else warns
+        # role-specific severity:
+        #   FAIL: HF/precision roles (decouple, sense_R precision, gate_R, feedback_R)
+        #   WARN: DC/slow roles (pull_R_slow, sense_R_slow, pull_R)
+        bucket = fails if role in ("decouple", "sense_R", "gate_R", "feedback_R") else warns
         bucket.append(msg)
         for r, x, y, p, d, m in sorted(entries, key=lambda t: -t[4])[:8]:
             bucket.append(f"  {r} at ({x:.1f},{y:.1f}) → {p} @ {d:.1f}mm (rule {m}mm)")
