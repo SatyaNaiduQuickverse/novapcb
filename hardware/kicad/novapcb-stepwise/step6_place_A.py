@@ -54,7 +54,7 @@ ANCHORS = {
     "J4":  (15.0, 5.0, 0.0),       # Mauch primary 6-pin JST-GH (pads Y=3.15)
     "D5":  (23.0, 4.0, 0.0),       # TVS on J4 BATT+ input
     "D6":  (23.0, 6.0, 0.0),       # TVS on J4 BATT- (return)
-    "U11": (33.0, 5.0, 0.0),       # LM74700-Q1 OR-FET ctrl west (SOT-23-6)
+    "U11": (33.0, 5.0, 0.0),       # LM74700-Q1 OR-FET ctrl west (SOT-23-6) — kept rot=0 (rot=90 trial had B.Cu crossings; via-on-pad-center fits cleanly per A↔B-2)
     "C73": (36.0, 4.0, 0.0),       # U11 VCAP, NE of U11
     "C74": (36.0, 6.0, 0.0),       # U11 bypass
     "Q3":  (27.0, 10.0, 0.0),      # OR-FET N-channel SO-8 west (pads Y=7.43,12.57)
@@ -67,7 +67,7 @@ ANCHORS = {
     "J19": (90.0, 5.0, 0.0),       # Mauch secondary 6-pin
     "D7":  (82.0, 4.0, 0.0),       # TVS on J19 BATT+
     "D8":  (82.0, 6.0, 0.0),       # TVS on J19 BATT-
-    "U12": (72.0, 5.0, 0.0),       # LM74700-Q1 OR-FET ctrl east
+    "U12": (72.0, 5.0, 0.0),       # LM74700-Q1 OR-FET ctrl east (mirror of U11)
     "C75": (69.0, 4.0, 0.0),       # U12 VCAP
     "C76": (69.0, 6.0, 0.0),       # U12 bypass
     "Q4":  (78.0, 10.0, 0.0),      # OR-FET N-channel SO-8 east (51mm from Q3)
