@@ -484,6 +484,43 @@ def check_mid_edge_keepout(items):
             fails.append(f"  {r} at ({x:.1f},{y:.1f}) inside keep-out @ ({kx:.1f},{ky:.1f})")
 
 
+# ----- check 9.5: fab-exception count (master 2026-05-23 hard bar) -----
+# Reads novapcb-stepwise.kicad_dru and counts non-standard rules
+# (clearance relax, via-in-pad, 4mil, extended-courtyard). >4 in any
+# single region (U6, U11/U12, etc.) triggers WARN — implicit
+# accretion cap.
+def check_fab_exceptions():
+    dru_path = sys.argv[1].replace(".kicad_pcb", ".kicad_dru")
+    try:
+        with open(dru_path) as f:
+            txt = f.read()
+    except FileNotFoundError:
+        return
+    import re
+    rule_names = re.findall(r'\(rule\s+"([^"]+)"', txt)
+    # Categorize: standard (USB diff-pair) vs fab-exception
+    standard_keywords = ("usb-diff-pair", "usbc-pre-esd", "usbc-bridge")
+    exceptions = [n for n in rule_names
+                  if not any(s in n for s in standard_keywords)]
+    info.append(f"FAB-EXCEPTIONS: {len(rule_names)} total DRU rules; "
+                f"{len(exceptions)} fab-spec exceptions; "
+                f"{len(rule_names)-len(exceptions)} standard")
+    # Per-region count: bucket by name prefix
+    by_region = {}
+    for name in exceptions:
+        # Region = first hyphenated token chunk before -fanout/-courtyard/-orfet etc
+        if name.startswith("u11-u12"): region = "U11/U12"
+        elif name.startswith("u6-"): region = "U6"
+        elif "orfet" in name: region = "U11/U12"  # orfet maps to U11/U12
+        else: region = "other"
+        by_region.setdefault(region, []).append(name)
+    for region, rules in sorted(by_region.items()):
+        if len(rules) > 4:
+            warns.append(f"FAB-EXCEPTIONS: {region} region at {len(rules)} rules — "
+                         f"exceeds master 4-rule cap. Consider placement-rework.")
+        info.append(f"  {region}: {len(rules)} ({', '.join(rules)})")
+
+
 # ----- check 9: zone-fill audit (master 2026-05-23 Rule 9) -----
 # Every declared zone must have GetFilledArea() > 0. "Zone declared" is
 # NOT the same as "zone filled" — KiCad pcbnew Python does NOT auto-fill
@@ -529,6 +566,7 @@ check_imu_slot()
 check_usb_pair()
 check_mid_edge_keepout(items)
 check_zone_fill()
+check_fab_exceptions()
 
 print(f"=== Layout compliance audit: {os.path.basename(sys.argv[1])} ===")
 print(f"Components: {len(items)}")
