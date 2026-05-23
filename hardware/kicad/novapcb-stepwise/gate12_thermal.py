@@ -850,7 +850,11 @@ def main(pcb_path: str = None):
         P_tot += s.power_W
     print(f"  total P = {P_tot*1000:.0f} mW\n")
 
-    board_L_m, board_W_m = 0.090, 0.070
+    # Board outline: v1.1 = 105 × 85 mm (master sign-off 2026-05-23).
+    # WAS 0.090 × 0.070 (90×70) — caused +5.2°C MCU overestimate in
+    # step-3 thermal vs the arch-sweep prediction (smaller board area
+    # = less spreader copper = artificially higher Tj).
+    board_L_m, board_W_m = 0.105, 0.085
     result = run(sources, board_L_m=board_L_m, board_W_m=board_W_m, case_label="current_step")
     if "error" in result:
         print(f"Gate 12 ERROR: {result['error']}")
