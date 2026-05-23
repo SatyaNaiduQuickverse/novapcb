@@ -319,6 +319,32 @@ def check_decoupling(items):
     for ref, d in items.items():
         if not (ref.startswith("U") and ref[1:].isdigit()):
             continue
+        value = d.get("value", "").upper()
+        # LM74700-aware: device's VCAP cap (on ORING_*_VCAP net at pin 1)
+        # is the required decap per TI datasheet, not a VDD-style decap.
+        # Audit accepts ORING_*_VCAP cap as the decap for LM74700.
+        if "LM74700" in value:
+            vcap_pad_pos = None
+            vcap_net = None
+            for pad in d["fp"].Pads():
+                n = pad.GetNetname()
+                if n.startswith("ORING_") and n.endswith("_VCAP"):
+                    pp = pad.GetPosition()
+                    vcap_pad_pos = (pcbnew.ToMM(pp.x), pcbnew.ToMM(pp.y))
+                    vcap_net = n
+                    break
+            if vcap_pad_pos:
+                found = False
+                for cref, cd in items.items():
+                    if not (cref.startswith("C") and cref[1:].isdigit()): continue
+                    if vcap_net not in cd.get("nets", {}).values(): continue
+                    if cap_body_edge_to_point(cd, *vcap_pad_pos) <= 3.0:
+                        found = True; break
+                if found:
+                    continue  # LM74700 properly decoupled via VCAP cap
+                # Otherwise fall through to VDD check (which will likely fail
+                # too — flag it).
+
         # Strict VDD pads only
         vdd_pad_positions = []
         for pad in d["fp"].Pads():
@@ -330,20 +356,29 @@ def check_decoupling(items):
             continue
         for vx, vy, vnet in vdd_pad_positions:
             found = False
+            closest = (float('inf'), None)
             for cref, cd in items.items():
                 if not (cref.startswith("C") and cref[1:].isdigit()): continue
                 cap_nets = list(cd.get("nets", {}).values())
                 if vnet not in cap_nets: continue
-                if cap_body_edge_to_point(cd, vx, vy) <= 3.0:
+                dist = cap_body_edge_to_point(cd, vx, vy)
+                if dist < closest[0]:
+                    closest = (dist, cref)
+                if dist <= 3.0:
                     found = True; break
             if not found:
-                bad.append((ref, vnet, vx, vy))
+                # Report with body-edge distance to NEAREST in-net cap
+                bad.append((ref, vnet, vx, vy, closest[0], closest[1]))
     if bad:
-        unique = set((r, n) for r, n, _, _ in bad)
+        unique = set((r, n) for r, n, _, _, _, _ in bad)
         fails.append(f"DECOUPLING: {len(unique)} IC VDD-net assignments "
                      f"with no cap within 3mm of VDD pad (body-edge)")
         for r, n in sorted(unique)[:10]:
-            fails.append(f"  {r} VDD net={n}")
+            # Find best distance for this (ref, net)
+            best = min((bd for bd in bad if bd[0]==r and bd[1]==n),
+                       key=lambda b: b[4])
+            cap_ref = best[5] or "(no in-net cap)"
+            fails.append(f"  {r} VDD net={n} — nearest cap {cap_ref} @ {best[4]:.2f}mm body-edge")
 
 
 # ----- check 6: IMU stress-relief slot integrity -----
