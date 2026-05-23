@@ -2088,147 +2088,6 @@
 			)
 		)
 	)
-	(footprint "ESC_solder_pad"
-		(layer "F.Cu")
-		(uuid "1ab9ebd6-2fad-435b-a227-a8cc965661f6")
-		(at 134 0)
-		(descr "ESC motor-output solder pad pair (signal + GND), 2.0x1.5mm SMD pads at 2.5mm pitch. Per CLAUDE.md §3.4 logic-level 3.3V, no power passthrough on motor connectors (ESCs powered direct-from-battery). MatekH743-style mini-FC convention. Pad 1 = signal (MOTn), Pad 2 = GND.")
-		(tags "esc dshot solder-pad mini-fc")
-		(property "Reference" "J14"
-			(at 0 -2 0)
-			(layer "F.SilkS")
-			(uuid "8dad562c-6a5e-4208-b56a-aa00834bb498")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Value" "ESC_solder_pad"
-			(at 0 3.5 0)
-			(layer "F.Fab")
-			(uuid "178dbe5e-4a14-4ea7-9170-204cfd5afb57")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Datasheet" "MatekH743-bdshot reference convention; ESC wire solders direct to pad"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "6e970d05-f111-4ce5-8ac0-41d5d6a1ed83")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Description" "ESC motor output solder pad pair (2.0x1.5mm at 2.5mm pitch)"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "d25ccd8e-f0ac-4cf3-85a9-7364523ad9ff")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(attr smd)
-		(fp_line
-			(start -1.2 -1)
-			(end -1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "72beb25d-f96a-482f-8936-96982aabd243")
-		)
-		(fp_line
-			(start 1.2 -1)
-			(end 1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "5c88d291-e7db-4253-9160-166e11eac37b")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end -1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "f0f62214-2fdf-4b97-8de8-ac3b23066721")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end 1.5 -1.2)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "f6cfb7a1-c15a-4849-88cf-059c3320b970")
-		)
-		(fp_line
-			(start -1.5 3.7)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "f8f3a6a0-b464-4a0c-9a43-51d2655ddea9")
-		)
-		(fp_line
-			(start 1.5 -1.2)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "6d66ae71-cc69-4717-85d5-e1d59d78647e")
-		)
-		(fp_text user "${REFERENCE}"
-			(at 1.4 0 90)
-			(layer "F.SilkS")
-			(uuid "62fdab10-65c9-4999-8458-30c21fa1eeb3")
-			(effects
-				(font
-					(size 0.6 0.6)
-					(thickness 0.1)
-				)
-			)
-		)
-		(pad "1" smd rect
-			(at 0 0)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 58 "MOT4")
-			(uuid "f1737a40-b815-4918-8fef-db89b0df79af")
-		)
-		(pad "2" smd rect
-			(at 0 2.5)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 29 "GND")
-			(zone_connect 2)
-			(uuid "0a45fd3c-d7b4-4a3c-aee9-faf129ef38ec")
-		)
-		(embedded_fonts no)
-	)
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "1abda0ad-3d89-40db-9975-fa86604f0650")
@@ -6254,147 +6113,6 @@
 			)
 		)
 	)
-	(footprint "ESC_solder_pad"
-		(layer "F.Cu")
-		(uuid "39ebcfed-942c-4f39-bb89-7d59d4d56e33")
-		(at 191 0)
-		(descr "ESC motor-output solder pad pair (signal + GND), 2.0x1.5mm SMD pads at 2.5mm pitch. Per CLAUDE.md §3.4 logic-level 3.3V, no power passthrough on motor connectors (ESCs powered direct-from-battery). MatekH743-style mini-FC convention. Pad 1 = signal (MOTn), Pad 2 = GND.")
-		(tags "esc dshot solder-pad mini-fc")
-		(property "Reference" "J11"
-			(at 0 -2 0)
-			(layer "F.SilkS")
-			(uuid "789e1956-d8a6-41b3-bcea-ea82ea3c7d76")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Value" "ESC_solder_pad"
-			(at 0 3.5 0)
-			(layer "F.Fab")
-			(uuid "c7223fcb-7b80-4665-a431-15513e3c8b3e")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Datasheet" "MatekH743-bdshot reference convention; ESC wire solders direct to pad"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "c939ae29-a307-49fa-bbb6-2a6274fb6518")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Description" "ESC motor output solder pad pair (2.0x1.5mm at 2.5mm pitch)"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "ca32a631-24da-456d-b4e7-eb86e2dda359")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(attr smd)
-		(fp_line
-			(start -1.2 -1)
-			(end -1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "b4561cc7-173d-4141-bf0a-e7b9d13ec137")
-		)
-		(fp_line
-			(start 1.2 -1)
-			(end 1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "ec6a56e8-30a2-48d7-a8df-40301cf95c1a")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end -1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "aab98053-0c6a-4cab-af58-d1e1f1490ba7")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end 1.5 -1.2)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "ed78b045-9bba-41be-a38d-af57cbfbc5f6")
-		)
-		(fp_line
-			(start -1.5 3.7)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "f0e3710d-fa0d-4590-8b77-33faba0c3243")
-		)
-		(fp_line
-			(start 1.5 -1.2)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "c3ec0af8-02bd-43d9-abee-83f8f2c06fc1")
-		)
-		(fp_text user "${REFERENCE}"
-			(at 1.4 0 90)
-			(layer "F.SilkS")
-			(uuid "fe2033c4-2e9b-4a56-bc34-5ae972986e48")
-			(effects
-				(font
-					(size 0.6 0.6)
-					(thickness 0.1)
-				)
-			)
-		)
-		(pad "1" smd rect
-			(at 0 0)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 55 "MOT1")
-			(uuid "9ca995ea-8ccd-4637-aaab-28c2b6cd35ed")
-		)
-		(pad "2" smd rect
-			(at 0 2.5)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 29 "GND")
-			(zone_connect 2)
-			(uuid "d618dbaf-7811-4ede-ace5-77e983b9c049")
-		)
-		(embedded_fonts no)
-	)
 	(footprint "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm"
 		(layer "F.Cu")
 		(uuid "3aad5f92-7f8e-4f98-951e-4979b594a563")
@@ -7020,147 +6738,6 @@
 				(xyz 0 0 180)
 			)
 		)
-	)
-	(footprint "ESC_solder_pad"
-		(layer "F.Cu")
-		(uuid "3d816570-c30d-45b8-b826-fe8a8a679581")
-		(at 113 3)
-		(descr "ESC motor-output solder pad pair (signal + GND), 2.0x1.5mm SMD pads at 2.5mm pitch. Per CLAUDE.md §3.4 logic-level 3.3V, no power passthrough on motor connectors (ESCs powered direct-from-battery). MatekH743-style mini-FC convention. Pad 1 = signal (MOTn), Pad 2 = GND.")
-		(tags "esc dshot solder-pad mini-fc")
-		(property "Reference" "J18"
-			(at 0 -2 0)
-			(layer "F.SilkS")
-			(uuid "3ed1cd18-b93f-4985-b570-08fd91e6548e")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Value" "ESC_solder_pad"
-			(at 0 3.5 0)
-			(layer "F.Fab")
-			(uuid "e4d53938-e6fb-43e4-a559-c4cc5c953087")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Datasheet" "MatekH743-bdshot reference convention; ESC wire solders direct to pad"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "1d911c0b-5d29-4736-9601-a21a8080fd0c")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Description" "ESC motor output solder pad pair (2.0x1.5mm at 2.5mm pitch)"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "5011c256-33de-469e-9e81-56a57b83656d")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(attr smd)
-		(fp_line
-			(start -1.2 -1)
-			(end -1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "410f8d63-d3a7-42f1-a3e8-e153122ba1d6")
-		)
-		(fp_line
-			(start 1.2 -1)
-			(end 1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "468dd3a1-2d03-434c-a933-8924ee9b20dd")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end -1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "34e1b43a-f857-4685-891c-691018168c87")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end 1.5 -1.2)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "27a2c502-d100-4329-ac43-b3865c43b134")
-		)
-		(fp_line
-			(start -1.5 3.7)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "36218591-fee4-49d8-b0f4-8d9077f7e587")
-		)
-		(fp_line
-			(start 1.5 -1.2)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "3b548b74-755a-40e6-ae1a-452706f84494")
-		)
-		(fp_text user "${REFERENCE}"
-			(at 1.4 0 90)
-			(layer "F.SilkS")
-			(uuid "2d3d394c-c45b-4095-986e-3c389c7ceefe")
-			(effects
-				(font
-					(size 0.6 0.6)
-					(thickness 0.1)
-				)
-			)
-		)
-		(pad "1" smd rect
-			(at 0 0)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 62 "MOT8")
-			(uuid "713a577a-4744-4a24-aae1-9d29fcb26078")
-		)
-		(pad "2" smd rect
-			(at 0 2.5)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 29 "GND")
-			(zone_connect 2)
-			(uuid "459bc776-8d24-4dae-892b-792a13f042a0")
-		)
-		(embedded_fonts no)
 	)
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
@@ -9034,147 +8611,6 @@
 				(xyz 0 0 0)
 			)
 		)
-	)
-	(footprint "ESC_solder_pad"
-		(layer "F.Cu")
-		(uuid "45df0bde-aa94-4f3f-8807-abb85f069ecc")
-		(at 143 3)
-		(descr "ESC motor-output solder pad pair (signal + GND), 2.0x1.5mm SMD pads at 2.5mm pitch. Per CLAUDE.md §3.4 logic-level 3.3V, no power passthrough on motor connectors (ESCs powered direct-from-battery). MatekH743-style mini-FC convention. Pad 1 = signal (MOTn), Pad 2 = GND.")
-		(tags "esc dshot solder-pad mini-fc")
-		(property "Reference" "J17"
-			(at 0 -2 0)
-			(layer "F.SilkS")
-			(uuid "3bd22473-d9a3-4abd-a230-17a43c89edf4")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Value" "ESC_solder_pad"
-			(at 0 3.5 0)
-			(layer "F.Fab")
-			(uuid "1d02067d-de1d-4a6e-8ec5-acadbe6c36e2")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Datasheet" "MatekH743-bdshot reference convention; ESC wire solders direct to pad"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "bb059015-027a-4b06-bfef-37ce807d1dca")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Description" "ESC motor output solder pad pair (2.0x1.5mm at 2.5mm pitch)"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "7be57342-af51-4208-8746-bdceee7ec1fd")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(attr smd)
-		(fp_line
-			(start -1.2 -1)
-			(end -1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "ef2e1da6-b36b-4be6-9506-48840dc6d037")
-		)
-		(fp_line
-			(start 1.2 -1)
-			(end 1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "7cce1ccb-b17d-4b80-82d1-44575d910496")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end -1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "239ce20d-c665-4cf8-a601-d0fb79860140")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end 1.5 -1.2)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "5647d67b-2956-43ce-8152-2af4188751a6")
-		)
-		(fp_line
-			(start -1.5 3.7)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "b587509e-87e3-4330-beea-61acf794b870")
-		)
-		(fp_line
-			(start 1.5 -1.2)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "df22de10-6e03-49c7-b4ee-f03698c7b395")
-		)
-		(fp_text user "${REFERENCE}"
-			(at 1.4 0 90)
-			(layer "F.SilkS")
-			(uuid "6ddd51e5-5050-41fb-a3eb-b83bec3e29e7")
-			(effects
-				(font
-					(size 0.6 0.6)
-					(thickness 0.1)
-				)
-			)
-		)
-		(pad "1" smd rect
-			(at 0 0)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 61 "MOT7")
-			(uuid "54cda40c-42f2-4771-808a-b0035afbda67")
-		)
-		(pad "2" smd rect
-			(at 0 2.5)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 29 "GND")
-			(zone_connect 2)
-			(uuid "91936bbd-777c-46ee-98de-c753f362d7ba")
-		)
-		(embedded_fonts no)
 	)
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "F.Cu")
@@ -15315,39 +14751,39 @@
 			)
 		)
 	)
-	(footprint "ESC_solder_pad"
+	(footprint "JST_GH_SM10B-GHS-TB_1x10-1MP_P1.25mm_Horizontal"
 		(layer "F.Cu")
-		(uuid "9c201005-3d89-40c1-be76-25f81f1a13fe")
-		(at 137 6)
-		(descr "ESC motor-output solder pad pair (signal + GND), 2.0x1.5mm SMD pads at 2.5mm pitch. Per CLAUDE.md §3.4 logic-level 3.3V, no power passthrough on motor connectors (ESCs powered direct-from-battery). MatekH743-style mini-FC convention. Pad 1 = signal (MOTn), Pad 2 = GND.")
-		(tags "esc dshot solder-pad mini-fc")
-		(property "Reference" "J13"
-			(at 0 -2 0)
+		(uuid "9b4a736b-0a33-4950-8894-a4de2b08eaf2")
+		(at 52.5 80)
+		(descr "JST GH series connector, SM10B-GHS-TB (http://www.jst-mfg.com/product/pdf/eng/eGH.pdf), generated with kicad-footprint-generator")
+		(tags "connector JST GH horizontal")
+		(property "Reference" "J11"
+			(at 0 -3.9 0)
 			(layer "F.SilkS")
-			(uuid "a3837681-c43e-4a45-8e79-5f57f0053a61")
+			(uuid "b8fd8344-6160-4ef1-ab6f-cbd5742a4598")
 			(effects
 				(font
-					(size 0.8 0.8)
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
 		)
-		(property "Value" "ESC_solder_pad"
-			(at 0 3.5 0)
+		(property "Value" "ESC_OUT"
+			(at 0 3.9 0)
 			(layer "F.Fab")
-			(uuid "4c856776-6cff-4c43-ae3a-42b9d8803707")
+			(uuid "e1ff5469-772b-45a1-a7cf-6aefbc4993e0")
 			(effects
 				(font
-					(size 0.8 0.8)
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
 		)
-		(property "Datasheet" "MatekH743-bdshot reference convention; ESC wire solders direct to pad"
+		(property "Datasheet" ""
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "5b084745-4a09-43a7-98f1-f9067823f6bd")
+			(uuid "869455b4-4838-43cd-b882-17ad8dfe602e")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15355,11 +14791,11 @@
 				)
 			)
 		)
-		(property "Description" "ESC motor output solder pad pair (2.0x1.5mm at 2.5mm pitch)"
+		(property "Description" ""
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "806359d5-e295-4a30-bbf3-33be518f452a")
+			(uuid "0a9b628a-02f0-49ef-b1db-85b1cfaa96f2")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15369,92 +14805,281 @@
 		)
 		(attr smd)
 		(fp_line
-			(start -1.2 -1)
-			(end -1.2 3.5)
+			(start -7.985 -1.71)
+			(end -6.185 -1.71)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "47396057-8615-4b95-ae41-e06285b57756")
+		)
+		(fp_line
+			(start -7.985 -0.26)
+			(end -7.985 -1.71)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "0cea4583-ae6a-4c0b-b012-f813d4b3fe6d")
+		)
+		(fp_line
+			(start -6.715 2.56)
+			(end 6.715 2.56)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "b8370c88-4244-4a03-981e-8691896390ff")
+		)
+		(fp_line
+			(start -6.185 -1.71)
+			(end -6.185 -2.7)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "b5c91ca4-19fd-432a-8a32-0e9bb07527d6")
+		)
+		(fp_line
+			(start 7.985 -1.71)
+			(end 6.185 -1.71)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "f53a4c25-39fe-47bd-a624-9038acf21d65")
+		)
+		(fp_line
+			(start 7.985 -0.26)
+			(end 7.985 -1.71)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "0b2507d2-7ffc-45c8-bc83-1e80b544e6a5")
+		)
+		(fp_line
+			(start -8.48 -3.2)
+			(end -8.48 3.2)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(layer "F.CrtYd")
+			(uuid "e5ffcd02-8fcd-465e-918f-7b691578781c")
+		)
+		(fp_line
+			(start -8.48 3.2)
+			(end 8.48 3.2)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(layer "F.CrtYd")
+			(uuid "181797db-eb1b-4e04-89dd-2501ff4585ae")
+		)
+		(fp_line
+			(start 8.48 -3.2)
+			(end -8.48 -3.2)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(layer "F.CrtYd")
+			(uuid "96979aa8-13b3-439d-b924-89a2988ce507")
+		)
+		(fp_line
+			(start 8.48 3.2)
+			(end 8.48 -3.2)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(layer "F.CrtYd")
+			(uuid "574fd0c8-9ea6-428e-9113-5daca33f8189")
+		)
+		(fp_line
+			(start -7.875 -1.6)
+			(end -7.875 2.45)
 			(stroke
 				(width 0.1)
 				(type solid)
 			)
-			(layer "F.SilkS")
-			(uuid "a5265b3b-bfcf-4199-9397-f34adf7d2ac8")
+			(layer "F.Fab")
+			(uuid "9e8c2c32-93b9-44f5-b96a-e156cc2822ea")
 		)
 		(fp_line
-			(start 1.2 -1)
-			(end 1.2 3.5)
+			(start -7.875 -1.6)
+			(end 7.875 -1.6)
 			(stroke
 				(width 0.1)
 				(type solid)
 			)
-			(layer "F.SilkS")
-			(uuid "4a3d2827-8a56-4af0-9cac-601f2ec98941")
+			(layer "F.Fab")
+			(uuid "7b8ebcc5-7579-43b5-818a-a878349f832a")
 		)
 		(fp_line
-			(start -1.5 -1.2)
-			(end -1.5 3.7)
+			(start -7.875 2.45)
+			(end 7.875 2.45)
 			(stroke
-				(width 0.05)
-				(type default)
+				(width 0.1)
+				(type solid)
 			)
-			(layer "F.CrtYd")
-			(uuid "a9315174-ba1b-4519-a40e-28c14adecc24")
+			(layer "F.Fab")
+			(uuid "a9826a02-9603-4d37-ab40-18e48aa0b3f9")
 		)
 		(fp_line
-			(start -1.5 -1.2)
-			(end 1.5 -1.2)
+			(start -6.125 -1.6)
+			(end -5.625 -0.892893)
 			(stroke
-				(width 0.05)
-				(type default)
+				(width 0.1)
+				(type solid)
 			)
-			(layer "F.CrtYd")
-			(uuid "a66e9143-8be9-4a7c-a41c-40ca575fb21a")
+			(layer "F.Fab")
+			(uuid "317a2389-0db4-4c5e-b4de-177ab61b17a4")
 		)
 		(fp_line
-			(start -1.5 3.7)
-			(end 1.5 3.7)
+			(start -5.625 -0.892893)
+			(end -5.125 -1.6)
 			(stroke
-				(width 0.05)
-				(type default)
+				(width 0.1)
+				(type solid)
 			)
-			(layer "F.CrtYd")
-			(uuid "9e413ac6-efa0-46ff-b583-a40043386241")
+			(layer "F.Fab")
+			(uuid "501986cb-2789-4fb0-8fc3-ec0b46f070b5")
 		)
 		(fp_line
-			(start 1.5 -1.2)
-			(end 1.5 3.7)
+			(start 7.875 -1.6)
+			(end 7.875 2.45)
 			(stroke
-				(width 0.05)
-				(type default)
+				(width 0.1)
+				(type solid)
 			)
-			(layer "F.CrtYd")
-			(uuid "3865deee-ed66-4922-aeef-84ee559f34f7")
+			(layer "F.Fab")
+			(uuid "f1b4f3c7-2ed4-405d-bb26-0ab12177a2c1")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 1.4 0 90)
-			(layer "F.SilkS")
-			(uuid "19934a4c-d516-4bb9-9a23-5be947fdf433")
+			(at 0 0 0)
+			(layer "F.Fab")
+			(uuid "91b0f52e-0fed-4525-aba4-c4b2c5f4e686")
 			(effects
 				(font
-					(size 0.6 0.6)
-					(thickness 0.1)
+					(size 1 1)
+					(thickness 0.15)
 				)
 			)
 		)
-		(pad "1" smd rect
-			(at 0 0)
-			(size 2 1.5)
+		(pad "1" smd roundrect
+			(at -5.625 -1.85)
+			(size 0.6 1.7)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 57 "MOT3")
-			(uuid "eec9416d-973b-4c86-b58e-87fbfed99e86")
+			(roundrect_rratio 0.25)
+			(net 55 "MOT1")
+			(uuid "069a050c-ce55-4972-acec-55644054d8df")
 		)
-		(pad "2" smd rect
-			(at 0 2.5)
-			(size 2 1.5)
+		(pad "2" smd roundrect
+			(at -4.375 -1.85)
+			(size 0.6 1.7)
 			(layers "F.Cu" "F.Mask" "F.Paste")
+			(roundrect_rratio 0.25)
+			(net 56 "MOT2")
+			(uuid "2d33bb53-ebfb-49bb-8000-6f0dff1b0fbc")
+		)
+		(pad "3" smd roundrect
+			(at -3.125 -1.85)
+			(size 0.6 1.7)
+			(layers "F.Cu" "F.Mask" "F.Paste")
+			(roundrect_rratio 0.25)
+			(net 57 "MOT3")
+			(uuid "55cd2d27-5650-4569-a0ee-060b444c183a")
+		)
+		(pad "4" smd roundrect
+			(at -1.875 -1.85)
+			(size 0.6 1.7)
+			(layers "F.Cu" "F.Mask" "F.Paste")
+			(roundrect_rratio 0.25)
+			(net 58 "MOT4")
+			(uuid "6bc2e714-a7be-4889-9ab2-c6c2febac72a")
+		)
+		(pad "5" smd roundrect
+			(at -0.625 -1.85)
+			(size 0.6 1.7)
+			(layers "F.Cu" "F.Mask" "F.Paste")
+			(roundrect_rratio 0.25)
+			(net 59 "MOT5")
+			(uuid "2a310ec9-cb41-4b03-85df-54a1e4f7f577")
+		)
+		(pad "6" smd roundrect
+			(at 0.625 -1.85)
+			(size 0.6 1.7)
+			(layers "F.Cu" "F.Mask" "F.Paste")
+			(roundrect_rratio 0.25)
+			(net 60 "MOT6")
+			(uuid "cc725412-3f28-40de-9a9c-37773881fa30")
+		)
+		(pad "7" smd roundrect
+			(at 1.875 -1.85)
+			(size 0.6 1.7)
+			(layers "F.Cu" "F.Mask" "F.Paste")
+			(roundrect_rratio 0.25)
+			(net 61 "MOT7")
+			(uuid "ae49eebc-a055-4eb3-b467-e6abf11a9fc8")
+		)
+		(pad "8" smd roundrect
+			(at 3.125 -1.85)
+			(size 0.6 1.7)
+			(layers "F.Cu" "F.Mask" "F.Paste")
+			(roundrect_rratio 0.25)
+			(net 62 "MOT8")
+			(uuid "6adefffe-b0ab-4056-8945-88c3db6f5da1")
+		)
+		(pad "9" smd roundrect
+			(at 4.375 -1.85)
+			(size 0.6 1.7)
+			(layers "F.Cu" "F.Mask" "F.Paste")
+			(roundrect_rratio 0.25)
+			(uuid "82df0495-13d6-4266-af5c-5da8f9bea15a")
+		)
+		(pad "10" smd roundrect
+			(at 5.625 -1.85)
+			(size 0.6 1.7)
+			(layers "F.Cu" "F.Mask" "F.Paste")
+			(roundrect_rratio 0.25)
 			(net 29 "GND")
-			(zone_connect 2)
-			(uuid "cf959651-0ddf-47e5-ad28-fe175e0365ea")
+			(uuid "403dfa1f-c138-4871-89f9-5f85b7ff06ae")
+		)
+		(pad "MP" smd roundrect
+			(at -7.475 1.35)
+			(size 1 2.7)
+			(layers "F.Cu" "F.Mask" "F.Paste")
+			(roundrect_rratio 0.25)
+			(uuid "a45b5620-c37d-4055-a4d9-ec05e9be1d0e")
+		)
+		(pad "MP" smd roundrect
+			(at 7.475 1.35)
+			(size 1 2.7)
+			(layers "F.Cu" "F.Mask" "F.Paste")
+			(roundrect_rratio 0.25)
+			(uuid "54c7bdca-ea98-4af6-806b-776d64bb7beb")
 		)
 		(embedded_fonts no)
+		(model "${KICAD9_3DMODEL_DIR}/Connector_JST.3dshapes/JST_GH_SM10B-GHS-TB_1x10-1MP_P1.25mm_Horizontal.step"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
@@ -18854,147 +18479,6 @@
 			)
 		)
 	)
-	(footprint "ESC_solder_pad"
-		(layer "F.Cu")
-		(uuid "bb059bbf-5ccc-4b93-b109-3644a7d50470")
-		(at 182 6)
-		(descr "ESC motor-output solder pad pair (signal + GND), 2.0x1.5mm SMD pads at 2.5mm pitch. Per CLAUDE.md §3.4 logic-level 3.3V, no power passthrough on motor connectors (ESCs powered direct-from-battery). MatekH743-style mini-FC convention. Pad 1 = signal (MOTn), Pad 2 = GND.")
-		(tags "esc dshot solder-pad mini-fc")
-		(property "Reference" "J12"
-			(at 0 -2 0)
-			(layer "F.SilkS")
-			(uuid "2f145e44-4fe1-43aa-86cc-7c4522d8e32d")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Value" "ESC_solder_pad"
-			(at 0 3.5 0)
-			(layer "F.Fab")
-			(uuid "396679ba-484c-48e7-b6ac-f60586dc6035")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Datasheet" "MatekH743-bdshot reference convention; ESC wire solders direct to pad"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "7215bdb4-4488-456e-b5f9-99343b171b9c")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Description" "ESC motor output solder pad pair (2.0x1.5mm at 2.5mm pitch)"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "c760d42c-94cb-4231-8e51-20d16c9fe193")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(attr smd)
-		(fp_line
-			(start -1.2 -1)
-			(end -1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "1cf86f6c-18cb-4fa4-9caf-bd92cf92393d")
-		)
-		(fp_line
-			(start 1.2 -1)
-			(end 1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "df70e586-833a-4ea8-9520-37cd1d408cd0")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end -1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "b1cb8eb0-6644-4191-91a0-19da6e6f33ac")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end 1.5 -1.2)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "843ad4c9-cf0a-4282-b865-8ceba91bb4a5")
-		)
-		(fp_line
-			(start -1.5 3.7)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "af8fd5e4-847f-4187-a180-77629dc02227")
-		)
-		(fp_line
-			(start 1.5 -1.2)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "f6bb800c-2d15-42be-977c-8ae8d0bd5db9")
-		)
-		(fp_text user "${REFERENCE}"
-			(at 1.4 0 90)
-			(layer "F.SilkS")
-			(uuid "e0df0629-aaa1-4882-a8c6-5bcdd0dbdf67")
-			(effects
-				(font
-					(size 0.6 0.6)
-					(thickness 0.1)
-				)
-			)
-		)
-		(pad "1" smd rect
-			(at 0 0)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 56 "MOT2")
-			(uuid "e8858665-1418-4c78-a1bb-fca89c8eeabf")
-		)
-		(pad "2" smd rect
-			(at 0 2.5)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 29 "GND")
-			(zone_connect 2)
-			(uuid "3d62dece-7cb2-4989-bff5-faa2d7d83ca3")
-		)
-		(embedded_fonts no)
-	)
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "c614edec-a863-4b0e-bad0-8e99b1ac8d6d")
@@ -21758,147 +21242,6 @@
 			)
 		)
 	)
-	(footprint "ESC_solder_pad"
-		(layer "F.Cu")
-		(uuid "ced501b1-6ed2-4773-a2e0-562daca5146d")
-		(at 113 9)
-		(descr "ESC motor-output solder pad pair (signal + GND), 2.0x1.5mm SMD pads at 2.5mm pitch. Per CLAUDE.md §3.4 logic-level 3.3V, no power passthrough on motor connectors (ESCs powered direct-from-battery). MatekH743-style mini-FC convention. Pad 1 = signal (MOTn), Pad 2 = GND.")
-		(tags "esc dshot solder-pad mini-fc")
-		(property "Reference" "J15"
-			(at 0 -2 0)
-			(layer "F.SilkS")
-			(uuid "b04a8ce3-2976-4c26-b75f-86336b7e7ad0")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Value" "ESC_solder_pad"
-			(at 0 3.5 0)
-			(layer "F.Fab")
-			(uuid "4952922f-4fa7-42fb-9fd8-7ba892e3480f")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Datasheet" "MatekH743-bdshot reference convention; ESC wire solders direct to pad"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "9f20b6c8-0145-4e73-9690-2a2f3de01465")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Description" "ESC motor output solder pad pair (2.0x1.5mm at 2.5mm pitch)"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "7261d560-3760-4507-9a9d-c72dd971b12f")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(attr smd)
-		(fp_line
-			(start -1.2 -1)
-			(end -1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "48b78a91-1904-4552-84f2-0dc3a51dbb6c")
-		)
-		(fp_line
-			(start 1.2 -1)
-			(end 1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "c6a70766-3700-446a-8c70-62ea918fc92d")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end -1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "d13d3180-b6c0-45cd-8637-e90a8bc1a4b5")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end 1.5 -1.2)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "2b68d2dc-d729-4340-b6cc-0f2e6f61e393")
-		)
-		(fp_line
-			(start -1.5 3.7)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "3354982f-d688-4c8f-8776-f5a0b26ba991")
-		)
-		(fp_line
-			(start 1.5 -1.2)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "f7ccb83d-993b-436b-a9ef-e4e91fdc27cd")
-		)
-		(fp_text user "${REFERENCE}"
-			(at 1.4 0 90)
-			(layer "F.SilkS")
-			(uuid "fbe0340b-67be-4c55-9a2f-c89b83652dce")
-			(effects
-				(font
-					(size 0.6 0.6)
-					(thickness 0.1)
-				)
-			)
-		)
-		(pad "1" smd rect
-			(at 0 0)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 59 "MOT5")
-			(uuid "343a8779-affd-493b-883e-87b037c814c7")
-		)
-		(pad "2" smd rect
-			(at 0 2.5)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 29 "GND")
-			(zone_connect 2)
-			(uuid "f077e42f-886a-443b-a1c8-841e4b3a4796")
-		)
-		(embedded_fonts no)
-	)
 	(footprint "Inductor_SMD:L_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "cf8e4f96-0206-4f70-81c2-82195a0bc8f2")
@@ -23522,147 +22865,6 @@
 				(xyz 0 0 0)
 			)
 		)
-	)
-	(footprint "ESC_solder_pad"
-		(layer "F.Cu")
-		(uuid "e001e350-ca53-4520-94a2-b9ffbc136644")
-		(at 140 9)
-		(descr "ESC motor-output solder pad pair (signal + GND), 2.0x1.5mm SMD pads at 2.5mm pitch. Per CLAUDE.md §3.4 logic-level 3.3V, no power passthrough on motor connectors (ESCs powered direct-from-battery). MatekH743-style mini-FC convention. Pad 1 = signal (MOTn), Pad 2 = GND.")
-		(tags "esc dshot solder-pad mini-fc")
-		(property "Reference" "J16"
-			(at 0 -2 0)
-			(layer "F.SilkS")
-			(uuid "3ab04f17-ad23-4a67-81ca-f57d567c5300")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Value" "ESC_solder_pad"
-			(at 0 3.5 0)
-			(layer "F.Fab")
-			(uuid "1acd44db-de44-4696-b860-c4fd29bfdf01")
-			(effects
-				(font
-					(size 0.8 0.8)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Datasheet" "MatekH743-bdshot reference convention; ESC wire solders direct to pad"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "5aa7c651-6844-4f9d-ac6e-89a5ad0ad016")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Description" "ESC motor output solder pad pair (2.0x1.5mm at 2.5mm pitch)"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "825fb2d0-9d9f-4641-b973-5961ef1ef5fa")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(attr smd)
-		(fp_line
-			(start -1.2 -1)
-			(end -1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "5a2ae18e-9d5c-47c8-82e9-5e620050f6a5")
-		)
-		(fp_line
-			(start 1.2 -1)
-			(end 1.2 3.5)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "67b96d0e-0ec7-4dce-b571-61643d841ae1")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end -1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "c18c696f-d521-4c6d-b2a7-00e5e3caee41")
-		)
-		(fp_line
-			(start -1.5 -1.2)
-			(end 1.5 -1.2)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "b66a8d33-2cf7-4737-9566-511524fae132")
-		)
-		(fp_line
-			(start -1.5 3.7)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "9f654474-b88b-4198-aabc-ff87f2d9f6b9")
-		)
-		(fp_line
-			(start 1.5 -1.2)
-			(end 1.5 3.7)
-			(stroke
-				(width 0.05)
-				(type default)
-			)
-			(layer "F.CrtYd")
-			(uuid "610daf63-68b2-411d-b39b-3e9327935d2c")
-		)
-		(fp_text user "${REFERENCE}"
-			(at 1.4 0 90)
-			(layer "F.SilkS")
-			(uuid "579bfb6b-f668-45ca-9917-eed809b87176")
-			(effects
-				(font
-					(size 0.6 0.6)
-					(thickness 0.1)
-				)
-			)
-		)
-		(pad "1" smd rect
-			(at 0 0)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 60 "MOT6")
-			(uuid "6489abd6-8156-4a89-b5cf-81f9c77241c4")
-		)
-		(pad "2" smd rect
-			(at 0 2.5)
-			(size 2 1.5)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 29 "GND")
-			(zone_connect 2)
-			(uuid "f433f791-f552-4e98-8039-edd6bd1db5bc")
-		)
-		(embedded_fonts no)
 	)
 	(footprint "pesd2can:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR"
 		(layer "F.Cu")
