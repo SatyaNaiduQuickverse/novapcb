@@ -98,7 +98,7 @@ ANCHORS = {
     "D1":  (35.0, 18.0, 0.0),    # TVS post-eFuse
     "C7":  (24.0, 19.0, 0.0),    # U6 input bulk cap
     "C8":  (32.0, 19.0, 0.0),    # U6 output cap
-    "C9":  (28.0, 16.0, 0.0),    # secondary bulk
+    "C9":  (32.0, 16.0, 0.0),    # secondary bulk — moved east 4mm to clear A zone R42 sense (which sits at Y=14.5 in same X range as old C9 anchor)
 
     # AUXILIARY FET MID (Y=21..23)
     "Q2":  (24.0, 22.0, 0.0),    # reverse-polarity FET (kept; small heat)
