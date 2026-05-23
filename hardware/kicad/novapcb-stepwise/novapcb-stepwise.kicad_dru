@@ -55,3 +55,21 @@
     (constraint clearance (min 0.15mm))
     (condition "(A.insideCourtyard('U11') || A.insideCourtyard('U12'))
                 && (B.insideCourtyard('U11') || B.insideCourtyard('U12'))"))
+
+# U6 protection-config 4mil exit traces — scoped to U6 courtyard.
+# Per master 2026-05-23 Option (A) approval. U6 (TPS25940A) WQFN-24
+# north-row config pins (15-20: OVP/ILIM/DVDT/IMON/FLT) at 0.5mm pitch
+# with 0.30mm pad width leaves 0.20mm pad-pad gap. Standard 0.20mm
+# trace + 2x 0.20mm clearance = 0.60mm needed — doesn't fit. Relax
+# trace width to 0.10mm and clearance to 0.05mm WITHIN U6 courtyard
+# for exit traces only. 0.10mm + 2x 0.05mm = 0.20mm pad-pad gap — fits.
+# DC config signals (low current, low frequency); 0.10mm trace ample.
+# JLC 4mil minimum trace process — cost bump ~$10-20/board. Combined
+# with existing via-in-pad fab process (see DECISIONS §13).
+(rule "u6-courtyard-4mil-track"
+    (constraint track_width (min 0.10mm))
+    (condition "A.insideCourtyard('U6')"))
+
+(rule "u6-courtyard-4mil-clearance"
+    (constraint clearance (min 0.05mm))
+    (condition "A.insideCourtyard('U6') && B.insideCourtyard('U6')"))
