@@ -191,10 +191,13 @@ def main():
     # R10.1 ↔ R9.2 bridge
     add_track(brd, r10_1[0], r10_1[1], r9_2[0], r9_2[1], n_ovp, F_CU, W_SIG)
 
-    # 3. EFUSE_ILIM: U6.17 NORTH-row pin. 4mil north exit + transition via
-    # at (28.75, 14.5). Stagger DVDT via to Y=13.0 below ILIM to avoid
-    # 0.5mm via-via short with DVDT at same Y.
-    print("[ILIM] U6.17 → R4.1 (4mil north exit + B.Cu south)", flush=True)
+    # 3. EFUSE_ILIM: U6.17 NORTH-row pin. 4mil F.Cu exit + via at (28.75,
+    # 14.5) — back to outside-courtyard (DRU u6-extended now uses
+    # insideCourtyard scope; via at 14.5 outside courtyard means standard
+    # 0.20mm clearance applies — but DVDT via at (28.25, 15.4) is INSIDE
+    # courtyard so DVDT-vs-ILIM clearance uses standard 0.20mm. ILIM via
+    # at 14.5 is 0.9mm Y from DVDT via — edge-to-edge 0.55mm OK).
+    print("[ILIM] U6.17 → R4.1 (4mil + via at 14.5 + B.Cu south)", flush=True)
     add_track(brd, u6_17[0], u6_17[1], 28.75, EXIT_Y, n_ilim, F_CU, W_4MIL)
     add_track(brd, 28.75, EXIT_Y, 28.75, 14.5, n_ilim, F_CU, W_SIG)
     add_via(brd, 28.75, 14.5, n_ilim, SMALL_VIA_DIA, SMALL_VIA_DRILL)
@@ -206,16 +209,16 @@ def main():
     # clears Q3.3 (27.63, 12.57) by 5.68mm and sense row R41 (24, 14.5)
     # by 1.5mm Y. Diagonal F.Cu from (28.25, 15.4) to (24, 13) passes
     # at Y=14.5 X=26.66 — clear of sense row (R42 west at X=20).
-    print("[DVDT] U6.18 → C7.1 via WEST-OF-Q3 via at (21, 12.5)", flush=True)
-    # Via at (22, 12.5): farther WEST + slightly NORTH to clear Q3.1 pad
-    # (Q3.1 pad Y extends to 13.593 due to large 2.045mm Y dimension).
-    # F.Cu trace from (28.25, 15.4) → (22, 12.5) at X=25.10 Y=13.94 —
-    # 0.45mm gap to Q3.1 pad south edge (was 0.003 fail with via at
-    # (24, 13.10)).
-    add_track(brd, u6_18[0], u6_18[1], 28.25, EXIT_Y, n_dvdt, F_CU, W_4MIL)
-    add_track(brd, 28.25, EXIT_Y, 21.0, 12.5, n_dvdt, F_CU, W_SIG)
-    add_via(brd, 21.0, 12.5, n_dvdt)
-    add_track(brd, 21.0, 12.5, c7_1[0], c7_1[1], n_dvdt, B_CU, W_SIG)
+    print("[DVDT] U6.18 → C7.1 via offset small-via at (28.20, 15.6)", flush=True)
+    # Via offset 0.05mm west + 0.20mm south to clear ILIM F.Cu trace at
+    # X=28.75. Via X edge 28.425 vs ILIM trace west edge 28.65 = 0.225mm
+    # gap (PASS standard 0.20mm). Pad-via Y overlap 0.075mm (via Y north
+    # 15.375 to pad north 15.75 = 0.375; via south 15.825 to pad north
+    # 15.75 = -0.075 overlap into pad area — sufficient electrical
+    # connection per KiCad bbox-overlap rule).
+    add_track(brd, u6_18[0], u6_18[1], 28.20, 15.6, n_dvdt, F_CU, W_4MIL)
+    add_via(brd, 28.20, 15.6, n_dvdt, SMALL_VIA_DIA, SMALL_VIA_DRILL)
+    add_track(brd, 28.20, 15.6, c7_1[0], c7_1[1], n_dvdt, B_CU, W_SIG)
 
     # Zone fill + save
     print("[fill] unfill + refill all zones...", flush=True)

@@ -88,5 +88,4 @@
 
 (rule "u6-extended-courtyard-via-clearance"
     (constraint clearance (min 0.10mm))
-    (condition "(A.NetName == 'EFUSE_OVP' || A.NetName == 'EFUSE_ILIM' ||
-                 A.NetName == 'EFUSE_DVDT' || A.NetName == 'EFUSE_FLT')"))
+    (condition "A.insideCourtyard('U6') && B.insideCourtyard('U6')"))
