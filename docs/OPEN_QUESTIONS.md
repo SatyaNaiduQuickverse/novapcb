@@ -2,6 +2,66 @@
 
 All v1 scoping decisions are in `DECISIONS.md`. Add new open questions here as they arise.
 
+## hwdef-heater-pwm-pa15. HEATER_PWM pin/timer conflict (raised 2026-05-23, task #66)
+
+**Raised** during task #66 (revise `firmware/hwdef-novapcb/hwdef.dat` to match
+v1.1 SKiDL netlist).
+
+**The conflict.** v1.1 SKiDL (`hardware/kicad/novapcb/sheets/power_3b.py:566`)
+wires `HEATER_PWM` to **MCU PA15**, citing "TIM2_CH1 AF1 — valid timer for
+HEATER_PWM low-frequency PWM". But `hwdef.dat:167` already declares:
+
+```
+PA0  TIM2_CH1  TIM2  PWM(3)  GPIO(52) BIDIR
+```
+
+i.e. **TIM2_CH1 is already in use as the timer-channel for ESC PWM3 on PA0**.
+A STM32 timer-channel can only output on one pin at a time, so PA15 cannot
+also drive TIM2_CH1. The v1.1 SKiDL comment is engineering-incorrect about
+the timer availability.
+
+**The net itself is fine.** SKiDL wires PA15 → Q5 P-FET gate (heater
+control). PA15 can deliver software-PWM via plain GPIO output at any
+frequency the heater needs (heater is mW-scale, slow thermostatic — 1–100 Hz
+software-toggle is ample). The MISTAKE is the timer assertion.
+
+**Options:**
+
+- **(A)** Declare PA15 in hwdef.dat as plain GPIO output (HEATER_PWM is
+  software-PWM). Net stays at PA15; no SKiDL/schematic change. RECOMMENDED —
+  minimum change, engineering-safe.
+- **(B)** Re-mux HEATER_PWM in SKiDL to a different free MCU pin that has
+  an actually-free timer channel. Requires SKiDL netlist edit + schematic
+  regen + potential board re-route. v1.1 SKiDL is documented as IMMUTABLE
+  in SUBSYSTEM_CONTRACTS.md so this is heavy-lift.
+- **(C)** Re-mux ESC PWM3 off PA0 so PA15/TIM2_CH1 is available. BAD — ESC
+  PWM map is more load-bearing than HEATER_PWM.
+
+**Worker recommendation: (A).** Concrete proposal for hwdef.dat:
+
+```
+# HEATER_PWM (IMU heater on Q5 P-FET gate). Software-PWM via GPIO.
+# Hardware PWM unavailable: PA15 = AF1 = TIM2_CH1, but TIM2_CH1 already
+# bound to PA0 for ESC PWM3 (hwdef.dat:167). Heater is mW-scale + slow,
+# so software toggle at ~10-100 Hz from a timer ISR is sufficient.
+PA15 HEATER_PWM OUTPUT GPIO(N) LOW
+```
+
+Where `GPIO(N)` is the next-free ArduPilot GPIO index (after the BUZZER
+GPIO(32) on PD7).
+
+**Decision authority:** master adjudication needed — this is a firmware
+behavioral change (hardware-PWM → software-PWM) within the v1.1 immutable
+SKiDL scope. Worker did the 2 SAFE hwdef swaps (SPI1_MOSI: PD7→PA7;
+BUZZER: PA15→PD7) but stopped on HEATER_PWM pending sign-off.
+
+**Reference:**
+- Conflict source: `hwdef.dat:167` (PA0 TIM2_CH1) vs
+  `hardware/kicad/novapcb/sheets/power_3b.py:561-566` (PA15 = "TIM2_CH1").
+- 2 safe swaps committed in hwdef.dat: see task #66 PR.
+
+
+
 ## phase5-thermal-ldo-vs-buck. +3V3 LDO vs buck-switcher escalation — **RE-OPENED 2026-05-23 (Sai-decision pending)**
 
 **Status: RE-OPENED 2026-05-23.** Originally CLOSED 2026-05-23 morning

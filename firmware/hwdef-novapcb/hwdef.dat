@@ -35,7 +35,10 @@ PA14 JTCK-SWCLK SWD
 # SPI1 for IMU1 (ICM-42688-P) — novapcb-v1 primary IMU (Phase 2a, 2026-05-18)
 PA5 SPI1_SCK SPI1
 PA6 SPI1_MISO SPI1
-PD7 SPI1_MOSI SPI1
+# v1.1 SKiDL re-mux 2026-05-22: SPI1_MOSI moved PD7 (pin 88 N)
+# → PA7 (pin 31 S) to shorten SPI1 routing to U3 IMU island.
+# hwdef revision 2026-05-23 aligns to immutable v1.1 SKiDL netlist.
+PA7 SPI1_MOSI SPI1
 PC15 IMU1_CS CS
 
 # SPI2 for MAX7456 OSD
@@ -176,7 +179,10 @@ PD13 TIM4_CH2  TIM4  PWM(8)  GPIO(57)
 # bdshot variant resolves by switching to GPIO single-tone (cite MatekH743-bdshot hwdef.dat:39-40).
 # novapcb v1 has no documented buzzer requirement; pin definition retained for future option,
 # but no buzzer hardware is implied.
-PA15 BUZZER OUTPUT GPIO(32) LOW
+# v1.1 SKiDL re-mux 2026-05-22: BUZZER moved PA15 → PD7 (PA15
+# freed by SPI1_MOSI departing; HEATER_PWM was supposed to take
+# PA15 but timer conflict — see OPEN_QUESTIONS hwdef-heater-pwm-pa15).
+PD7 BUZZER OUTPUT GPIO(32) LOW
 define HAL_BUZZER_PIN 32
 
 # microSD support
