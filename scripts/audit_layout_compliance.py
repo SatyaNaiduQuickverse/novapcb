@@ -240,18 +240,29 @@ def classify_role(ref, value, nets):
 
 
 def parent_ic_for_passive(ref, nets, items):
-    """Find nearest IC/FET sharing a net with this passive."""
+    """Find nearest IC/FET sharing a net with this passive — body-edge
+    metric (cap center to IC body edge), not centroid-to-centroid. For
+    LQFP-100 / SOIC-8 / SOT-23-6 with caps placed at body edge, centroid
+    distance over-reports by half the IC body extent."""
     on_net = set(nets.values())
+    rx, ry = items[ref]["x"], items[ref]["y"]
     candidates = []
     for cref, cd in items.items():
         if cref == ref: continue
         if not (cref.startswith(("U", "Q", "J", "Y", "X")) and
                 (cref[1:].isdigit() or (len(cref) > 1 and cref[1:2].isdigit()))):
             continue
-        # Find pads on same net as passive
         for cnet in cd["nets"].values():
             if cnet and cnet in on_net:
-                d = math.hypot(cd["x"] - items[ref]["x"], cd["y"] - items[ref]["y"])
+                # body-edge distance: cap center to IC bbox edge
+                bb = cd["fp"].GetBoundingBox()
+                ic_x1 = pcbnew.ToMM(bb.GetLeft())
+                ic_y1 = pcbnew.ToMM(bb.GetTop())
+                ic_x2 = pcbnew.ToMM(bb.GetRight())
+                ic_y2 = pcbnew.ToMM(bb.GetBottom())
+                dx = max(ic_x1 - rx, 0, rx - ic_x2)
+                dy = max(ic_y1 - ry, 0, ry - ic_y2)
+                d = math.hypot(dx, dy)
                 candidates.append((d, cref))
                 break
     return sorted(candidates) if candidates else []
@@ -420,6 +431,39 @@ def check_mid_edge_keepout(items):
             fails.append(f"  {r} at ({x:.1f},{y:.1f}) inside keep-out @ ({kx:.1f},{ky:.1f})")
 
 
+# ----- check 9: zone-fill audit (master 2026-05-23 Rule 9) -----
+# Every declared zone must have GetFilledArea() > 0. "Zone declared" is
+# NOT the same as "zone filled" — KiCad pcbnew Python does NOT auto-fill
+# on SaveBoard. Outline changes are silently ignored until UnFill+Fill.
+# Catches the failure-mode that lied about +5V_BEC plane connectivity
+# in earlier A↔B-3 verification: pads logically on +5V_BEC net showed
+# 0 unconnected in DRC, but the plane was empty → no physical connection.
+def check_zone_fill():
+    empty_zones = []
+    filled_zones = []
+    for z in board.Zones():
+        if not hasattr(z, "GetNetname"): continue
+        net = z.GetNetname()
+        layer = board.GetLayerName(z.GetLayer())
+        try:
+            fa_mm2 = z.GetFilledArea() / 1e12
+        except Exception:
+            continue
+        if fa_mm2 == 0:
+            empty_zones.append((net, layer))
+        else:
+            filled_zones.append((net, layer, fa_mm2))
+    if empty_zones:
+        fails.append(f"ZONE-FILL: {len(empty_zones)} declared zones are EMPTY "
+                     f"(not filled). Run pcbnew UnFill()+Fill() before save.")
+        for net, layer in empty_zones[:10]:
+            fails.append(f"  {net} on {layer}: filled_area=0 — DECLARED ≠ FILLED")
+    if filled_zones:
+        # Summary line in INFO (so positive verification is visible)
+        info.append(f"ZONE-FILL: {len(filled_zones)} zones filled — "
+                    f"total {sum(fa for _,_,fa in filled_zones):.0f} mm² copper plane")
+
+
 # ----- run -----
 items = collect_components()
 bbox = get_outline_bbox()
@@ -431,6 +475,7 @@ check_decoupling(items)
 check_imu_slot()
 check_usb_pair()
 check_mid_edge_keepout(items)
+check_zone_fill()
 
 print(f"=== Layout compliance audit: {os.path.basename(sys.argv[1])} ===")
 print(f"Components: {len(items)}")
