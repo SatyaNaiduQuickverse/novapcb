@@ -438,30 +438,44 @@ required, doesn't fit. 4mil trace (0.10mm) + 2×0.05mm clearance =
 
 **Fab requirement**: same JLC via-in-pad tier as 13.1 (no new bump).
 
-### 13.5 Q3/Q4 OR-FET north 0.5mm — REVERTED 2026-05-23
+### 13.5 Q3/Q4 OR-FET north 0.5mm — STANDS (load-bearing for U6 DVDT routing)
 
-**Status: REVERTED.** Q3/Q4 back at (X, 10). The "negligible thermal impact"
-claim in the original entry was disproven by the gate12 v3 re-verification
-that used actual board positions: MCU Tj came out at 82.46°C vs the
-LOCK-cited 73.98°C, well over the 80°C ceiling. The placement move and the
-LOCK number were both invalidated in the same audit (the LOCK had been
-computed against PLANNED positions, not actual; see audit-codification
-commit `eb51601`).
+**Status: STANDS.** Q3 at (27, 9.5), Q4 at (78, 9.5). Master-directed
+Option E placement nudge, committed in `hardware/kicad/novapcb-stepwise/
+novapcb-stepwise.kicad_pcb` at sha `76f096d`. **Note: earlier doc revision
+in this same session claimed "REVERTED" — that was a Rule-9 lapse on the
+worker's part (doc edit without board verification). Board state was never
+changed; Q3/Q4 are at the moved positions.**
 
-**What remains valid**: U6 DVDT routing was completed without the Q3/Q4
-move by NORTH-around via at (20, 11.7) inside Q3.1 north corridor. No fab
-exception needed for DVDT.
+**Why the move stands**: U6 DVDT routing requires the 0.5mm-opened
+corridor between Q3.1 pad south edge and the sense row north edge. Without
+the move, the corridor is 0.408mm — too narrow for the DVDT via + trace
+geometry. With the move, corridor = 0.908mm, enabling the routing
+completed in `76f096d`. Reverting Q3/Q4 to (X, 10) would BREAK U6 DVDT
+routing and re-trigger a new fab exception or a routing iteration.
 
-**Why this entry is preserved**: traceability — the Q3/Q4 move was
-master-directed (Option E) and Sai-visible. The reversal + the reasoning
-(thermal LOCK unreproducible) must remain in the record so a future Claude
-doesn't re-propose the same move on the same false premise.
+**Thermal accounting (corrected)**:
+- The original "negligible thermal impact" claim was made before the LOCK
+  invalidation. The thermal sweep that DID run on the actual board
+  (`gate12_arch_sweep.py`, sha `eb51601`+) used Q3/Q4 at (X, 9.5) — so
+  the Option A/B/C numbers in `docs/THERMAL_ARCHITECTURE_DECISION.md`
+  ALREADY bake in the moved positions.
+- Implication: the +16.3°C margin for Option B and +17.2°C for Option C
+  are achievable WITH Q3/Q4 at (X, 9.5). No need to revisit the move.
+- Edge proximity caveat (per `feedback_adiabatic_edge_trap`): a 0.5mm
+  shift toward the adiabatic north edge does funnel some heat back, but
+  the sweep measurement captures this — it's not an unmodelled term.
+
+**The actual 82.46°C MCU regression** had a SEPARATE root cause: the
+LOCK sweep used PLANNED Q3 at (35, 8) vs ACTUAL Q3 at (27, 9.5) — an
+11mm-closer-to-MCU positional drift independent of the 0.5mm north move.
 
 **Cross-refs**:
 - `docs/THERMAL_ARCHITECTURE_DECISION.md` — full sweep + Option-B recommendation
 - `docs/INTEGRATION_LOG.md` — CRITICAL HALT note 2026-05-23
 - `scripts/audit_layout_compliance.py` check 10 — thermal-uses-actual-positions
   audit gate that codified the prevention
+- Commit `76f096d` — Q3/Q4 north 0.5mm + DVDT cleared (the load-bearing move)
 
 ### Combined cost impact
 
