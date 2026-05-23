@@ -1,12 +1,20 @@
-# PR — ESC connector SKiDL amend → JST-GH 1x02 horizontal
+# PR — ESC connector SKiDL amend → 1× JST-GH 1x10 horizontal (Pixhawk 6X FMU PWM OUT)
 
 > **Branch**: `sch/esc-jst-gh-amend` off `sch/option-b-buck` head `c35dee1`
-> **Scope**: SCHEMATIC ONLY — `esc_3f.py` footprint amend + regen netlist.
-> No layout / board file touch. PR-A in a 2-PR sequence (PR-B = H placement
-> layout, branches on top of this once merged).
+> **Scope**: SCHEMATIC ONLY — `esc_3f.py` footprint + topology amend +
+> regen netlist. No layout / board file touch. PR-A in a 2-PR sequence
+> (PR-B = H placement layout, branches on top of this once merged).
 > **Authorization required**: **Sai ratification** — schematic/netlist
 > changes are not under master's delegated merge authority per the
 > [follow-master memory](../../.claude/projects/-home-novatics64-novapcb/memory/feedback_follow_master.md).
+>
+> **Revision history on this PR**:
+> - sha 7a6a959 — first amend (8× JST-GH 1x02). Sai pushback: Pixhawk
+>   6X / Cube Orange+ / Jetson Baseboard all use 1× 10-pin per port;
+>   8× 2-pin would force custom motor cables, violating §7's literal
+>   harness-compat motivation.
+> - **(this revision)** — second amend (1× JST-GH 1x10) per master
+>   directive 2026-05-24 after Sai ratification of the direction.
 
 ---
 
@@ -16,103 +24,172 @@ H placement up-front constraint analysis (sub-step #106, branch
 `hw/h-placement` doc-only) surfaced a contradiction between the
 schematic source and the locked connector decision:
 
-- **SKiDL `esc_3f.py:151`** (current) uses a **placeholder footprint**
+- **SKiDL `esc_3f.py:151`** (original) used a **placeholder footprint**
   `Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical` with
-  body docstring claiming "Solder pads" as the resolved choice (§38-56).
+  body docstring claiming "Solder pads" as the resolved choice (Matek-
+  style mini-racing-FC convention).
 - **`docs/DECISIONS.md §7`** (locked 2026-05-18) mandates **JST-GH
   (Pixhawk family)** for ALL FC connectors with explicit rationale:
   *"matches every harness on the existing airframe; bring-up must not
   also require re-crimping cables."*
 
-Both can't be right. The Phase 3f docstring is from an earlier sub-phase
-where the connector choice was open; DECISIONS.md §7 superseded it on
-2026-05-18 (Sai-signed). The SKiDL was never re-aligned.
+The first amendment (sha 7a6a959) corrected the family to JST-GH but
+chose **8× 1x02** (one connector per motor). Sai flagged this as a
+second §7 violation: no Pixhawk-family FC ships an 8× 2-pin layout —
+the existing airframe harness terminates in a single 10-pin connector.
+
+### Competitor research (justifies 1× 10-pin choice)
+
+| FC board | Vendor | PWM OUT connector | Per port |
+|---|---|---|---|
+| Pixhawk 6X | Holybro | 2× **10-pin JST-GH** (FMU + IO) | 8 sig + 1 VDD_SERVO + 1 GND |
+| Cube Orange+ | CubePilot | 2× **10-pin JST-GH** | same |
+| Jetson Baseboard | NXP / ARK | 2× **10-pin JST-GH** | same |
+| MatekH743 (referenced earlier) | Matek | **solder pads** per motor | racing-FC convention, NOT Pixhawk-family |
+
+novapcb is FMU-only (no separate IO MCU), so only the FMU port is
+implemented: **1× 10-pin JST-GH**. This matches the existing Pixhawk
+6X harness end-to-end — drop-in compatible per §7.
+
+The 8× 2-pin (first amend) and the original solder-pad (Phase 3f
+placeholder) both came from racing-FC convention, not Pixhawk family.
+Both violated §7's literal motivation. This revision restores alignment.
 
 ## Fix
 
-Two minimal edits to `hardware/kicad/novapcb/sheets/esc_3f.py`:
+Two edits to `hardware/kicad/novapcb/sheets/esc_3f.py`:
 
-### 1. Footprint reference (line 151 area)
+### 1. Connector instantiation (replaces 8-iteration loop)
 
 ```diff
- for idx in range(1, 9):
-     pad = Part(
-         "Connector_Generic", "Conn_01x02",
--        # Placeholder footprint — Phase 4 layout decides actual pad geometry.
--        # Using a generic header footprint for now; Phase 4 swaps to the
--        # production solder-pad land pattern.
--        footprint="Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
--        value=f"ESC{idx}_PAD",
-+        footprint="Connector_JST:JST_GH_SM02B-GHS-TB_1x02-1MP_P1.25mm_Horizontal",
-+        value=f"ESC{idx}",
-     )
-     pad.ref = f"J{10 + idx}"   # J11..J18
-     mot_nets[idx] += pad[1]    # pin 1 = motor signal
-     GND            += pad[2]   # pin 2 = GND return
+-for idx in range(1, 9):
+-    pad = Part(
+-        "Connector_Generic", "Conn_01x02",
+-        footprint="Connector_JST:JST_GH_SM02B-GHS-TB_1x02-1MP_P1.25mm_Horizontal",
+-        value=f"ESC{idx}",
+-    )
+-    pad.ref = f"J{10 + idx}"   # J11..J18
+-    mot_nets[idx] += pad[1]    # pin 1 = motor signal
+-    GND            += pad[2]   # pin 2 = GND return
++esc_conn = Part(
++    "Connector_Generic", "Conn_01x10",
++    footprint="Connector_JST:JST_GH_SM10B-GHS-TB_1x10-1MP_P1.25mm_Horizontal",
++    value="ESC_OUT",
++)
++esc_conn.ref = "J11"
++
++for idx in range(1, 9):
++    mot_nets[idx] += esc_conn[idx]   # pin 1..8 = MOT1..MOT8 signal
++
++# pin 9 VDD_SERVO: NC — explicit no-bind per project SKiDL convention
++# (imu_3c.py:170). ERC will emit "unconnected pin" warning — EXPECTED.
++# If Sai ratifies (b) tie-to-GND: add `GND += esc_conn[9]` here.
++
++GND += esc_conn[10]   # pin 10 = GND return
 ```
 
-### 2. Docstring §38-56 rewrite
+### 2. Pin assignment (Pixhawk 6X DS-002 / DS-009 FMU PWM OUT)
 
-Replaces the "Solder pads" rationale with:
-- Cites `DECISIONS.md §7` mandate
-- Calls out the horizontal-variant choice rationale (motor leads exit
-  parallel to south board edge, matches other JST-GH conn on telem 3i /
-  power 3h / GPS sheets)
-- Pixhawk DS-009 reference (FMUv6 family uses JST-GH 1x02 per motor)
-- Lists the canonical KiCad 9 footprint string
+| Pin | Net          | Role |
+|---:|--------------|------|
+| 1  | MOT1         | DShot ch 1 signal (3.3V logic) |
+| 2  | MOT2         | DShot ch 2 |
+| 3  | MOT3         | DShot ch 3 |
+| 4  | MOT4         | DShot ch 4 |
+| 5  | MOT5         | DShot ch 5 |
+| 6  | MOT6         | DShot ch 6 |
+| 7  | MOT7         | DShot ch 7 |
+| 8  | MOT8         | DShot ch 8 |
+| 9  | **VDD_SERVO** | **NC on novapcb** — see Sai decision below |
+| 10 | GND          | Return |
 
-Net assignments + topology unchanged:
-- 8 connectors (J11..J18) — one per motor
-- 2 pads each (pin 1 = MOT_N signal, pin 2 = GND)
-- 16 total pads → identical to placeholder count
+### 3. Docstring §38-56 rewrite
+
+Replaces "Solder pads" rationale with:
+- DECISIONS.md §7 + literal Pixhawk-family motivation
+- Competitor research table
+- Pin-assignment table (matches code)
+- Pin 9 VDD_SERVO NC convention note + cross-ref to Sai decision
+- Footprint: `Connector_JST:JST_GH_SM10B-GHS-TB_1x10-1MP_P1.25mm_Horizontal`
+
+### Net topology
+
+- Before (original): 8 conn × 2 pads = 16 pads. 8 signal + 8 GND.
+- This rev: 1 conn × 10 pads = 10 pads. 8 signal + 1 NC (pin 9) + 1 GND (pin 10).
+- 6 fewer pads, 7 fewer connector refs (J12..J18 now free for future).
+- All 8 MOT* net assignments preserved (now to J11.1..J11.8).
+- GND on J11.10 (was J11.2 + J12.2 + ... + J18.2 across 8 connectors).
+
+## Decisions for Sai
+
+### D1 — Pin 9 VDD_SERVO handling
+
+| Option | Wiring | Behavior | Trade-off |
+|---|---|---|---|
+| **(a) NC** (recommend, this PR's default) | unbound in SKiDL | floating on FC side; harness rail sourced elsewhere or unused | matches Pixhawk-family "FC doesn't power servos" pattern (DShot-only setup); avoids unintended GND short if external harness ever powers this pin |
+| (b) tied-to-GND | `GND += esc_conn[9]` | defined potential on FC side | safer if harness wiring is ambiguous; matches some non-Pixhawk vendors; but if harness ever injects 5V on pin 9 (e.g., for analog servos on a different airframe), this would short the BEC to GND |
+
+**Recommend (a)**. Pixhawk 6X itself leaves the FMU PWM OUT VDD_SERVO
+unconnected on the FMU side (sourced from a separate PM02 servo BEC
+into the IO port on dual-MCU designs). novapcb is single-MCU + DShot-
+only, so option (b) "tie-to-GND" adds risk without benefit.
+
+If Sai picks (b), one line of SKiDL changes (uncomment the documented
+alternative). Net regen + ERC re-run is trivial.
 
 ## Root cause
 
 Phase 3f wrote SKiDL in 2026-04..05 when the connector standard was
-still **open** in `DECISIONS.md §7` (then-pending fork). The Phase 3f
-author chose solder-pad provisionally with docstring rationale captured
-in `esc_3f.py:38-56`.
+still **open** in `DECISIONS.md §7`. The Phase 3f author defaulted to
+**Matek-style solder pads** (racing-FC convention they were familiar
+with), captured the rationale in `esc_3f.py:38-56`.
 
 On **2026-05-18**, Sai locked §7 to **JST-GH (Pixhawk family)** —
-explicitly tighter than solder-pad: "must not require re-crimping
-cables on the existing airframe." This supersedes the solder-pad
-provisional.
+literal motivation: "matches every harness on the existing airframe."
+Two layers of placeholder needed correcting:
 
-`esc_3f.py` was never re-edited to match. Other sheets (telem_3i,
-power_sd_swd_3h, gps, can) DID get the JST-GH treatment (verified by
-grep — `JST_GH_SM06B-GHS-TB` × 1, `JST_GH_SM04B-GHS-TB` × N for those
-sheets). Only `esc_3f.py` was missed.
+1. **Family**: solder-pad (Matek racing-FC) → JST-GH (Pixhawk family).
+   First amend (sha 7a6a959).
+2. **Topology**: 8 per-motor vs 1 multi-pin. Every Pixhawk-family FC
+   (6X, Cube, Jetson Baseboard) ships 1× 10-pin per port. 8× 2-pin
+   would force Sai to crimp custom cables to mate with the airframe
+   harness, violating §7's literal motivation. Second amend (this rev).
 
-The contradiction was hidden because:
-- Schematic ERC doesn't validate footprint-vs-spec
-- Audit script (`scripts/audit_layout_compliance.py`) checks placement
-  / DRC / stackup / fanout — not connector-family alignment
-- Board file J11..J18 use a custom `ESC_solder_pad` footprint (PARKED at
-  X>100) that diverged from BOTH the SKiDL placeholder AND the
-  DECISIONS spec, masking the schematic discrepancy
-
-H placement audit forced the cross-check (master found the
-contradiction while reviewing the constraint analysis).
+Both placeholders inherited from a different FC market segment
+(racing) than the locked decision target (Pixhawk family). The audit
+didn't catch this because it doesn't currently cross-check connector
+footprint family against DECISIONS.md.
 
 ## Prevention
 
-### Audit gate (suggested follow-up — NOT in this PR)
+### Audit gate (follow-up — NOT in this PR)
 
 Add a `check_connector_family_alignment()` info-only gate to
 `scripts/audit_layout_compliance.py` that parses
 `hardware/kicad/novapcb/novapcb.net` for every `J*` reference and
 flags any footprint NOT in `Connector_JST:JST_GH_*` (with allowlist
-for known exceptions like USB-C, SWD ribbon, microSD).
+for known exceptions like USB-C, SWD ribbon, microSD card socket).
+
+For the next level of rigor (catch topology mismatches like 8× vs 1×),
+the gate could also flag whenever the SAME logical port (e.g., all
+motor outputs) is split across multiple connector refs without an
+explicit DECISIONS.md ratification.
 
 Owner: master (defer until DRU cleanup PR #97). Out of scope for PR-A.
 
 ### Phase 3 amend hygiene
 
 When `DECISIONS.md` lands a value that supersedes a prior Phase 3
-placeholder, the corresponding SKiDL sheet MUST be re-edited within the
-same calendar day. Going forward: any `DECISIONS.md` ratification PR
-should grep `hardware/kicad/novapcb/sheets/*.py` for placeholder
+placeholder, the corresponding SKiDL sheet MUST be re-edited within
+the same calendar day. Going forward: any `DECISIONS.md` ratification
+PR should grep `hardware/kicad/novapcb/sheets/*.py` for placeholder
 patterns it potentially supersedes and bundle the SKiDL amend.
+
+This sheet was missed in May because §7's ratification PR only touched
+docs, not SKiDL. The other sheets (telem 3i, power 3h, GPS, CAN) had
+already been written with JST-GH (their authors happened to use the
+Pixhawk-family default). Only `esc_3f.py` had the Matek-derived
+placeholder.
 
 ## Spec deviations (Rule 4)
 
@@ -122,44 +199,62 @@ NONE. This PR restores alignment to a locked spec.
 
 | Claim | Verified by |
 |---|---|
-| SKiDL footprint changed to JST-GH-1x02 horizontal | `grep "JST_GH_SM02B-GHS-TB" hardware/kicad/novapcb/sheets/esc_3f.py` → 1 match |
-| Netlist regenerated | `novapcb.net` mtime updated; date "05/24/2026 12:23 AM" |
-| Netlist J11..J18 all use JST-GH footprint | `grep -E 'JST_GH_SM02B' novapcb.net` → 16 matches (8× component decl + 8× field) |
-| J11..J18 net assignments preserved (MOT1..MOT8 → pin 1, GND → pin 2) | side-by-side `grep 'ref "J1[1-8]"\|MOT[1-8]'` old vs new identical |
-| Line count parity | `wc -l novapcb.net` old=new=5720 (no nets added/removed) |
-| ERC clean | `python3 generate.py` → "INFO: 0 errors found while generating netlist" |
+| Single 10-pin connector instantiated | `grep -c 'ref "J11"' novapcb.net` = 13 (1 comp + 10 pin nodes + 2 misc) |
+| J12..J18 absent | `grep -cE 'ref "J1[2-8]"' novapcb.net` = **0** |
+| J11 footprint = JST_GH_SM10B | `grep -A4 'ref "J11"' novapcb.net` shows `Connector_JST:JST_GH_SM10B-GHS-TB_1x10-1MP_P1.25mm_Horizontal` |
+| MOT1..MOT8 each have J11 node | for n in 1..8: `grep -A20 'name "MOT$n"' novapcb.net \| grep 'ref "J11"'` = 1 match each ✓ |
+| GND has J11 pin 10 | `grep -A1 'name "GND"' novapcb.net` shows J11/pin 10 ✓ |
+| Pin 9 unbound (NC) | no node entry for J11 pin 9 in any net (greppable via `grep -B1 -A2 'pin "9"' novapcb.net \| grep -B1 'J11'` returns empty) |
+| ERC clean | `python3 generate.py` → "ERC INFO: 0 errors found while running ERC" |
 | No board file touch | `git diff sch/option-b-buck -- hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_pcb` empty |
-| Audit baseline unchanged | 2 pre-existing FAILs (U6 DECOUPLING task #91, R13 fanout slot-deferral consequence) — not caused by this PR |
+| Audit baseline unchanged | 2 pre-existing FAILs (U6 DECOUPLING #91 + R13 fanout slot-deferral) — not caused by this PR |
 
 ### Netlist diff noise note
 
-SKiDL regenerates random `tstamps` UUIDs + `SKiDL Tag` values for every
-component on every run. The full `git diff novapcb.net` is ~5000 lines
-of UUID churn unrelated to the substantive change. **For review,
-inspect**:
+SKiDL regenerates random `tstamps` UUIDs + `SKiDL Tag` values on every
+run. The full `git diff novapcb.net` is mostly UUID churn. **For
+substantive review**:
 
 ```bash
-grep -B1 -A4 'ref "J1[1-8]"' hardware/kicad/novapcb/novapcb.net
-# All 8 should show JST_GH_SM02B-GHS-TB footprint + value ESCN (was ESCN_PAD)
+# 1× 10-pin J11 verification
+grep -B1 -A4 'ref "J11"' hardware/kicad/novapcb/novapcb.net | head -10
+
+# J12..J18 should be GONE (was 8 connectors, now 1)
+grep -cE 'ref "J1[2-8]"' hardware/kicad/novapcb/novapcb.net
+
+# 8 MOT* nets each bound to J11 pin 1..8
+for n in 1 2 3 4 5 6 7 8; do
+  echo "MOT$n:"; grep -A20 "name \"MOT$n\"" hardware/kicad/novapcb/novapcb.net | grep -A2 'ref "J11"' | head -3
+done
 ```
 
 ## After this lands
 
 PR-B (`hw/h-placement`, branched on top of this) starts:
-- Layout placement of 8× JST-GH-1x02 horizontal connectors
-- Per master D2-D5 (sub-step #107): south band Y=65..85, uniform
-  11.86mm pitch, X=10..93, right-edge compressed for H4 mount keep-out
-- KiCad update-from-netlist auto-replaces parked `ESC_solder_pad`
-  footprints with new JST-GH footprints at parked X>100 — then
-  step7_place_H.py moves them into final position
+- Single 10-pin JST-GH placement (~17mm × ~7mm body, much simpler than 8 destinations)
+- Center on board midline OR offset — fresh up-front analysis required
+- MCU fanout: 8 MOT* from MCU TIM pins consolidated to a single connector
+- South-edge placement (motor harness exits south) still correct
+- D-zone EMI keep-out + length budgeting reuse the §6-§7 analysis from
+  the original H placement doc
+
+Geometry is **fundamentally different** from the 8× 2-pin plan, so the
+existing `docs/H_PLACEMENT_CONSTRAINT_ANALYSIS.md` (sha 87fc1e0 on
+`hw/h-placement`) needs a fresh rewrite before PR-B layout. Master
+will sign off on the new analysis before layout execution per the
+established up-front-analysis pattern.
 
 ## Test plan
 
 - [x] `hardware/kicad/novapcb/sheets/esc_3f.py` footprint string =
-  `Connector_JST:JST_GH_SM02B-GHS-TB_1x02-1MP_P1.25mm_Horizontal`
+  `Connector_JST:JST_GH_SM10B-GHS-TB_1x10-1MP_P1.25mm_Horizontal`
 - [x] `python3 generate.py` runs clean: 0 ERC errors
-- [x] `novapcb.net` regenerated with new footprint × 8 connectors
-- [x] Net topology preserved (MOT1..MOT8 → pin 1; GND → pin 2 on all 8)
-- [x] Docstring §38-56 reflects JST-GH decision (DECISIONS.md §7 citation)
+- [x] `novapcb.net` regenerated with single J11 connector
+- [x] J12..J18 absent
+- [x] All 8 MOT1..MOT8 nets bound to J11 pin 1..8 respectively
+- [x] GND bound to J11 pin 10
+- [x] Pin 9 VDD_SERVO unbound (NC per default; Sai decision D1)
+- [x] Docstring §38-56 reflects 1× 10-pin Pixhawk 6X convention + competitor research
 - [x] No board file touched (placement happens in PR-B)
 - [x] DECISIONS.md §7 (lock unchanged)
+- [ ] **Sai D1 decision**: pin 9 NC (default) vs tied-to-GND

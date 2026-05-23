@@ -1,10 +1,14 @@
 """
-novapcb Phase 3f — ESC outputs sheet (8 DShot channels to JST-GH motor connectors).
+novapcb Phase 3f — ESC outputs sheet (8 DShot channels on 1× JST-GH 10-pin
+connector, Pixhawk 6X FMU PWM OUT convention).
 
-Wires the 8 motor output pins (Phase 2e bdshot-locked) to 8 JST-GH
-1x02 connectors (signal + GND per motor). No series resistors per
-MatekH743-bdshot inheritance; no power passthrough (ESCs powered directly
-from the main battery, not through the FC).
+Wires the 8 motor output pins (Phase 2e bdshot-locked) to a SINGLE
+10-pin JST-GH connector matching the Pixhawk 6X baseboard FMU PWM
+OUT port (8 sig + 1 VDD_SERVO + 1 GND). No series resistors per
+MatekH743-bdshot inheritance; no power passthrough on novapcb (ESCs
+powered directly from the main battery — pin 9 VDD_SERVO is kept
+physically present for harness compatibility but is **unconnected**
+on novapcb, see "esc-connector-type fork" below for ratification).
 
 ## Authority for this sheet
 
@@ -37,29 +41,49 @@ because telemetry returns on the same wire.
 
 ### ESC connector / termination type (esc-connector-type fork)
 
-**JST-GH 1x02 horizontal** per motor (8 connectors total: signal + GND).
+**1× JST-GH 1x10 horizontal** — Pixhawk 6X FMU PWM OUT standard.
 
 Reasoning:
   - `DECISIONS.md §7` (locked 2026-05-18) mandates JST-GH (Pixhawk
     family) for ALL FC connectors — "matches every harness on the
     existing airframe; bring-up must not also require re-crimping
-    cables." The earlier solder-pad choice on this sheet was a
-    placeholder inconsistent with that contract; this amend restores
-    alignment.
-  - Horizontal (right-angle / side-entry) variant chosen so motor leads
-    exit parallel to the south board edge — same convention as the
-    other JST-GH connectors on this design (telem 3i, power 3h, GPS).
-  - Pixhawk DS-009 reference: motor outputs on FMUv6 family use JST-GH
-    1x02 per channel for individual motor harness routing.
-  - Footprint: `Connector_JST:JST_GH_SM02B-GHS-TB_1x02-1MP_P1.25mm_Horizontal`
-    (KiCad 9 stock). 1.25 mm pitch, SMT, vertical-mount with
-    horizontal wire entry.
+    cables." The motivation is literal: an existing Pixhawk-family
+    harness must plug into novapcb unchanged.
+  - **Competitor reference**: Pixhawk 6X (Holybro), Cube Orange+ (CubePilot),
+    Jetson Orin Nano + Baseboard (NXP, ARK) all use **2× 10-pin JST-GH**
+    PWM OUT ports (FMU + IO, 8 channels each). novapcb is FMU-only so
+    only the FMU port is implemented — 1× 10-pin JST-GH.
+  - Pinout (Pixhawk 6X DS-002 / DS-009 FMU PWM OUT):
+    | Pin | Net          | Role |
+    |---:|--------------|------|
+    | 1  | MOT1         | DShot ch 1 signal (3.3V logic) |
+    | 2  | MOT2         | DShot ch 2 |
+    | 3  | MOT3         | DShot ch 3 |
+    | 4  | MOT4         | DShot ch 4 |
+    | 5  | MOT5         | DShot ch 5 |
+    | 6  | MOT6         | DShot ch 6 |
+    | 7  | MOT7         | DShot ch 7 |
+    | 8  | MOT8         | DShot ch 8 |
+    | 9  | VDD_SERVO    | NC on novapcb (kept for harness compat — see below) |
+    | 10 | GND          | Return |
+  - **Pin 9 VDD_SERVO handling** — Pixhawk-standard pin for analog servo
+    power injection (typically 5V from a separate BEC). novapcb runs
+    DShot ESCs only (powered directly from main battery), so this rail
+    is unused on the FC side. Pin kept physically present (10-pin
+    connector matches harness mate) but **unconnected in SKiDL** —
+    ERC will emit "unconnected pin" warning per project convention
+    (see imu_3c.py:170 — explicit-NC is the accepted SKiDL 2.2.3
+    pattern). Awaiting Sai sign-off on alternative (b: tie to GND for
+    defined harness potential) — see PR doc.
+  - Horizontal (right-angle / side-entry) variant: motor leads exit
+    parallel to south board edge — same convention as other JST-GH
+    connectors on this design.
+  - Footprint: `Connector_JST:JST_GH_SM10B-GHS-TB_1x10-1MP_P1.25mm_Horizontal`
+    (KiCad 9 stock).
 
-Each motor connector = 1 signal pad + 1 GND pad. 8 motors × 1 connector
-× 2 pads = 16 pads total (same netlist count as the earlier solder-pad
-placeholder). Schematic models each connector as
-`Connector_Generic:Conn_01x02` for netlist clarity (pin 1 = motor
-signal, pin 2 = GND).
+Single connector ref **J11** (drops J12..J18 — those refs are now free
+for future use). Schematic models the connector as
+`Connector_Generic:Conn_01x10` for netlist clarity.
 
 ### Series resistors on DShot lines (dshot-series-r fork)
 
@@ -137,26 +161,32 @@ for idx, mcu_pin, _bidir in motor_map:
     mot_nets[idx] = net
 
 
-# ---- motor output connectors (8× JST-GH 1x02 = 8 motors × (signal + GND)) ----
-# Each connector: pin 1 = motor signal, pin 2 = GND return. Per
-# DECISIONS.md §7 (locked 2026-05-18), all FC connectors use JST-GH
-# (Pixhawk-family standard) — matches every existing airframe harness;
-# bring-up must not require re-crimping cables. Horizontal (right-angle,
-# side-entry) variant chosen so motor leads exit parallel to the south
-# board edge, same convention as the existing JST-GH telem/power/GPS
-# connectors on other sheets.
+# ---- motor output connector (1× JST-GH 1x10 = Pixhawk 6X FMU PWM OUT) ----
+# Single 10-pin JST-GH matching the Pixhawk 6X / Cube Orange+ / Jetson
+# Baseboard PWM OUT port convention. Pin assignment (DS-002 / DS-009):
+#   pin 1..8 = MOT1..MOT8 (DShot signal, 3.3V logic)
+#   pin 9    = VDD_SERVO  (Pixhawk-standard pin for analog servo power;
+#                          NC on novapcb — see "esc-connector-type fork"
+#                          in docstring above; awaiting Sai sign-off
+#                          NC-vs-tie-to-GND)
+#   pin 10   = GND (return)
 #
-# Reference designators J11..J18 (J1-J9 already in use: J1 USB-C, J2
-# microSD, J3 telem, J4 power, J5 GPS, J6 CAN/aux, J7 ESC1-4 stub from
-# Phase 2.5 placement, J8 ESC5-8 stub, J9 SWD). The Phase 2.5 J7/J8
-# were placement-fit-only stubs; Phase 4 layout uses J11..J18 (one per
-# motor).
+# Ref J11 (J1-J9 already in use: J1 USB-C, J2 microSD, J3 telem,
+# J4 power, J5 GPS, J6 CAN/aux, J7 ESC1-4 stub, J8 ESC5-8 stub, J9 SWD).
+# Earlier 8-per-motor topology (J11..J18) collapses to single J11; J12..J18
+# refs are now free for future use.
+esc_conn = Part(
+    "Connector_Generic", "Conn_01x10",
+    footprint="Connector_JST:JST_GH_SM10B-GHS-TB_1x10-1MP_P1.25mm_Horizontal",
+    value="ESC_OUT",
+)
+esc_conn.ref = "J11"
+
 for idx in range(1, 9):
-    pad = Part(
-        "Connector_Generic", "Conn_01x02",
-        footprint="Connector_JST:JST_GH_SM02B-GHS-TB_1x02-1MP_P1.25mm_Horizontal",
-        value=f"ESC{idx}",
-    )
-    pad.ref = f"J{10 + idx}"   # J11..J18
-    mot_nets[idx] += pad[1]    # pin 1 = motor signal
-    GND            += pad[2]   # pin 2 = GND return
+    mot_nets[idx] += esc_conn[idx]   # pin 1..8 = MOT1..MOT8 signal
+
+# pin 9 VDD_SERVO: NC — explicit no-bind per project SKiDL convention
+# (imu_3c.py:170). ERC will emit "unconnected pin" warning — EXPECTED.
+# If Sai ratifies (b) tie-to-GND: add `GND += esc_conn[9]` here.
+
+GND += esc_conn[10]   # pin 10 = GND return
