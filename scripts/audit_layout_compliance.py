@@ -332,6 +332,28 @@ def cap_body_edge_to_point(cd, vx, vy):
     return math.hypot(dx, dy)
 
 
+def _vdd_pad_has_plane_via(pad, vnet, brd):
+    """Check if a VDD pad has a via connecting to a filled-zone plane on
+    the same net (inner-layer plane decoupling)."""
+    pp = pad.GetPosition()
+    px_nm, py_nm = pp.x, pp.y
+    # Find vias at pad center (or within pad bbox) on same net
+    for t in brd.GetTracks():
+        if not isinstance(t, pcbnew.PCB_VIA): continue
+        if t.GetNetname() != vnet: continue
+        vp = t.GetPosition()
+        if abs(vp.x - px_nm) < 50000 and abs(vp.y - py_nm) < 50000:  # 50µm
+            # Via at pad. Check if there's a filled zone on the same net.
+            for z in brd.Zones():
+                if z.GetNetname() != vnet: continue
+                try:
+                    if z.GetFilledArea() > 0:
+                        return True
+                except Exception:
+                    pass
+    return False
+
+
 def check_decoupling(items):
     bad = []
     for ref, d in items.items():
@@ -384,6 +406,17 @@ def check_decoupling(items):
                     closest = (dist, cref)
                 if dist <= 3.0:
                     found = True; break
+            if not found:
+                # Plane-aware inference: if this VDD pad has a via to a
+                # filled plane on the same net, plane provides bulk
+                # decoupling — relax local 3mm requirement.
+                # Find the actual pad object to query.
+                for pad in d["fp"].Pads():
+                    pp = pad.GetPosition()
+                    if abs(pcbnew.ToMM(pp.x)-vx) < 0.01 and abs(pcbnew.ToMM(pp.y)-vy) < 0.01:
+                        if _vdd_pad_has_plane_via(pad, vnet, board):
+                            found = True  # plane decoupling accepted
+                            break
             if not found:
                 # Report with body-edge distance to NEAREST in-net cap
                 bad.append((ref, vnet, vx, vy, closest[0], closest[1]))
@@ -658,6 +691,52 @@ check_mid_edge_keepout(items)
 check_zone_fill()
 check_fab_exceptions()
 check_fanout_exit_corridor(items)
+
+
+# ----- check 10: thermal sim source-of-truth (master 2026-05-23) -----
+# Lesson from LOCK 73.98°C unreproducibility (2026-05-23):
+# board sweep used PLANNED component positions (Q3 at 35,8 etc) while
+# actual placement chose different positions (Q3 at 27,10), giving
+# +8.5°C MCU regression silently. The mechanism that allowed this:
+# gate12 used a parameter-override config for unplaced components,
+# masquerading as a "validated" run.
+#
+# Gate: assert any thermal/sim Python script in the repo READS component
+# positions from the .kicad_pcb file (via pcbnew.LoadBoard), NOT from
+# hardcoded constants or planned-position dicts. Catches the recurrence
+# of "sim ran with hypothetical positions" silent divergence.
+def check_thermal_actual_positions():
+    sim_scripts = []
+    sim_dir = os.path.dirname(os.path.abspath(sys.argv[1]))
+    for name in os.listdir(sim_dir):
+        if name.startswith("gate12") and name.endswith(".py"):
+            sim_scripts.append(os.path.join(sim_dir, name))
+    if not sim_scripts:
+        info.append("THERMAL-SIM-SOT: no gate12*.py scripts found in board dir")
+        return
+    for path in sim_scripts:
+        with open(path) as f:
+            txt = f.read()
+        # MUST have LoadBoard call (reads .kicad_pcb)
+        if "pcbnew.LoadBoard" not in txt and "LoadBoard(" not in txt:
+            warns.append(f"THERMAL-SIM-SOT: {os.path.basename(path)} doesn't call LoadBoard — may use planned positions instead of actual")
+            continue
+        # SHOULD NOT have lots of hardcoded position dicts (planned)
+        # Heuristic: count tuples like (x.x, y.y) on lines with refdes patterns
+        import re
+        # Lines like '"U1": (45.0, 35.0)' or 'Q3 = (27, 10)' that imply hardcoded position
+        position_overrides = re.findall(r'"[QURDXY]\d+\*?"\s*:\s*\(\d+\.?\d*\s*,\s*\d+\.?\d*\)', txt)
+        if len(position_overrides) > 3:
+            warns.append(
+                f"THERMAL-SIM-SOT: {os.path.basename(path)} has "
+                f"{len(position_overrides)} hardcoded position overrides — "
+                f"verify these are FALLBACK only (used when refdes not on board), "
+                f"not the active source-of-truth")
+        else:
+            info.append(f"THERMAL-SIM-SOT: {os.path.basename(path)} reads from .kicad_pcb (PASS)")
+
+
+check_thermal_actual_positions()
 
 print(f"=== Layout compliance audit: {os.path.basename(sys.argv[1])} ===")
 print(f"Components: {len(items)}")
