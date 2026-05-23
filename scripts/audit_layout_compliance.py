@@ -484,6 +484,81 @@ def check_mid_edge_keepout(items):
             fails.append(f"  {r} at ({x:.1f},{y:.1f}) inside keep-out @ ({kx:.1f},{ky:.1f})")
 
 
+# ----- check 9.4: fanout exit corridor (master 2026-05-23 new gate) -----
+# For every multi-pin IC (≥8 pins), verify each NON-GROUND/POWER pin has a
+# clear exit lane: no other-component pad inside the X/Y strip extending
+# N mm from the pin in the direction perpendicular to the pin row.
+# Catches R42-vs-U6-north placement collision BEFORE routing.
+EXIT_CORRIDOR_MM = 1.5   # corridor reach: at least 1.5mm from pin edge
+CORRIDOR_WIDTH_MM = 0.5  # strip width: 0.5mm (typical IC pin pitch)
+
+def check_fanout_exit_corridor(items):
+    blocked = []
+    for ref, d in items.items():
+        if not ref.startswith("U") or not ref[1:].isdigit():
+            continue
+        pads = list(d["fp"].Pads())
+        if len(pads) < 8:
+            continue  # only multi-pin ICs
+        # For each non-GND/Vdd pin, check exit corridor.
+        # Pin row direction: determined by pad position vs IC center.
+        ic_x, ic_y = d["x"], d["y"]
+        for pad in pads:
+            net = pad.GetNetname()
+            if not net or net in ("GND",) or is_vdd_net(net):
+                continue
+            pp = pad.GetPosition()
+            px, py = pcbnew.ToMM(pp.x), pcbnew.ToMM(pp.y)
+            psz = pad.GetSize()
+            pw, ph = pcbnew.ToMM(psz.x), pcbnew.ToMM(psz.y)
+            # Pin row direction — exit perpendicular to long dimension
+            # For pads on N/S sides: exit Y direction.
+            # For pads on E/W sides: exit X direction.
+            if abs(py - ic_y) > abs(px - ic_x):
+                # N or S side — exit Y
+                if py < ic_y:  # north pin → exit N (Y decreasing)
+                    corridor_y1 = py - ph/2 - EXIT_CORRIDOR_MM
+                    corridor_y2 = py - ph/2
+                else:  # south pin → exit S
+                    corridor_y1 = py + ph/2
+                    corridor_y2 = py + ph/2 + EXIT_CORRIDOR_MM
+                corridor_x1 = px - CORRIDOR_WIDTH_MM/2
+                corridor_x2 = px + CORRIDOR_WIDTH_MM/2
+            else:
+                # E or W side — exit X
+                if px < ic_x:  # west pin → exit W
+                    corridor_x1 = px - pw/2 - EXIT_CORRIDOR_MM
+                    corridor_x2 = px - pw/2
+                else:
+                    corridor_x1 = px + pw/2
+                    corridor_x2 = px + pw/2 + EXIT_CORRIDOR_MM
+                corridor_y1 = py - CORRIDOR_WIDTH_MM/2
+                corridor_y2 = py + CORRIDOR_WIDTH_MM/2
+            # Check for other-component pads in this strip
+            for oref, od in items.items():
+                if oref == ref: continue
+                for opad in od["fp"].Pads():
+                    opp = opad.GetPosition()
+                    obb = opad.GetBoundingBox()
+                    ox1 = pcbnew.ToMM(obb.GetLeft())
+                    oy1 = pcbnew.ToMM(obb.GetTop())
+                    ox2 = pcbnew.ToMM(obb.GetRight())
+                    oy2 = pcbnew.ToMM(obb.GetBottom())
+                    if ox1 < corridor_x2 and ox2 > corridor_x1 and oy1 < corridor_y2 and oy2 > corridor_y1:
+                        blocked.append((ref, pad.GetPadName(), net, oref, opad.GetPadName()))
+                        break
+                else:
+                    continue
+                break
+    if blocked:
+        # Dedup by (ref, pin)
+        unique = list({(b[0], b[1], b[2], b[3], b[4]) for b in blocked})
+        warns.append(f"FANOUT-CORRIDOR: {len(unique)} multi-pin-IC pins "
+                     f"have blocked exit corridor (<{EXIT_CORRIDOR_MM}mm)")
+        for ic, pin, net, blker, blker_pin in sorted(unique)[:10]:
+            warns.append(f"  {ic}.{pin} ({net}) blocked by {blker}.{blker_pin}")
+
+
 # ----- check 9.5: fab-exception count (master 2026-05-23 hard bar) -----
 # Reads novapcb-stepwise.kicad_dru and counts non-standard rules
 # (clearance relax, via-in-pad, 4mil, extended-courtyard). >4 in any
@@ -567,6 +642,7 @@ check_usb_pair()
 check_mid_edge_keepout(items)
 check_zone_fill()
 check_fab_exceptions()
+check_fanout_exit_corridor(items)
 
 print(f"=== Layout compliance audit: {os.path.basename(sys.argv[1])} ===")
 print(f"Components: {len(items)}")
