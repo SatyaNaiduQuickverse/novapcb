@@ -38,7 +38,7 @@ import pcbnew
 HERE = os.path.dirname(os.path.abspath(__file__))
 PCB = os.path.join(HERE, "novapcb-stepwise.kicad_pcb")
 
-F_REFDES = ["J1", "R31", "R32", "U5"]
+F_REFDES = ["J1", "R31", "R32", "U5", "C83"]
 # Zone REVISED 2026-05-23 per master Step-3 SECOND re-open: extended X
 # WEST to 71mm to give U5 breathing room from J1 (the 1.785mm corridor
 # between U5 east pads and J1 west pads at U5_X=76 was too tight for
@@ -155,6 +155,16 @@ def main():
     #   - Geometric perp-distance issue: not present (no descent)
     # X=73 unchanged from 2nd re-open (clear of locked C subsystem).
     try_place("U5", 73.0, 31.0)
+
+    # C83 (100nF 0402) — U5 VBUS decap (master task #27, 2026-05-23).
+    # Placed NW of U5 east column, NORTH of U5 body — avoids the
+    # USBC_D_M_PRE diff-pair routing east of U5 (track at Y=31.95 length
+    # ~4.84mm). U5 pad 5 (+5V VBUS) at global (74.138, 31.0); C83 at
+    # (74.5, 28.5) gives body-edge ~2.0mm to pad 5 (≤3mm DECOUPLING rule
+    # for U5 +5V VDD net). Initial east-of-U5 placement at (76.5, 31.0)
+    # caused 1 shorting + 2 solder-mask-bridge violations against the
+    # USBC_D_M_PRE trace — redo with NORTH placement instead.
+    try_place("C83", 74.5, 28.5)
 
     pcbnew.SaveBoard(PCB, brd)
     print(f"\n  Placed {len(placed_F)} of {len(F_REFDES)} F components", flush=True)
