@@ -55,3 +55,6 @@ sims/validation/elmer_thermal/mesh/
 sims/validation/elmer_thermal/mesh2/
 sims/validation/elmer_thermal/mesh.grd
 sims/validation/elmer_beam/mesh/
+
+# gate12 architecture sweep run outputs (transient; reproducible from gate12_arch_sweep.py)
+hardware/kicad/novapcb-stepwise/thermal/swp_*/

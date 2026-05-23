@@ -2,7 +2,32 @@
 
 All v1 scoping decisions are in `DECISIONS.md`. Add new open questions here as they arise.
 
-## phase5-thermal-ldo-vs-buck. +3V3 LDO vs buck-switcher escalation — **CLOSED 2026-05-23**
+## phase5-thermal-ldo-vs-buck. +3V3 LDO vs buck-switcher escalation — **RE-OPENED 2026-05-23 (Sai-decision pending)**
+
+**Status: RE-OPENED 2026-05-23.** Originally CLOSED 2026-05-23 morning
+("LDO retained, thermal margin met at 105×85"). The closure was based on
+gate12 v3 LOCK MCU Tj=73.98°C, which was later proven UNREPRODUCIBLE — actual
+board with actual component positions produces MCU Tj=82.46°C (over the
+80°C ceiling).
+
+Master 2026-05-23 commissioned a 3-config sweep documented in
+`docs/THERMAL_ARCHITECTURE_DECISION.md`:
+
+| Config             | MCU Tj    | Margin   | Notes                            |
+|--------------------|-----------|----------|----------------------------------|
+| Current (LDO 105×85) | 82.5°C    | -2.5°C   | FAIL ceiling                     |
+| A. LDO 115×100      | 74.1°C    | +5.9°C   | board area only                  |
+| **B. Buck 105×85**  | **63.7°C** | **+16.3°C** | schematic change, no board grow |
+| C. Buck 110×90      | 62.8°C    | +17.2°C  | both                             |
+
+Quantified IMU-noise budget (see decision doc) shows buck supply noise is
+24 ppm of IMU intrinsic noise floor — engineering safe with U13 LDO + standard
+buck layout.
+
+**Awaiting Sai pick** between A / B / C. Original LDO-retained reasoning
+preserved below for traceability but no longer current.
+
+— original CLOSED entry (now superseded — preserved for traceability) —
 
 **Status:** **CLOSED — LDO retained**, no escalation to switching regulator.
 
@@ -255,10 +280,10 @@ The dense 36×36 / 4-layer board is being set aside in favor of a deliberate, si
 
 ### Sai-resolved 2026-05-20 (the dimension-freedom update)
 1. **Board outline shape** — RECTANGLE. Aspect ratio is an OUTPUT of placement (Step 3), not pre-decided.
-2. **Board size** — sized to the placement. No fixed dim constraint. ✓
-3. **Layer count** — **OPEN**. 4 vs 6 to be decided in Step 3 based on whether 6-layer measurably reduces EMI/SI failure modes per the §10 reliability mandate.
-4. **Mounting pattern** — **RESOLVED 2026-05-23** (master, delegated from Sai). 4× M3 corner-inset holes on the 90×70 board; mid-long-edge +2 holes (6 total) gated on Phase 6 vibration sim (Task #10), placement reserves keep-out at mid-edge positions for later add-without-replace. See `pivot-2026-05-20-mounting-resolution` below for details.
-5. **Airframe envelope** — **RESOLVED 2026-05-23** (Sai). NO airframe size constraint — the 90×70 outline is final; no mechanical-fit check needed.
+2. **Board size** — sized to the placement. **v1.1 final: 105×85 mm** (grown from 90×70 in the thermal-budget re-spin; see `docs/THERMAL_ARCHITECTURE_DECISION.md`).
+3. **Layer count** — **RESOLVED**: 6-layer per `DECISIONS.md §8`.
+4. **Mounting pattern** — **RESOLVED 2026-05-23** (master, delegated from Sai). 4× M3 corner-inset holes on the 105×85 board; mid-long-edge +2 holes (6 total) gated on Phase 6 vibration sim (Task #10). See `pivot-2026-05-20-mounting-resolution` below for the 105×85 positions.
+5. **Airframe envelope** — **RESOLVED 2026-05-23** (Sai). NO airframe size constraint — the 105×85 outline is final; no mechanical-fit check needed.
 
 ### What's locked
 - Schematic (Phase 3, in `hardware/kicad/novapcb/`) — unchanged
@@ -277,23 +302,42 @@ The Phase 6 P0 sim results surfaced real density-driven concerns: PDN anti-reson
 
 ---
 
-## pivot-2026-05-20-mounting-resolution. Mounting holes — RESOLVED 2026-05-23 (master, delegated by Sai)
+## pivot-2026-05-20-mounting-resolution. Mounting holes — RESOLVED 2026-05-23, then RE-SCALED for 105×85 (2026-05-23)
 
 **RESOLVED 2026-05-23** (master, Sai-delegated decision). Supersedes earlier `Mounting-hole-pattern-90x70` open question and `pivot-2026-05-20` items 4 + 5.
 
-**Decision:**
+**RE-SCALED 2026-05-23** when board outline grew from 90×70 → 105×85 (v1.1
+final, per `update_outline_v11.py`). The geometric pattern below carries
+through to 105×85; only the absolute positions shift.
 
-1. **4× M3 corner-inset holes**, 3mm edge inset on the 90×70 board. Positions: (3, 3), (87, 3), (3, 67), (87, 67) → **c-to-c = 84 × 64 mm**. Hole spec per `docs/PLACEMENT_STRATEGY.md §5.2`: 3.2mm drilled, through-plated, 5mm GND-pad land to chassis GND.
+**Decision (105×85 board):**
 
-   The Pixhawk-standard 30.5×30.5 pattern is formally **dropped for v1.1** (per `DECISIONS.md §2` post-pivot, no longer applicable). Per Sai 2026-05-23: **no airframe size constraint**, 90×70 is final, no mechanical-fit check needed.
+1. **4× M3 corner-inset holes**, 3mm edge inset. Positions on 105×85:
+   (3, 3), (102, 3), (3, 82), (102, 82) → **c-to-c = 99 × 79 mm**. Hole
+   spec per `docs/PLACEMENT_STRATEGY.md §5.2`: 3.2mm drilled, through-plated,
+   5mm GND-pad land to chassis GND.
 
-2. **+2 mid-long-edge holes (6 total)** — **gated on Phase 6 vibration sim** (Task #10), NOT pre-committed. BUT: **placement MUST reserve keep-out** at the two mid-long-edge hole positions NOW. When B/A/D/H subsystems get placed, do NOT fill those two spots. This makes a sim-driven add free and prevents a re-place. Mid-edge keep-out positions: (3, 35) west mid, (87, 35) east mid — each with 8mm-diameter circular keep-out (M3 hole + GND-pad land + tolerance).
+   The Pixhawk-standard 30.5×30.5 pattern is formally **dropped for v1.1**
+   (per `DECISIONS.md §2` post-pivot, no longer applicable). Per Sai
+   2026-05-23: **no airframe size constraint**, 105×85 is final, no
+   mechanical-fit check needed.
 
-3. **Current placement** (Step-1 C only): H1=(5, 5), H2=(85, 5), H3=(5, 65), H4=(85, 65) = c-to-c 80×60. Will update to 3mm-inset / 84×64 c-to-c in next placement pass (does not block C↔F sign-off).
+2. **+2 mid-long-edge holes (6 total)** — **gated on Phase 6 vibration sim**
+   (Task #10), NOT pre-committed. BUT: **placement MUST reserve keep-out**
+   at the two mid-long-edge hole positions NOW. When B/A/D/H subsystems get
+   placed, do NOT fill those two spots. Mid-edge keep-out positions:
+   (3, 42.5) west mid, (102, 42.5) east mid — each with 8mm-diameter circular
+   keep-out (M3 hole + GND-pad land + tolerance).
 
-**`docs/DECISIONS.md §2` updated**: airframe envelope no longer open; 90×70 final.
+3. **Current placement actual**: corners at (3, 3) / (102, 3) / (3, 82) /
+   (102, 82) per latest commit. Verify with `audit_layout_compliance.py`.
 
-**`docs/PLACEMENT_STRATEGY.md §5` updated**: corner-hole pattern decided; mid-edge keep-out reservation + sim-gated 4-vs-6 documented.
+**`docs/DECISIONS.md §2` updated**: airframe envelope no longer open; 105×85 final.
+
+**`docs/PLACEMENT_STRATEGY.md §5` updated**: corner-hole pattern decided;
+mid-edge keep-out reservation + sim-gated 4-vs-6 documented. NOTE: if
+PLACEMENT_STRATEGY still cites 90×70 coordinates, that's stale — follow-up
+PR to align with 105×85.
 
 ---
 

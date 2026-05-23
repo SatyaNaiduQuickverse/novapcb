@@ -427,19 +427,30 @@ required, doesn't fit. 4mil trace (0.10mm) + 2×0.05mm clearance =
 
 **Fab requirement**: same JLC via-in-pad tier as 13.1 (no new bump).
 
-### 13.5 Q3/Q4 OR-FET north 0.5mm (master 2026-05-23 Option E)
+### 13.5 Q3/Q4 OR-FET north 0.5mm — REVERTED 2026-05-23
 
-**Scope**: Q3 (27, 10) → (27, 9.5). Q4 (78, 10) → (78, 9.5). Symmetric.
+**Status: REVERTED.** Q3/Q4 back at (X, 10). The "negligible thermal impact"
+claim in the original entry was disproven by the gate12 v3 re-verification
+that used actual board positions: MCU Tj came out at 82.46°C vs the
+LOCK-cited 73.98°C, well over the 80°C ceiling. The placement move and the
+LOCK number were both invalidated in the same audit (the LOCK had been
+computed against PLANNED positions, not actual; see audit-codification
+commit `eb51601`).
 
-**Why**: Opened corridor between Q3.1 pad south edge and sense row
-north edge from 0.408mm → 0.908mm. Enables DVDT routing without
-additional DRU exception.
+**What remains valid**: U6 DVDT routing was completed without the Q3/Q4
+move by NORTH-around via at (20, 11.7) inside Q3.1 north corridor. No fab
+exception needed for DVDT.
 
-**Thermal**: Q3/Q4 are <0.1W static dissipation; 0.5mm closer to
-north adiabatic edge has negligible impact on the +5°C margin from
-gate12 v3 LOCK. No re-verify needed unless freeze-gate check requires.
+**Why this entry is preserved**: traceability — the Q3/Q4 move was
+master-directed (Option E) and Sai-visible. The reversal + the reasoning
+(thermal LOCK unreproducible) must remain in the record so a future Claude
+doesn't re-propose the same move on the same false premise.
 
-**No fab implication** — just a placement nudge.
+**Cross-refs**:
+- `docs/THERMAL_ARCHITECTURE_DECISION.md` — full sweep + Option-B recommendation
+- `docs/INTEGRATION_LOG.md` — CRITICAL HALT note 2026-05-23
+- `scripts/audit_layout_compliance.py` check 10 — thermal-uses-actual-positions
+  audit gate that codified the prevention
 
 ### Combined cost impact
 

@@ -26,9 +26,26 @@ Sim failures route back to layout. Not a project failure. The failure mode is *a
 
 Every LOW-rated subsystem in `CONFIDENCE_MAP.md` goes through ArduPilot forum / RC Groups external review before Phase 7. Optional for HIGH-confidence rows.
 
-## 7. Brutal honesty mode-locked
+## 7. Brutal honesty mode-locked — 4-section PR docs
 
 Reports state what was checked AND what was not. "Looks clean" without enumeration is a Rule 6 violation. Pushback over flattery, explicit gaps over false coverage, "I don't know" over confident filler.
+
+**4-section PR doc format** (adopted 2026-05-23 from pcb.ai master, ack'd by novapcb master):
+
+Every PR description includes these four headings — even on a one-line fix:
+
+1. **Symptom** — observed problem (DRC error / sim fail / unexpected number / user-reported bug). What you actually saw, not your interpretation.
+2. **Fix** — what was changed (one to three bullets). The diff, in prose.
+3. **Root cause** — WHY it broke (the underlying issue, not where the symptom surfaced). Cross-ref §12 above.
+4. **Prevention** — how to avoid the next instance. New gate / audit rule / doc clarification / committed memory. If no preventive measure is possible, say so explicitly.
+
+Augmented sections (when applicable):
+
+5. **Spec deviations** (Rule 4) — every divergence from the approved spec: WHAT spec said, WHAT was built, WHY, WHO approved.
+6. **Rule 9 verification** — artifact-level proof for any "DRC GREEN" claim: cluster walks, `GetFilledArea()` reads, gerber visual inspection. Tool exit code alone does not satisfy.
+7. **Audit run** — `scripts/audit_layout_compliance.py` output summary; PR cannot be merged with NEW warnings.
+
+PR without 1–4 = reviewer rejection. PR without 5–7 when applicable = reviewer rejection.
 
 ## 8. Task contracts gate sub-phase work
 

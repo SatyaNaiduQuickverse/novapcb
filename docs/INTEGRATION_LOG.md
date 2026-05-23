@@ -81,6 +81,6 @@ but thermal RED on architecture.
 
 | Item | Reference | Must close before |
 |---|---|---|
-| openEMS coupled-pair S=0.13 independent cross-check (K-J or 2D field solver) | task #75 (extended), `docs/OPEN_QUESTIONS.md` (to add) | Phase 7a freeze |
+| ~~openEMS coupled-pair S=0.13 independent cross-check~~ | **CLOSED 2026-05-23** — K-J 1984 closed-form cross-check delivered in `sims/validation/VALIDATION_RESULTS.md` §"Update 2026-05-23 (b)". Verdict: PASS. openEMS 87.41 Ω + K-J 105.75 Ω bracket the true Z_diff; midpoint 96.58 Ω in USB 2.0 spec band 76.5..103.5 Ω. Decoupled-limit cross-validation self-consistent on both methods. Script: `sims/validation/val_kj_coupled.py`. | n/a — done |
 | JLCPCB DFM gate (#11) — USB fan-region 0.106mm thin clearance vs 0.10mm rule | `docs/OPEN_QUESTIONS.md phase4-dfm-usb-fan` | Fab order |
 | USBLC6-2P6 pin-swap final ratification log | PR #70 closed; ratification recorded master 2026-05-23 | n/a — done, lands with v1.1 |
