@@ -4,13 +4,21 @@
 Run AFTER step1 (C), step2 (E), step3 (F), and step4 (G) have placed
 their subsystems.
 
-B subsystem per docs/SUBSYSTEM_CONTRACTS.md §B:
+B subsystem per docs/SUBSYSTEM_CONTRACTS.md §B (Option B 2026-05-23):
   U6   — eFuse (TPS25922 or similar) on the P5V_BEC path
-  U2   — main +3V3 LDO (AP2112K-3.3, SOT-25, per power_3b.py)
+  U2   — main +3V3 BUCK (TPS62177DQC, DFN-10-1EP_3x3mm, Option B
+         2026-05-23 — replaces AP2112K-3.3 LDO). 0.642W dissipation
+         eliminated → 25mW residual; resolves Option-A MCU 82.5°C fail.
+  L1   — XAL4020-2R2 shielded power inductor (NEW under Option B,
+         buck SW node to VOUT)
+  R47, R48 — feedback divider (562k top / 180k bot → Vout=3.297V)
   D1   — TVS diode on input
   Q2   — auxiliary FET (TBD: reverse polarity?)
   R7..R10, R13 — eFuse programming (ILIM, PG pull-up, FLT pull-up)
-  C7, C8, C9, C31..C34 — input/output bulk + 100nF decap
+  C7, C8, C9 — eFuse path bulk + decap
+  C31..C34 — buck Cin/Cout topology (Option B): C31 10µF + C32 100nF
+             on VIN, C33 22µF + C34 100nF on VOUT (per TI SLVSC73 §10
+             typical-application)
   FB2  — ferrite bead isolating +3V3 → +3V3_IMU
   U13  — secondary LDO for +3V3_IMU (LP5907MFX-3.3, SOT-23-5)
   C77, C78 — U13 input/output decap
@@ -48,7 +56,9 @@ PCB = os.path.join(HERE, "novapcb-stepwise.kicad_pcb")
 
 B_REFDES = [
     "U6", "U2", "U13", "Q2", "D1", "FB2",
+    "L1",  # NEW under Option B (buck inductor)
     "R4", "R5", "R7", "R8", "R9", "R10", "R13",
+    "R47", "R48",  # NEW under Option B (buck FB divider)
     "C7", "C8", "C9", "C31", "C32", "C33", "C34",
     "C77", "C78",
 ]
@@ -117,26 +127,43 @@ ANCHORS = {
     "R13": (43.0, 24.0, 0.0),    # EFUSE_FLT pullup (10k)
     "R5":  (45.0, 24.0, 0.0),    # EFUSE_PGOOD pullup (10k)
 
-    # LDO — KEPT at (24, 25) sweet spot.
+    # BUCK U2 — KEPT at (24, 25) sweet spot (proven by pre-Option-B sweep).
     #
-    # Iteration log (DO NOT push U2 max-west again, mistake documented):
+    # Iteration log (LDO era, DO NOT push U2 max-west again — adiabatic-edge
+    # trap documented, see memory feedback_adiabatic_edge_trap):
     #   - (22, 25) on 90×70: MCU +0.9°C — adiabatic-west-edge reflects
     #     heat eastward into MCU.
     #   - (24, 25) on 90×70: MCU +2.1°C — best balance found.
-    #   - (24, 25) on 105×85: MCU +6.0°C — the bigger board's extra
-    #     north-south space gives the MCU enough surrounding cool board
-    #     even without changing U2.
-    #   - (15, 22) on 105×85: MCU +4.8°C — RE-MADE the same adiabatic-edge
-    #     mistake; U2 too close to adiabatic west edge (15mm) forces heat
-    #     east into MCU vicinity. Reverted 2026-05-23.
+    #   - (24, 25) on 105×85: MCU +6.0°C margin (LDO Tj 82.5°C — FAIL → Option B).
+    #   - (15, 22) on 105×85: MCU +4.8°C — re-made adiabatic-edge mistake.
     #
-    # Conclusion: on 105×85 board, U2 at (24, 25) gives both MCU +6°C
-    # margin AND U2 itself at +10°C margin. No need to relocate.
-    "U2":  (24.0, 25.0, 0.0),    # AP2112K main LDO, 21mm from MCU, 24mm from W edge
-    "C31": (28.0, 25.0, 0.0),    # U2 input cap
-    "C32": (26.0, 27.0, 90.0),   # U2 output cap (vertical)
-    "C33": (22.0, 27.0, 90.0),   # U2 output decap (vertical)
-    "C34": (30.0, 27.0, 0.0),    # decap, east of others
+    # Option B 2026-05-23 (master sign-off): swap U2 to TPS62177DQC buck.
+    # U2 stays at (24, 25). Buck dissipation 25mW vs LDO 642mW → 96%
+    # heat-source removed at this site. Expected MCU Tj 63.7°C (gate12
+    # arch-sweep result, to be confirmed at all-actual positions).
+    #
+    # Buck layout discipline (per master 2026-05-23 sign-off):
+    #   - L1 close to U2 SW pin, magnetic axis NOT pointing at IMU island
+    #     (long axis E-W, perpendicular to N-S buck-to-IMU vector)
+    #   - Cin (C31 10µF + C32 100nF) close to VIN pin; C32 HF cap nearest
+    #   - Cout (C33 22µF + C34 100nF) close to VOUT pin; C34 HF cap nearest
+    #   - FB divider (R47 562k top + R48 180k bot) close to FB pin,
+    #     FB trace ≤5 mm, GND-shielded if practical (high-Z 742kΩ node)
+    #   - Tight switching loop: VIN→C31/C32→VIN pin→SW pin→L1→Cout
+    #   - Dedicated buck GND return (not shared with sensitive analog)
+    #   - Buck-to-IMU island linear distance ≥25 mm (IMU = D zone south)
+    "U2":  (24.0, 25.0, 0.0),    # TPS62177DQC buck, DFN-10-1EP_3x3, 21mm from MCU
+    "L1":  (28.5, 25.0, 0.0),    # XAL4020-2R2 shielded, E-W axis (⊥ buck-IMU vector)
+    "C31": (21.0, 24.0, 0.0),    # Cin bulk 10µF, VIN side (west of U2)
+    "C32": (21.0, 26.0, 0.0),    # Cin HF 100nF, nearest VIN pin (high-freq)
+    "C33": (33.0, 25.0, 0.0),    # Cout bulk 22µF, VOUT side (east of L1)
+    # C34 (Cout HF 100nF) placed NORTH of L1, NOT east — only way to keep
+    # cap body-edge within 3mm of U2 body (DECOUPLING audit rule). VOS pin
+    # at global (25.44, 24.0) is NE of U2 body; C34 anchored NE of U2 body,
+    # just north of L1 footprint. Body-edge dist C34→U2 ≈ 1.6mm ✓.
+    "C34": (29.0, 21.5, 0.0),    # Cout HF 100nF, NE of U2 (north of L1)
+    "R47": (24.0, 27.5, 0.0),    # FB div top 562k, south of U2 (FB pin), ≤5mm trace
+    "R48": (24.0, 28.5, 0.0),    # FB div bot 180k, south of R47, FB→GND
 
     # FERRITE + IMU LDO EAST (along path to D)
     # C77 originally at X=58 collided with U13 pad 5 — moved west to
@@ -246,10 +273,12 @@ def main():
                 return
         print(f"  !! could not place {ref} near target ({x}, {y})")
 
-    # Place in priority order: U2, U6, U13 first (the heat-generating + critical)
-    for ref in ["U2", "U6", "U13", "Q2", "D1", "FB2",
-                "C32", "C33", "C77", "C78",
-                "C31", "C34", "C7", "C8", "C9",
+    # Place in priority order: U2 + L1 first (buck pair — tight loop), then
+    # U6/U13 (other heat sources), then caps + divider + eFuse passives.
+    for ref in ["U2", "L1", "U6", "U13", "Q2", "D1", "FB2",
+                "C32", "C33", "C34", "C77", "C78",
+                "C31", "C7", "C8", "C9",
+                "R47", "R48",
                 "R4", "R7", "R8", "R9", "R10", "R13", "R5"]:
         if ref in ANCHORS:
             tx, ty, rot = ANCHORS[ref]

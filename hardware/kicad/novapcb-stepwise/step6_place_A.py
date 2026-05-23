@@ -76,10 +76,17 @@ ANCHORS = {
     "C75": (69.0, 4.0, 0.0),       # U12 VCAP
     "C76": (69.0, 6.0, 0.0),       # U12 bypass
     "Q4":  (78.0, 9.5, 0.0),       # OR-FET N-channel SO-8 east — MOVED 10.0→9.5 (NORTH 0.5mm) for Q3 symmetry per master 2026-05-23 Option (E)
-    "R43": (76.0, 14.5, 0.0),      # V_sense2 divider — SOUTH of Q4
-    "R44": (80.0, 14.5, 0.0),      # I_sense2 filter — SOUTH of Q4
-    "C81": (74.0, 14.5, 0.0),      # V_sense2 filter cap
-    "C82": (82.0, 14.5, 0.0),      # I_sense2 filter cap
+    # SENSE-ROW MIRROR FIXES — master 2026-05-23 (pcb.ai R2 hard-fail close).
+    # Audit caught 5-9mm pair-deviation from X=52.5 axis. East-side moves
+    # only (west side already constrained by U6 north-pin column at
+    # X=27.25..28.75 — see R42/C62 relocation note). East cluster has no
+    # equivalent obstruction (no analogue to U6 at X≈80,Y=18); Q4/U12/D7/D8/J19
+    # all at Y≤9.5, sense row at Y=14.5 — bbox separation in Y ensures no
+    # collision regardless of X overlap. Mirror axis X=52.5 → east_x = 105-west_x.
+    "R43": (81.0, 14.5, 0.0),      # V_sense2 — mirror of R41@24.0 (was 76, +5mm E)
+    "R44": (85.0, 14.5, 0.0),      # I_sense2 — mirror of R42@20.0 (was 80, +5mm E)
+    "C81": (83.0, 14.5, 0.0),      # V_sense2 cap — mirror of C61@22.0 (was 74, +9mm E)
+    "C82": (87.0, 14.5, 0.0),      # I_sense2 cap — mirror of C62@18.0 (was 82, +5mm E)
 }
 
 
