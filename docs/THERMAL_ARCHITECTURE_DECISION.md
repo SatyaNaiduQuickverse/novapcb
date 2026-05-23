@@ -260,4 +260,42 @@ within-tolerance placeholders that match final intent).
 - [ ] DECISIONS.md §2 corrected with actual-placement-verified board size
 - [ ] INTEGRATION_LOG.md #M / #7 corrected (LOCK numbers were planned-position artifacts)
 
+## Artifact provenance — verification 2026-05-23
+
+Numbers in this doc cross-checked against on-disk Elmer results. Run this
+to reproduce:
+
+```
+cd hardware/kicad/novapcb-stepwise
+python3 -c "
+import os, gate12_thermal as g12, pcbnew
+brd = pcbnew.LoadBoard('novapcb-stepwise.kicad_pcb')
+srcs = g12.get_active_heat_sources(brd)
+for case, srcs_ in [('full_v11', srcs)]:
+    Tj_U1 = g12.sample_Tj(os.path.join(g12.CASE_DIR, case),
+                          next(s for s in srcs_ if s.name=='U1'))
+    print(case, Tj_U1)
+"
+```
+
+| Citation in doc | Result dir | MCU °C verified |
+|---|---|---|
+| Current baseline 82.5°C | `thermal/full_v11/` | 82.32°C (matches within mesh tolerance) |
+| Option A 74.1°C | `thermal/swp_A_115_LDO/` | 74.10°C ✓ |
+| Option B 63.7°C | `thermal/swp_B_105_BUCK/` | 63.72°C ✓ |
+| Option C 62.8°C | `thermal/swp_C_110_BUCK/` | 62.76°C ✓ |
+
+### Loose thread — legacy result dirs still on disk
+
+`thermal/full_v11_105x85/` contains MCU=73.89°C (the LOCK-cited number).
+This dir was generated with PLANNED component positions; the trustworthy
+105×85 baseline is `thermal/full_v11/` (82.32°C, actual positions).
+
+**Action needed** (post-Sai pick): either delete `full_v11_105x85/` (and
+the other `full_v11_*` sweep dirs that share the same planned-positions
+provenance) or rename them with a `_PLANNED_DO_NOT_CITE` suffix. The
+audit gate added in commit `eb51601` catches HARDCODED positions in sim
+SCRIPTS but does not flag stale RESULT dirs — that's a follow-up audit
+check (see DECISIONS.md §13 follow-up).
+
 — End of THERMAL_ARCHITECTURE_DECISION.md —
