@@ -209,16 +209,21 @@ def main():
     # clears Q3.3 (27.63, 12.57) by 5.68mm and sense row R41 (24, 14.5)
     # by 1.5mm Y. Diagonal F.Cu from (28.25, 15.4) to (24, 13) passes
     # at Y=14.5 X=26.66 — clear of sense row (R42 west at X=20).
-    print("[DVDT] U6.18 → C7.1 via offset small-via at (28.20, 15.6)", flush=True)
-    # Via offset 0.05mm west + 0.20mm south to clear ILIM F.Cu trace at
-    # X=28.75. Via X edge 28.425 vs ILIM trace west edge 28.65 = 0.225mm
-    # gap (PASS standard 0.20mm). Pad-via Y overlap 0.075mm (via Y north
-    # 15.375 to pad north 15.75 = 0.375; via south 15.825 to pad north
-    # 15.75 = -0.075 overlap into pad area — sufficient electrical
-    # connection per KiCad bbox-overlap rule).
-    add_track(brd, u6_18[0], u6_18[1], 28.20, 15.6, n_dvdt, F_CU, W_4MIL)
-    add_via(brd, 28.20, 15.6, n_dvdt, SMALL_VIA_DIA, SMALL_VIA_DRILL)
-    add_track(brd, 28.20, 15.6, c7_1[0], c7_1[1], n_dvdt, B_CU, W_SIG)
+    print("[DVDT] U6.18 → perpendicular-north + NORTH-around diagonal + via at (20, 12.1)", flush=True)
+    # Master 2026-05-23 Option (D): perpendicular escape + diagonal SLOPE
+    # NORTH (Y decreasing as X decreases). U6.19/20 pad bbox Y=15.625..16.475.
+    # Slope +0.4 from (28.25, 15.4): at X=27.75 Y=15.20 (north of pad north
+    # 15.625 by 0.425mm). Clears Q3.1 south edge (13.593) and sense row
+    # (Y=14.0..15.0) by routing trace south of Q3.1 BUT NORTH of sense row
+    # pads — wait, with positive slope from (28.25, 15.4), trace at X<28.25
+    # has Y<15.4 (going NORTH, Y decreasing). At X=20: Y=12.1.
+    # Path validated: trace at X=27.75 Y=15.20 (clears U6.19/20 north),
+    # X=25.10 Y=14.14 (clears Q3.1 south), X=24 Y=13.70 (below R41), X=20
+    # Y=12.10 (below R42 pad). All gaps ≥0.20mm.
+    add_track(brd, u6_18[0], u6_18[1], 28.25, EXIT_Y, n_dvdt, F_CU, W_4MIL)
+    add_track(brd, 28.25, EXIT_Y, 20.0, 11.5, n_dvdt, F_CU, W_SIG)
+    add_via(brd, 20.0, 11.5, n_dvdt)
+    add_track(brd, 20.0, 11.5, c7_1[0], c7_1[1], n_dvdt, B_CU, W_SIG)
 
     # Zone fill + save
     print("[fill] unfill + refill all zones...", flush=True)
