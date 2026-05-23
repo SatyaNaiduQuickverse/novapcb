@@ -48,7 +48,7 @@ PCB = os.path.join(HERE, "novapcb-stepwise.kicad_pcb")
 
 B_REFDES = [
     "U6", "U2", "U13", "Q2", "D1", "FB2",
-    "R7", "R8", "R9", "R10", "R13",
+    "R4", "R5", "R7", "R8", "R9", "R10", "R13",
     "C7", "C8", "C9", "C31", "C32", "C33", "C34",
     "C77", "C78",
 ]
@@ -104,11 +104,13 @@ ANCHORS = {
     "Q2":  (24.0, 22.0, 0.0),    # reverse-polarity FET (kept; small heat)
 
     # eFuse PROGRAMMING RESISTORS — small 0402, row at Y=22
-    "R7":  (35.0, 22.0, 0.0),
-    "R8":  (37.0, 22.0, 0.0),
-    "R9":  (39.0, 22.0, 0.0),
-    "R10": (41.0, 22.0, 0.0),
-    "R13": (43.0, 22.0, 0.0),
+    "R4":  (33.0, 22.0, 0.0),    # EFUSE_ILIM (42.2k to GND) — added 2026-05-23
+    "R7":  (35.0, 22.0, 0.0),    # EFUSE_EN UVLO upper (30.1k)
+    "R8":  (37.0, 22.0, 0.0),    # EFUSE_EN UVLO lower (10k)
+    "R9":  (39.0, 22.0, 0.0),    # EFUSE_OVP upper (51k)
+    "R10": (41.0, 22.0, 0.0),    # EFUSE_OVP lower (10k)
+    "R13": (43.0, 22.0, 0.0),    # EFUSE_FLT pullup (10k)
+    "R5":  (45.0, 22.0, 0.0),    # EFUSE_PGOOD pullup (10k) — added 2026-05-23
 
     # LDO — KEPT at (24, 25) sweet spot.
     #
@@ -243,7 +245,7 @@ def main():
     for ref in ["U2", "U6", "U13", "Q2", "D1", "FB2",
                 "C32", "C33", "C77", "C78",
                 "C31", "C34", "C7", "C8", "C9",
-                "R7", "R8", "R9", "R10", "R13"]:
+                "R4", "R7", "R8", "R9", "R10", "R13", "R5"]:
         if ref in ANCHORS:
             tx, ty, rot = ANCHORS[ref]
             try_place(ref, tx, ty, rot)
