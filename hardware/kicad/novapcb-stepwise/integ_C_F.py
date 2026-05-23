@@ -306,6 +306,14 @@ def main():
     print(f"  D+ bridge: 0.50mm vias at X={DV_X}, Y=29.25/30.25")
     print(f"  D- bridge: 0.50mm vias at X={DM_X}, Y=29.75/30.75 (1.0mm X-offset from D+)")
 
+    # Zone fill before save (defensive — master 2026-05-23 Rule 9 discipline)
+    try:
+        for z in brd.Zones():
+            if hasattr(z, 'UnFill'): z.UnFill()
+        pcbnew.ZONE_FILLER(brd).Fill(list(brd.Zones()))
+    except Exception as _e:
+        print(f"  zone fill skipped: {_e}")
+
     pcbnew.SaveBoard(PCB, brd)
     print(f"\n[done] segments written")
     return 0

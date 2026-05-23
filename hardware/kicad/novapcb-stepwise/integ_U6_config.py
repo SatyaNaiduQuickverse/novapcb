@@ -117,6 +117,14 @@ def main():
     # F.Cu R7.2↔R8.1 bridge (same net, both F.Cu pads)
     add_track(brd, 35.51, 24.0, 36.49, 24.0, n_en, w_mm=W_SIG)
 
+    # Zone fill before save (defensive — master 2026-05-23 Rule 9 discipline)
+    try:
+        for z in brd.Zones():
+            if hasattr(z, 'UnFill'): z.UnFill()
+        pcbnew.ZONE_FILLER(brd).Fill(list(brd.Zones()))
+    except Exception as _e:
+        print(f"  zone fill skipped: {_e}")
+
     pcbnew.SaveBoard(PCB, brd)
     print(f"  Saved {PCB}")
     return 0

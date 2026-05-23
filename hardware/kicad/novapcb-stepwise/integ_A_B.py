@@ -180,6 +180,14 @@ def main():
     add_track(brd, 77.37, 12.57, 76.10, 12.57, n_5v_b, w_mm=0.40)
     print(f"  J19 + 4 trunk segments + 2 Q4 bridges")
 
+    # Zone fill before save (defensive — master 2026-05-23 Rule 9 discipline)
+    try:
+        for z in brd.Zones():
+            if hasattr(z, 'UnFill'): z.UnFill()
+        pcbnew.ZONE_FILLER(brd).Fill(list(brd.Zones()))
+    except Exception as _e:
+        print(f"  zone fill skipped: {_e}")
+
     pcbnew.SaveBoard(PCB, brd)
     print(f"\n  Saved {PCB}")
     print(f"\n  DEFERRED (next sub-step): U11/U12 SOT-23-6 fanout + 8 sense traces")

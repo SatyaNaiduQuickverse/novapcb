@@ -250,6 +250,14 @@ def main():
         add_track(brd, u13_p3[0], Y3, 60.0, Y3, n_3v3_imu_pre, w_mm=0.20)
         print(f"  +3V3_IMU_PRE U13.3 stub W to (60.0, 25.05) — joins C77→U13.1 route")
 
+    # Zone fill before save (defensive — master 2026-05-23 Rule 9 discipline)
+    try:
+        for z in brd.Zones():
+            if hasattr(z, 'UnFill'): z.UnFill()
+        pcbnew.ZONE_FILLER(brd).Fill(list(brd.Zones()))
+    except Exception as _e:
+        print(f"  zone fill skipped: {_e}")
+
     pcbnew.SaveBoard(PCB, brd)
     print(f"\n  Saved {PCB}")
     return 0

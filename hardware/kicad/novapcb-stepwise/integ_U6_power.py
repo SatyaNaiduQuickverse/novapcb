@@ -251,6 +251,14 @@ def main():
     # for bring-up. Production board should connect C7.
     print(f"  EFUSE_DVDT: DEFERRED (C7/R41 X-overlap forces B.Cu but conflicts +5V trace)")
 
+    # Zone fill before save (defensive — master 2026-05-23 Rule 9 discipline)
+    try:
+        for z in brd.Zones():
+            if hasattr(z, 'UnFill'): z.UnFill()
+        pcbnew.ZONE_FILLER(brd).Fill(list(brd.Zones()))
+    except Exception as _e:
+        print(f"  zone fill skipped: {_e}")
+
     pcbnew.SaveBoard(PCB, brd)
     print(f"\n  Saved {PCB}")
     print(f"\n  Deferred: EFUSE_EN/OVP/ILIM/PGOOD/FLT routing + R5/R12 parked-cap routing")

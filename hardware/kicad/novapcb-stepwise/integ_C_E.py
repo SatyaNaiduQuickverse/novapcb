@@ -207,6 +207,14 @@ def main():
 
         print(f"  routed via {r_pad[0]}, total {net_name} length so far ≈ {total_length_mm:.2f} mm", flush=True)
 
+    # Zone fill before save (defensive — master 2026-05-23 Rule 9 discipline)
+    try:
+        for z in brd.Zones():
+            if hasattr(z, 'UnFill'): z.UnFill()
+        pcbnew.ZONE_FILLER(brd).Fill(list(brd.Zones()))
+    except Exception as _e:
+        print(f"  zone fill skipped: {_e}")
+
     pcbnew.SaveBoard(PCB, brd)
     print(f"\n[done] {total_segments} segments, {total_length_mm:.2f} mm total", flush=True)
     return 0
