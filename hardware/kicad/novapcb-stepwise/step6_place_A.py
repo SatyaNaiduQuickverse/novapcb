@@ -57,7 +57,7 @@ ANCHORS = {
     "U11": (33.0, 5.0, 0.0),       # LM74700-Q1 OR-FET ctrl west (SOT-23-6) — kept rot=0 (rot=90 trial had B.Cu crossings; via-on-pad-center fits cleanly per A↔B-2)
     "C73": (36.0, 4.0, 0.0),       # U11 VCAP, NE of U11
     "C74": (36.0, 6.0, 0.0),       # U11 bypass
-    "Q3":  (27.0, 10.0, 0.0),      # OR-FET N-channel SO-8 west (pads Y=7.43,12.57)
+    "Q3":  (27.0, 9.5, 0.0),       # OR-FET N-channel SO-8 west — MOVED 10.0→9.5 (NORTH 0.5mm) per master 2026-05-23 Option (E) to clear corridor between Q3.1 south edge and sense row for DVDT routing. Symmetry with Q4 preserved.
     # R42 + C62 RELOCATED WEST (master 2026-05-23 selective B re-place).
     # Original positions (28, 14.5) and (30, 14.5) sat DIRECTLY ABOVE U6
     # north pin column (X=27.25..28.75) blocking 3 of 4 EFUSE protection
@@ -75,7 +75,7 @@ ANCHORS = {
     "U12": (72.0, 5.0, 0.0),       # LM74700-Q1 OR-FET ctrl east (mirror of U11)
     "C75": (69.0, 4.0, 0.0),       # U12 VCAP
     "C76": (69.0, 6.0, 0.0),       # U12 bypass
-    "Q4":  (78.0, 10.0, 0.0),      # OR-FET N-channel SO-8 east (51mm from Q3)
+    "Q4":  (78.0, 9.5, 0.0),       # OR-FET N-channel SO-8 east — MOVED 10.0→9.5 (NORTH 0.5mm) for Q3 symmetry per master 2026-05-23 Option (E)
     "R43": (76.0, 14.5, 0.0),      # V_sense2 divider — SOUTH of Q4
     "R44": (80.0, 14.5, 0.0),      # I_sense2 filter — SOUTH of Q4
     "C81": (74.0, 14.5, 0.0),      # V_sense2 filter cap
