@@ -540,11 +540,26 @@ def check_fanout_exit_corridor(items):
                 for opad in od["fp"].Pads():
                     opp = opad.GetPosition()
                     obb = opad.GetBoundingBox()
+                    onet = opad.GetNetname()
                     ox1 = pcbnew.ToMM(obb.GetLeft())
                     oy1 = pcbnew.ToMM(obb.GetTop())
                     ox2 = pcbnew.ToMM(obb.GetRight())
                     oy2 = pcbnew.ToMM(obb.GetBottom())
                     if ox1 < corridor_x2 and ox2 > corridor_x1 and oy1 < corridor_y2 and oy2 > corridor_y1:
+                        # Exclude same-net intentional adjacencies:
+                        #   - decoupling cap on Vdd-pin column
+                        #   - HSE/LSE loading cap on crystal pin
+                        #   - any cap on same net (it's THE decap)
+                        if onet == net:
+                            continue
+                        # Exclude pads of small (passive) component on same net
+                        # path — if the other component shares ANY net with the
+                        # IC, may be a working pair.
+                        ic_nets = set(d["nets"].values())
+                        other_nets = set(od["nets"].values())
+                        # If shared nets > 0, likely intentional adjacency.
+                        if ic_nets & other_nets:
+                            continue
                         blocked.append((ref, pad.GetPadName(), net, oref, opad.GetPadName()))
                         break
                 else:
