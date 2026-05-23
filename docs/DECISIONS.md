@@ -110,15 +110,75 @@ JST-GH (Pixhawk standard) vs JST-SH 1.0 vs solder pads. JST-GH is bulky but matc
 
 ## 8. PCB stack-up
 
-**SUPERSEDED 2026-05-20 (Sai pivot)**: 4-layer was right for the tight 36×36 board; the new rectangular roomier outline reopens the 4 vs 6 question. Phase 0.6 pivot Step 3 (placement) assesses which is appropriate given:
-- The reliability mandate ("won't fail") favors 6-layer if it materially reduces SI/EMI failure modes.
-- Phase 6k EMC analytical found 4 harmonics above -40 dB in GPS L1 / ELRS bands — a 6-layer with a second clean GND or split power plane can reduce those.
-- 6-layer ~25-40% more expensive at JLCPCB but trivial against the resilience priority.
+**LOCKED 2026-05-23** (master directive: explicit per-layer SI rationale).
 
-**Recommendation pending Step-3 analysis**: lean 6-layer if it provides quantifiable EMI/SI improvement; stay 4-layer if 6 only adds cost without measurable failure-mode reduction.
+### v1.1 final 6-layer stackup (JLC06161H-7628, 1.6mm total)
 
-**Original v1 record:**
-- *Resolved 2026-05-18*: 4-layer for v1 — clean ground plane under the IMU is the load-bearing requirement; 6-layer is reserved for a v2 spin only if on-board RF lands.
+| Layer | Name | Assignment | Adjacent reference for signals | Spacing to next |
+|-------|------|------------|-------------------------------|-----------------|
+| L1 | F.Cu | Components + high-speed signals (USB diff pair, I2C2, SPI bus, F.Cu power stubs) | refs L2 In1 GND ✓ | 0.21 mm prepreg |
+| L2 | In1.Cu | **GND plane** (primary) | n/a (plane) | 0.20 mm core |
+| L3 | In2.Cu | **+5V_BEC plane** (NEW for A↔B routing) | n/a (plane) | 0.20 mm core |
+| L4 | In3.Cu | **+3V3 plane** (MOVED from In4 — for B.Cu reference SI) | n/a (plane) | 0.20 mm core |
+| L5 | In4.Cu | **GND plane** (secondary) | n/a (plane) | 0.21 mm prepreg |
+| L6 | B.Cu | Signals (B.Cu USB sliver, I2C2 sliver, B.Cu component pads, future SDMMC1) | refs L5 In4 GND ✓ | n/a (bottom) |
+
+### Per-signal-layer SI verification
+
+**F.Cu signals (L1) — adjacent reference: L2 In1 GND (0.21 mm prepreg):**
+- USB 2.0 diff pair (USB_DM/DP, USBC_D_M_PRE/D_P_PRE) — high-speed (12 Mbps, harmonics to ~36 MHz); Z_diff 87 Ω computed assuming F.Cu→GND microstrip (`CONTROLLED_IMPEDANCE.md`). GND adjacent ✓.
+- I²C2 SDA/SCL (100-400 kHz) — slow; reference doesn't matter materially.
+- SPI bus to IMUs (8 MHz) — moderate-speed; GND reference improves return-path integrity ✓.
+- DShot ESC PWM (300/600 kHz, fast edges) — needs GND for clean returns ✓.
+- USART CRSF (420 kbaud) — slow.
+- F.Cu power stubs (+3V3 from MCU VDD to via, +3V3_IMU_PRE inter-cap) — power, not SI-critical.
+
+**B.Cu signals (L6) — adjacent reference: L5 In4 GND (0.21 mm prepreg):**
+- Short USB diff pair fan from U5 ESD to MCU side (1-2mm B.Cu segments) — high-speed but length too short for impedance discontinuity to matter materially. GND adjacent ✓.
+- I²C2 SDA/SCL slivers (3-mm) — slow; doesn't matter materially.
+- Future SDMMC1 (50 MHz writes) on B.Cu if routed — high-speed; needs GND ref ✓.
+- B.Cu component pads (U4 baro, C51/C52, J1 USB shield) — small SMD; not SI-critical individually.
+
+**Why move +3V3 from In4 to In3** (vs the original PR #72 placement):
+Original placement gave In4 = +3V3. With +3V3 on In4, B.Cu signals reference +3V3 (not GND). For the 1-2mm USB B.Cu slivers, this is "good enough" but not principled. Moving +3V3 to In3 and placing GND on In4 gives B.Cu a clean GND reference — better for future high-speed signals (SDMMC1) and removes the SI compromise.
+
+Cost of move: trivial — re-run `integ_C_B.py` with `IN3_CU` instead of `IN4_CU`. The thermal analysis is layer-independent.
+
+### Power-plane decoupling
+
+- **L3 (+5V_BEC)** ← L2 GND adjacent above ✓ + L4 +3V3 below (different rail).
+  - L2 GND provides primary return reference for +5V_BEC.
+  - +5V_BEC has bulk decoupling caps C7, C8 (at U6 eFuse), C73-76 (at U11/U12 ctrl), C61, C62, C81, C82 (sense filters) — all placed on F.Cu with vias dropping to L3.
+- **L4 (+3V3)** ← L5 GND adjacent below ✓ + L3 +5V_BEC above (different rail, derived via U2 LDO so not DC-isolated; inter-plane coupling acceptable).
+  - L5 GND provides primary return reference for +3V3.
+  - +3V3 has MCU decoupling halo (C11-C26), sensor decap (C41-96, C51-52, C71-72), U2 output caps (C31-34) — all placed on F.Cu with vias to L4.
+
+### Inter-plane considerations
+
+L3 (+5V_BEC) and L4 (+3V3) are adjacent power planes, separated by 0.20 mm core. This creates ~2 nF/cm² inter-plane capacitance — acts as a free decoupling cap between rails. Since +3V3 is derived from +5V_BEC via U2 LDO (not DC-isolated), this coupling is fine and beneficial (extra HF decoupling between rails).
+
+If the two rails NEEDED DC isolation (e.g., for galvanic-isolated subsystems), this stackup would be wrong. They don't — single power source through linear regulators — so OK.
+
+### EMC notes
+
+- Two GND planes (L2 + L5) provide stronger GND continuity, reducing common-mode currents on the IMU island and lowering radiated EMI.
+- All return-current loops are vertical-confined (L1↔L2, L6↔L5) — minimal loop area, low radiated emissions.
+- Phase 6k EMC harmonics in GPS L1 / ELRS bands benefit from this dual-GND geometry vs a single-GND 4-layer or a 6-layer with only 1 GND.
+
+### Justification vs alternatives
+
+| Alternative | Issue |
+|-------------|-------|
+| 1 GND + 2 power (e.g. In1=GND, In3=+5V, In4=+3V3) | B.Cu signals reference power; high-speed SI compromise |
+| GND-power-GND-power-GND-sig | Wastes 3 GND planes; reduces decoupling between power rails |
+| 4-layer (rejected) | Insufficient for 51mm Q3↔Q4 P5V_BEC plane + USB diff Z control + IMU GND quality |
+| Just route P5V_BEC as F.Cu trunk | Possible but adds top-side congestion in C zone; planes are cleaner for ≥3 A peak |
+
+### Original v1 record (kept for traceability)
+
+- *Resolved 2026-05-18*: 4-layer for v1 (the original 36×36 board) — superseded by 2026-05-20 pivot (90×70 then 105×85 rectangle).
+- *Interim 2026-05-20*: "6-layer for v1.1" decision without per-layer assignment.
+- **2026-05-23** (this entry): per-layer assignment locked with SI rationale.
 
 ## 9. USB VID/PID for the FC
 

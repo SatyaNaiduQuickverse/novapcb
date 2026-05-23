@@ -6,8 +6,8 @@ and not impedance-critical — no controlled-Z. Just clean routing."
 
 Strategy (revised after F.Cu trace+zone shorts on MCU pin rows + GND
 overlaps):
-  - +3V3 main rail: INNER LAYER PLANE on In4.Cu
-  - Vias from F.Cu +3V3 pads → In4.Cu plane (via at pad center where
+  - +3V3 main rail: INNER LAYER PLANE on In3.Cu
+  - Vias from F.Cu +3V3 pads → In3.Cu plane (via at pad center where
     pad size permits; for narrow MCU LQFP pin pads, short F.Cu stub
     to adjacent decap cap, then via at the cap)
   - +5V_BEC: short F.Cu trace Q2 → U2.1 (B-internal, no conflict)
@@ -25,14 +25,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PCB = os.path.join(HERE, "novapcb-stepwise.kicad_pcb")
 F_CU = pcbnew.F_Cu
 B_CU = pcbnew.B_Cu
-IN4_CU = pcbnew.In4_Cu
+IN3_CU = pcbnew.In3_Cu   # +3V3 plane layer (moved from In4 per DECISIONS §8 v1.1 SI-stackup lock 2026-05-23 — B.Cu signals now reference In4 GND not +3V3)
 
 W_PWR = 0.50    # power trace width (mm)
 VIA_DIA = 0.50
 VIA_DRILL = 0.30
 PAD_WIDE_THRESHOLD = 0.45   # pad needs ≥0.45mm in BOTH X and Y for via-at-center
 
-# +3V3 plane on In4.Cu — covers the central placement area, avoiding
+# +3V3 plane on In3.Cu — covers the central placement area, avoiding
 # the parked-component region (X >= 100) and the long-edge mounting
 # hole keep-outs at (3, 42.5) / (102, 42.5).
 PLUS3V3_PLANE_OUTLINE = [
@@ -117,17 +117,17 @@ def main():
     # MUTATE PHASE
     print(f"\n--- MUTATE: +3V3 plane + vias + B-internal traces ---", flush=True)
 
-    # 1. +3V3 plane on In4.Cu — inline zone (function-call indirection
+    # 1. +3V3 plane on In3.Cu — inline zone (function-call indirection
     # causes SIGSEGV on this pcbnew build)
     z = pcbnew.ZONE(brd)
-    z.SetLayer(IN4_CU)
+    z.SetLayer(IN3_CU)   # +3V3 plane: was IN4_CU in PR #72; moved per SI stackup lock 2026-05-23
     z.SetNet(n_3v3)
     o = pcbnew.SHAPE_POLY_SET(); o.NewOutline()
     for x, y in PLUS3V3_PLANE_OUTLINE:
         o.Append(_mm(x), _mm(y))
     z.SetOutline(o)
     brd.Add(z)
-    print(f"  +3V3 plane on In4.Cu: outline {PLUS3V3_PLANE_OUTLINE}")
+    print(f"  +3V3 plane on In3.Cu: outline {PLUS3V3_PLANE_OUTLINE}")
 
     # 2. Vias at WIDE pad centers. SKIP R11 — neighborhood is congested
     # (existing I2C2_SDA via at (52.0, 47.3)) and any via I add stays
@@ -144,7 +144,7 @@ def main():
     print(f"  vias at wide-pad centers: {via_count_pad}")
 
     # 3. NARROW MCU VDD stubs to OWN-DEDICATED VIAS placed in clear space.
-    # Plane In4.Cu connects all +3V3 — via locations only need to be
+    # Plane In3.Cu connects all +3V3 — via locations only need to be
     # NEAR each MCU pin, in clear space (not in pin row, not over Y1,
     # not crossing I2C2). 0.20mm trace fits between adjacent pads.
     #
@@ -183,7 +183,7 @@ def main():
             print(f"    F.Cu stub U1.{pn} W={W_STUB} → {stub_routes[pn]}")
     for vx, vy in extra_vias:
         add_via(brd, vx, vy, n_3v3)
-        print(f"    extra via at ({vx}, {vy}) → In4.Cu plane")
+        print(f"    extra via at ({vx}, {vy}) → In3.Cu plane")
     print(f"  narrow-pad stubs: {stub_count} routed, 2 deferred (U1.27/U1.50)")
 
     # 4. +5V_BEC routing — DEFERRED.
