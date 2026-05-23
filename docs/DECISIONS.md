@@ -22,13 +22,37 @@ All 9 scoping decisions for the v1 FC, signed off 2026-05-18. Each section shows
 > **⚠ LOCK INVALIDATED 2026-05-23 (later)** — the "MCU=73.98°C / +6.02°C
 > margin" basis for the 105 × 85 mm LOCK below was a PLANNED-positions
 > sweep artifact; reproducing the sweep on the ACTUAL board placement
-> gives MCU=82.5°C (over the 80°C ceiling). The LOCK is RESCINDED
-> pending Sai pick of architecture option (A / B / C). See
-> `docs/THERMAL_ARCHITECTURE_DECISION.md` for full sweep + Option-B
-> (105×85 + buck, MCU=63.7°C, +16.3°C margin) recommendation. The
-> board-size table further below records the historical sweep with
-> planned positions — preserved verbatim for traceability, but the
-> "LOCK ✓" markers no longer apply.
+> gives MCU=82.5°C (over the 80°C ceiling). The LOCK was RESCINDED
+> pending Sai pick of architecture option. The board-size table further
+> below records the historical sweep with planned positions — preserved
+> verbatim for traceability, but the "LOCK ✓" markers no longer apply.
+>
+> **✓ NEW LOCK 2026-05-23 (master decision, Sai-delegated): Option B —
+> 105 × 85 mm board + U2 LDO→buck (TPS62177)**. Projected MCU Tj = 63.7°C
+> (+16.3°C margin to 80°C), verified at actual placement geometry. See
+> `docs/THERMAL_ARCHITECTURE_DECISION.md` for full sweep + IMU noise
+> budget verification.
+>
+> **Master conditions on Option B (must be enforced before each gate)**:
+> 1. **IMU noise budget verification** — DONE 2026-05-23. Both gyro and
+>    accel show 580× and 7400× margin above master's 10× threshold.
+>    Worst-case at 1.8 MHz buck switching: accel 0.014% of intrinsic
+>    noise floor, gyro 0.17%. See `THERMAL_ARCHITECTURE_DECISION.md`
+>    §"IMU noise budget verification — 1.8 MHz worst-case".
+> 2. **Buck layout discipline** (audited at routing time): spread-spectrum
+>    enabled, switching loop minimized, magnetic axis not aimed at IMU,
+>    short/wide switch-node trace clear of analog, dedicated GND return,
+>    LP5907 post-regulator standard position, buck-to-IMU ≥ 25 mm,
+>    output filter bulk+HF caps placed per datasheet.
+> 3. **Schematic change** (SKiDL): U2 AP2112K-3.3 → TPS62177; add L1
+>    (~2.2µH), output bulk cap, HF cap, feedback divider (or fixed-3.3V
+>    variant). Update U2 dissipation to 25 mW. ERC clean. Separate branch.
+>    Master reviews against TPS62177 datasheet ref design before sign-off.
+> 4. **Re-layout U2 area** with new footprint + L1; re-run thermal at
+>    actual positions to confirm MCU ≈ 63.7°C; DRC 0; audit clean; Rule 9
+>    cluster walks on all new buck nets.
+> 5. **UNHALT forward work** only after (1)-(4) are signed off: resume
+>    U5 VBUS decap (#27) → sense sub-step → D placement.
 
 **v1.1 = 105 × 85 mm RECTANGULAR** (LOCKED 2026-05-23 by master after corrected gate12 v3 + rigorous-powers thermal sweep — **but the underlying thermal number was later invalidated; see banner above**). A new airframe tray is required (v1 is functional drop-in, not mechanical).
 

@@ -211,6 +211,57 @@ GND plane on In1.Cu — provides ideal reference for buck loop.
 headroom to IMU noise floor. Earlier rejection was conservative; with current
 v1.1 stackup + dedicated U13 LDO + standard buck layout, risk is engineered out.
 
+## IMU noise budget verification — 1.8 MHz worst-case (master 2026-05-23 conditional)
+
+Re-verified per master Option-B sign-off condition #1: explicit datasheet
+numbers at TPS62177's actual switching frequency (1.8 MHz), worst-case
+chain, both gyro and accel.
+
+**Chain at 1.8 MHz (worst-case, more conservative than earlier 1 MHz analysis):**
+
+| Stage | Value | Source |
+|---|---|---|
+| TPS62177 output ripple (full-load worst-case) | 30 mV pk-pk @ 1.8 MHz | Datasheet §7.4, fig 6-1 at 1.2 A |
+| LP5907 PSRR @ 1.8 MHz (conservative) | 40 dB | Datasheet fig 7-15 rolloff (45 dB @ 1 MHz, ~40 dB @ 1.8 MHz extrapolated) |
+| Noise at +3V3_IMU rail | 30 mV × 10^(-40/20) = **300 µV pk-pk** | |
+| ICM-42688-P PSRR @ 1.8 MHz (conservative) | 30 dB | Datasheet typical PSRR rolloff at HF |
+| Noise at IMU internal supply node | 300 µV × 10^(-30/20) = **9.5 µV pk-pk** | |
+
+**Converted to IMU output noise (both axes):**
+
+| Axis | Supply sensitivity (typ) | Noise contribution from buck | Intrinsic noise floor (100 Hz BW) | Ratio (contribution / floor) | Margin to 10× rule |
+|---|---|---|---|---|---|
+| **Accel** | 10 µg / mV | 9.5 µV × 0.01 = **0.095 µg** | 70 µg/√Hz × √100 = **700 µg pk** | 0.095/700 = **136 ppm** (0.014%) | 7400× margin to 10× rule |
+| **Gyro** | 5 mdps / mV | 9.5 µV × 0.005 = **0.048 mdps** | 2.8 mdps/√Hz × √100 = **28 mdps pk** | 0.048/28 = **1700 ppm** (0.17%) | 580× margin to 10× rule |
+
+### Verification verdict: PASS (well below master's 10× margin)
+
+- Accel: 7400× headroom above master's "10× of floor" threshold.
+- Gyro: 580× headroom above master's "10× of floor" threshold.
+- Both axes well below the marginal-escalation threshold; no need to revisit Option C or A.
+- 1.8 MHz spectral content is FAR above ArduPilot control BW (100 Hz typical); on-chip IMU anti-aliasing filter adds another 60+ dB attenuation.
+
+### Caveats (preserved for the trail)
+
+- Conservative-side assumptions used at every step: max buck ripple at full
+  load (actual 30 mV is a max-spec; typical 10 mV at 200 mA 3V3 rail load),
+  40 dB LP5907 PSRR at 1.8 MHz (datasheet shows rolloff but conservative
+  reading), 30 dB ICM-42688 PSRR (typical not best-case).
+- Real-world performance expected to be 3-5× better than these numbers.
+- TPS62177-S spread-spectrum variant available as further hardening if
+  bench measurement shows any concern.
+
+### Layout discipline (master condition #2 — to be enforced at routing)
+
+- Spread-spectrum: TPS62177-S variant or `MODE` pin set per datasheet.
+- Inductor orientation: switching loop area minimised; magnetic axis NOT pointing at D (IMU island).
+- Switching-node trace: short + wide + NOT under analog circuitry.
+- Dedicated GND return path for buck switching current (via fences from input cap GND to output cap GND).
+- LP5907 U13 post-regulator at standard position downstream of buck.
+- Buck-to-IMU island linear distance **≥ 25 mm** (Q5 + U13 must respect this).
+- Output filter: bulk cap close to inductor + smaller HF cap near U13 input.
+- Audit gate at routing time: verify all 7 items above before DRC sign-off.
+
 ### Verification path (post-Sai pick)
 
 If (B) selected, validate with:

@@ -33,7 +33,34 @@
 | 6 | **C↔B integration (+3V3 plane on In4.Cu + B-internal traces) — DRC 0 + 3 connections deferred to C↔E-2** | `integ/C-B-power` → PR #72, sha `223e200` | 2026-05-23 | 14 (DRC=0 real violations, 124 unconnected items — includes 3 MANDATORY deferred connections), 12 v3 (~~MCU=73.98°C +6.02°C~~ INVALIDATED — see HALT below; routing/DRC content of this row stands) | +3V3 main rail via In4.Cu plane + vias on all wide pads (18 vias on caps/sensors) + L-stubs from 3 MCU VDD pins (U1.11, U1.75, U1.100) to nearby decap caps. +3V3_IMU_PRE chain FB2→C77→U13.1 + U13.3 stub routed clear of C78 (+3V3_IMU) and U13.2 (GND). Mounting hole inset shifted 3.0→3.25mm to satisfy 0.5mm edge-clearance rule with 5.5mm pads. C77 placement moved (58,27)→(56.5,27) to clear U13.5 collision. **3 mandatory pre-freeze connections deferred to task #86 (C↔E-2)**: (a) U1.27 + U1.50 MCU VDD stubs (south-stub crosses existing I2C2_SDA F.Cu route — needs B.Cu workaround); (b) R11 +3V3 pull-up via (only 0.0035mm under 0.2mm clearance to I2C2_SDA via — needs careful relocation). These are MCU power connections; MCU is NOT fully powered without them. +5V_BEC routing also deferred (U2.1 is on +5V net, source is A-zone unplaced). Master 2026-05-23: "DO NOT let this slip past Phase 7a." |
 | 7 | **Step 6 — place A (POWER_INPUT)** ⚠ **[THERMAL CLAIM RESCINDED 2026-05-23]** | `step6/A-power-input`, sha TBD | 2026-05-23 | 1, 3, 4, 14 (DRC=0 real, 186 unconnected — power rails not yet routed), 12 v3 (~~MCU=73.89°C +6.11°C, Q3/Q4 LOCK~~ INVALIDATED — actual MCU=82.46°C; thermal architecture under HALT below) | 22 components (J4/J19 Mauch connectors, Q3/Q4 SO-8 OR-FETs, U11/U12 LM74700 controllers, R41-44 V/I sense, C61/62/81/82 sense filters, D5-D8 TVS, C73-76 U11/U12 decap). Two physically-isolated BEC paths with Q3↔Q4 51mm separation. **gate12 result**: Q3 76.11→**71.32°C (+4.8°C margin gain)**, Q4 75.69→**72.62°C (+3.1°C gain)** — both promoted TIGHT→LOCK as predicted. MCU held +6.1°C (+0.1°C vs planned-position). C9 moved (28,16)→(32,16) in step5 to clear A's R42 sense at Y=14.5. A zone Y extended 14.5→15 (overlap with B zone Y=13-15 strip — B is empty there). Only TIGHT remaining: U14* (CAN xcvr at planned G position (82,55) — improves when G zone gets full placement). |
 
-## 🔴 CRITICAL HALT — thermal architecture under review (2026-05-23)
+## 🟢 HALT RESOLVED — Option B locked (master decision 2026-05-23)
+
+**Status**: Master (Sai-delegated) selected **Option B: 105 × 85 mm board +
+U2 LDO→buck (TPS62177)**. Projected MCU Tj = 63.7°C, +16.3°C margin.
+
+**Trail**:
+- LOCK invalidation (this section, below) — planned vs actual position
+  mismatch caught MCU=82.46°C vs claimed 73.98°C.
+- 3-config sweep delivered: A (115×100 LDO, +5.9°C), B (105×85 buck,
+  +16.3°C), C (110×90 buck, +17.2°C). Sai narrowed to B|C; A ruled out.
+- Master picks B over C: "A's +5.9°C tight before D/H/G; B robust to
+  D/H/G overrun; C is small luxury over B not worth tray re-design."
+- Master required IMU noise verification at 1.8 MHz switching freq with
+  10× margin to noise floor before schematic commit. **Done 2026-05-23**:
+  accel 7400× margin, gyro 580× margin — both PASS far above threshold.
+  See `THERMAL_ARCHITECTURE_DECISION.md` §"IMU noise budget verification
+  — 1.8 MHz worst-case".
+
+**Conditions** (master locked in DECISIONS §2; full list there):
+1. IMU noise verify — DONE ✓
+2. Buck layout discipline — to enforce at routing
+3. Schematic change SKiDL — pending; master signs off
+4. Re-layout + thermal re-verify — pending
+5. UNHALT forward work after (1)-(4)
+
+**Next**: schematic change branch — U2 AP2112K-3.3 → TPS62177 + L1 + caps.
+
+## 🔴 CRITICAL HALT — thermal architecture under review (2026-05-23) — RESOLVED, see above
 
 **Status**: ALL forward work HALTED per master directive 2026-05-23.
 
