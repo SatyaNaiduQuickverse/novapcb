@@ -37,25 +37,61 @@ Summing the on-board 3.3V consumers at worst-case operating conditions:
 | ESC outputs (Phase 3f) | 0 mA from 3.3V (DShot driven from MCU IO pin, not a separate 3.3V load) | — |
 | **Total worst-case** | **~300–400 mA** | |
 
-## LDO selection (per 3b.2)
+## Regulator selection — REVISION 2026-05-23: Option B (LDO → buck)
 
-**AP2112K-3.3** (Diodes Inc) — 600 mA fixed-3.3V CMOS LDO in SOT-25 package.
+**Currently shipped: TPS62177 buck (TI)** — replaces the original AP2112K-3.3 LDO
+per master decision 2026-05-23 (sha 8236996). Drives MCU Tj from 82.5°C (LDO
+overheat at 105×85) down to 63.7°C (+16.3°C margin). See
+`docs/THERMAL_ARCHITECTURE_DECISION.md` for the full sweep + IMU noise budget
+verification.
+
+**TPS62177DQC** (Texas Instruments) — 28 V input, 0.5 A continuous, fixed-3.3 V
+output via external feedback divider, DCS-Control topology, 1.8 MHz switching.
+
+  - 0.5 A rated continuous → ~25% margin over worst-case 300–400 mA load.
+  - 4.75–28 V input range → covers full 5 V BEC range with comfortable margin.
+  - ~85% efficiency at our load → ~25 mW dissipation vs LDO's 642 mW (-617 mW).
+  - Internal compensation; no external components beyond Cin/Cout/Lout/divider.
+  - DCS-Control gives fast transient + low output ripple without external
+    compensation network.
+  - WSON-10 3 × 3 mm package with thermal pad — small footprint.
+
+KiCad symbol: `Regulator_Switching:TPS62177DQC` (verified exact match).
+KiCad footprint: `Package_DFN_QFN:DFN-10-1EP_3x3mm_P0.5mm_EP1.58x2.35mm`
+(close IPC-7351 match to TI's VSON-10 3 × 3 mm EP-1.45 × 2.36 mm; flag at
+Phase 6m DFM if exact land pattern needed).
+
+External components per TI SLVSC73 datasheet typical-application figure:
+  - L1: 2.2 µH inductor, I_sat ≥ 1.5 A (Coilcraft XAL4020-222 candidate).
+  - Cin: 10 µF X7R/X5R + 100 nF HF cap close to VIN.
+  - Cout: 22 µF X5R/X7R close to VOUT.
+  - Feedback divider: R_top / R_bot = (Vout/Vfb) − 1 = 3.3/0.8 − 1 = 3.125;
+    R_top = 562 kΩ, R_bot = 180 kΩ → Vout = 0.8 × (1 + 562/180) = 3.297 V
+    ≈ 3.3 V.
+  - VOS pin tied to VOUT for output sense.
+  - EN tied to VIN for always-on; SLEEP tied HIGH (to VIN) for normal mode.
+  - PG (power-good) left open; PAD to GND.
+
+IMU noise budget verified at 1.8 MHz switching — accel 7400× headroom, gyro
+580× headroom above intrinsic noise floor (both 2–4 orders of magnitude below).
+See `docs/THERMAL_ARCHITECTURE_DECISION.md` §"IMU noise budget verification —
+1.8 MHz worst-case".
+
+Layout discipline (enforced at routing): spread-spectrum mode, inductor magnetic
+axis not aimed at IMU island, switching loop minimized, dedicated buck GND
+return, ≥ 25 mm buck-to-IMU separation.
+
+### Historical record (preserved for traceability) — original AP2112K decision
+
+**AP2112K-3.3** (Diodes Inc) — 600 mA fixed-3.3 V CMOS LDO in SOT-25 package.
+Originally selected for low-noise IMU rail concern, but LDO efficiency drove
+MCU Tj over the 80 °C ceiling at 105 × 85 mm. Replaced by TPS62177 per Option B.
 
   - 600 mA rated continuous → ~50% margin over worst-case 300-400 mA load.
-  - Low dropout: 250 mV @ 600 mA → operates correctly down to Vin ≈ 3.55 V
-    (well within the 5 V BEC range, including BEC sag).
+  - Low dropout: 250 mV @ 600 mA → operates correctly down to Vin ≈ 3.55 V.
   - ±1.5% output accuracy.
   - Built-in over-current protection + thermal shutdown.
-  - Jellybean part (in production at Diodes Inc; in distribution at DigiKey,
-    LCSC, JLCPCB; common on Matek + Pixhawk-class mini-FCs).
-
-KiCad symbol: `Regulator_Linear:AP2112K-3.3` (verified exact match).
-KiCad footprint: `Package_TO_SOT_SMD:SOT-23-5` (per symbol's default hint).
-
-NOTE for Phase 3.5 reference audit: MatekH743's actual regulator part is
-NOT confirmed from local sources. AP2112K-3.3 is a datasheet-grounded pick
-that meets the load+margin requirement; Phase 3.5 should verify against
-the MatekH743 schematic if available + flag any divergence.
+  - Jellybean part (Diodes Inc, DigiKey/LCSC/JLCPCB, common on Matek + Pixhawk-class mini-FCs).
 
 ## Input protection (per 3b.4)
 
@@ -281,52 +317,93 @@ r_flt_pu = Part("Device", "R", value="10k", footprint=FP_R_0402); r_flt_pu.ref =
 EFUSE_FLT += r_flt_pu[1]; P5V += r_flt_pu[2]
 
 
-# ---- LDO: AP2112K-3.3 (5V in → 3.3V out, 600mA) ----
-ldo = Part(
-    "Regulator_Linear", "AP2112K-3.3",
-    footprint="Package_TO_SOT_SMD:SOT-23-5",
-    value="AP2112K-3.3",
+# ---- Buck regulator: TPS62177DQC (5V in → 3.3V out, 500mA) ----
+# Replaces AP2112K-3.3 LDO per Option B (master 2026-05-23, sha 8236996).
+# See header docs §"Regulator selection — REVISION 2026-05-23".
+buck = Part(
+    "Regulator_Switching", "TPS62177DQC",
+    # TI VSON-10 3x3mm EP. Closest KiCad standard: DFN-10-1EP_3x3mm with
+    # EP 1.58x2.35mm — Phase 6m DFM should verify exact land pattern vs DS
+    # SLVSC73 §10 (recommended PCB footprint).
+    footprint="Package_DFN_QFN:DFN-10-1EP_3x3mm_P0.5mm_EP1.58x2.35mm",
+    value="TPS62177DQC",
 )
-ldo.ref = "U2"
+buck.ref = "U2"
 
-# AP2112K-3.3 pin map (verified via SKiDL Part().pins query 2026-05-20):
-#   pin 1 = VIN, pin 2 = GND, pin 3 = EN, pin 4 = NC, pin 5 = VOUT
-P5V  += ldo["VIN"]
-GND  += ldo["GND"]
-P5V  += ldo["EN"]       # EN tied to VIN: LDO always-on (no enable control needed)
-# pin 4 NC: leave unconnected (intentional — the part has no internal use for it)
-P3V3 += ldo["VOUT"]
+# TPS62177DQC pin map (verified from KiCad Regulator_Switching.kicad_sym):
+#   1: PGND   2: VIN    3: EN    4: NC      5: FB
+#   6: AGND   7: PG     8: SLEEP 9: SW     10: VOS    11: PAD
+P5V  += buck["VIN"]
+P5V  += buck["EN"]       # always-on
+P5V  += buck["~{SLEEP}"] # SLEEP HIGH = normal mode (LOW = low-power sleep)
+GND  += buck["PGND"], buck["AGND"], buck["PAD"]
+# PG: open (not connected — no power-good monitoring on this rail)
+# NC pin 4: leave unconnected
+
+# Switch-node net (internal between buck SW pin and L1) — high-dV/dt node,
+# layout discipline requires tight + contained trace (see header §Layout).
+SW_NODE = Net("U2_SW")
+SW_NODE += buck["SW"]
+
+# Feedback net — divider sets Vout = 3.3V (Vfb=0.8V → R_top/R_bot=3.125)
+FB_NODE = Net("U2_FB")
+FB_NODE += buck["FB"]
+
+# VOS pin tied to VOUT for output sense (remote sensing)
+P3V3 += buck["VOS"]
 
 
-# ---- LDO input caps (per AP2112 datasheet — typical CMOS LDO: 1µF X7R) ----
-# C_in: 1µF X7R 0402 directly at VIN pin.
-c_in = Part("Device", "C", value="1uF", footprint=FP_C_0402)
-c_in.ref = "C31"
-P5V += c_in[1]
-GND += c_in[2]
+# ---- Inductor L1 (TI SLVSC73 typical-application: 2.2µH) ----
+# Coilcraft XAL4020-222ME or equivalent: 2.2µH, I_sat ≥ 3.7A (well above
+# buck's 1.2A peak), DCR ~50mΩ, 4.0×4.0×2.0mm shielded. Magnetic axis
+# orientation enforced at routing per buck layout discipline.
+L1 = Part("Device", "L", value="2.2uH",
+          footprint="Inductor_SMD:L_Coilcraft_XAL4020-XXX")
+L1.ref = "L1"
+SW_NODE += L1[1]
+P3V3    += L1[2]
 
-# C_in_bulk: 4.7µF X5R 0805 — bulk on the 5V rail to absorb BEC reflections +
-# transient demand from MCU load steps. Phase 6a will sim adequacy.
-c_in_bulk = Part("Device", "C", value="4.7uF", footprint=FP_C_0805)
-c_in_bulk.ref = "C32"
+
+# ---- Feedback divider (sets Vout = 3.3V) ----
+# Vout = Vfb × (1 + R_top/R_bot) = 0.8 × (1 + 562/180) = 3.297V ≈ 3.3V
+R_fb_top = Part("Device", "R", value="562k", footprint=FP_R_0402)
+R_fb_top.ref = "R47"
+P3V3    += R_fb_top[1]
+FB_NODE += R_fb_top[2]
+
+R_fb_bot = Part("Device", "R", value="180k", footprint=FP_R_0402)
+R_fb_bot.ref = "R48"
+FB_NODE += R_fb_bot[1]
+GND     += R_fb_bot[2]
+
+
+# ---- Input caps (per TI SLVSC73 §10 typical app: 10µF + 100nF) ----
+# C_in_bulk: 10µF X7R 0805 close to VIN. Buck input ripple-current handler.
+c_in_bulk = Part("Device", "C", value="10uF", footprint=FP_C_0805)
+c_in_bulk.ref = "C31"
 P5V += c_in_bulk[1]
 GND += c_in_bulk[2]
 
+# C_in_hf: 100nF X7R 0402 HF bypass at VIN (high-freq decoupling).
+c_in_hf = Part("Device", "C", value="100nF", footprint=FP_C_0402)
+c_in_hf.ref = "C32"
+P5V += c_in_hf[1]
+GND += c_in_hf[2]
 
-# ---- LDO output caps (per AP2112 datasheet — 1µF X7R minimum) ----
-# C_out: 1µF X7R 0402 directly at VOUT pin.
-c_out = Part("Device", "C", value="1uF", footprint=FP_C_0402)
+
+# ---- Output caps (per TI SLVSC73 §10 typical app: 22µF bulk) ----
+# C_out: 22µF X5R/X7R 0805 close to VOUT — primary buck output filter.
+c_out = Part("Device", "C", value="22uF", footprint=FP_C_0805)
 c_out.ref = "C33"
 P3V3 += c_out[1]
 GND  += c_out[2]
 
-# C_out_bulk: 4.7µF X5R 0805 — bulk on the +3V3 rail. Complements the per-VDD-
-# pin 100nF caps + the 4.7µF bulk in mcu_3a.py (C16); two parallel bulks give
-# good low-frequency + mid-frequency decoupling for the MCU load.
-c_out_bulk = Part("Device", "C", value="4.7uF", footprint=FP_C_0805)
-c_out_bulk.ref = "C34"
-P3V3 += c_out_bulk[1]
-GND  += c_out_bulk[2]
+# C_out_hf: 100nF X7R 0402 HF bypass at VOUT (complements bulk for HF
+# decoupling; also helps the +3V3 IMU rail PSRR-relevant frequency range).
+c_out_hf = Part("Device", "C", value="100nF", footprint=FP_C_0402)
+c_out_hf.ref = "C34"
+P3V3 += c_out_hf[1]
+GND  += c_out_hf[2]
 
 
 # ---- power-flag symbols for ERC ----

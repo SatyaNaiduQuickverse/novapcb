@@ -153,7 +153,7 @@ class HeatSource:
 # ---------------------------------------------------------------
 COMPONENT_PROFILES = {
     "U1":  dict(body_x=14.0, body_y=14.0, power_W=MCU_REALISTIC_WORST_W),
-    "U2":  dict(body_x=2.5,  body_y=3.0,  power_W=0.642),  # AP2112K LDO (rigorous-worst per THERMAL_3V3_BUDGET.md)
+    "U2":  dict(body_x=3.0,  body_y=3.0,  power_W=0.025),  # TPS62177 buck (Option B, master 2026-05-23) — 85% eff at 0.5A → 25mW; was AP2112K LDO @ 642mW
     "U6":  dict(body_x=3.0,  body_y=4.0,  power_W=0.018),  # eFuse TPS25922
     "U11": dict(body_x=3.0,  body_y=3.0,  power_W=0.050),
     "U12": dict(body_x=3.0,  body_y=3.0,  power_W=0.050),
