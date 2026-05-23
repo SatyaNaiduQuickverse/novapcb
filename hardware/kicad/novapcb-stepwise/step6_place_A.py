@@ -58,10 +58,15 @@ ANCHORS = {
     "C73": (36.0, 4.0, 0.0),       # U11 VCAP, NE of U11
     "C74": (36.0, 6.0, 0.0),       # U11 bypass
     "Q3":  (27.0, 10.0, 0.0),      # OR-FET N-channel SO-8 west (pads Y=7.43,12.57)
-    "R41": (24.0, 14.5, 0.0),      # V_sense divider — SOUTH of Q3
-    "R42": (28.0, 14.5, 0.0),      # I_sense filter — SOUTH of Q3
-    "C61": (22.0, 14.5, 0.0),      # V_sense filter cap — west of R41
-    "C62": (30.0, 14.5, 0.0),      # I_sense filter cap — east of R42
+    # R42 + C62 RELOCATED WEST (master 2026-05-23 selective B re-place).
+    # Original positions (28, 14.5) and (30, 14.5) sat DIRECTLY ABOVE U6
+    # north pin column (X=27.25..28.75) blocking 3 of 4 EFUSE protection
+    # config exits. New positions clear X=27..30 strip at Y=14.5 entirely.
+    # Mauch sense traces re-route in sense sub-step (tracked).
+    "R41": (24.0, 14.5, 0.0),      # V_sense divider — SOUTH of Q3 (unchanged)
+    "R42": (20.0, 14.5, 0.0),      # I_sense filter — RELOCATED 28→20 (clears U6 north)
+    "C61": (22.0, 14.5, 0.0),      # V_sense filter cap (unchanged)
+    "C62": (18.0, 14.5, 0.0),      # I_sense filter cap — RELOCATED 30→18 (clears U6 north)
 
     # BACKUP BEC (east cluster, X=68..95) — mirror of primary
     "J19": (90.0, 5.0, 0.0),       # Mauch secondary 6-pin
