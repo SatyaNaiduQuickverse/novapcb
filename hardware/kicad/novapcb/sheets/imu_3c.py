@@ -86,6 +86,15 @@ setup()
 # ---- shared nets ----
 GND       = n("GND")
 P3V3      = n("+3V3")
+# +3V3_IMU is the FB2-isolated rail dedicated to the IMU island (sourced
+# by U13 LP5907 LDO in power_3b.py). Defined early so U3 (this sheet)
+# can use it; U8/U9 (later in this file) also use it.
+# Corrective amend 2026-05-23 (master sign-off): U3 (ICM-42688-P) moved
+# from P3V3 to P3V3_IMU per contracts §D. Original assignment was a
+# netlist oversight — schematic intent has always been "all IMUs on the
+# filtered rail" but U3 was on P3V3 directly. EMI isolation consistency
+# fix; no design-intent change.
+P3V3_IMU  = n("+3V3_IMU")
 SPI1_SCK  = n("SPI1_SCK")
 SPI1_MISO = n("SPI1_MISO")
 SPI1_MOSI = n("SPI1_MOSI")
@@ -146,8 +155,11 @@ SPI1_MOSI += imu[12]   # SDI = MOSI
 
 
 # ---- power + ground connections ----
-P3V3 += imu[14]        # VDD (main supply)
-P3V3 += imu[8]         # VDDIO (tied to VDD per datasheet §11.1 SPI-only circuit)
+# Corrective amend 2026-05-23: VDD/VDDIO moved P3V3 → P3V3_IMU per
+# contracts §D + master sign-off. All 3 IMUs on FB2-isolated rail for
+# clean EMI environment.
+P3V3_IMU += imu[14]    # VDD (main supply)
+P3V3_IMU += imu[8]     # VDDIO (tied to VDD per datasheet §11.1 SPI-only circuit)
 GND  += imu[4]         # GND
 
 
@@ -172,22 +184,23 @@ IMU_INT1_TP += imu[1]
 
 
 # ---- decoupling caps (per ICM-42688-P datasheet §11 Typical Operating Circuit) ----
+# All U3 decap on P3V3_IMU (per 2026-05-23 corrective amend — was P3V3).
 # 100 nF X7R on VDD (close to pin 14)
 c_vdd_100n = Part("Device", "C", value="100nF", footprint=FP_C_0402)
 c_vdd_100n.ref = "C41"
-P3V3 += c_vdd_100n[1]
+P3V3_IMU += c_vdd_100n[1]
 GND  += c_vdd_100n[2]
 
 # 100 nF X7R on VDDIO (close to pin 8)
 c_vddio_100n = Part("Device", "C", value="100nF", footprint=FP_C_0402)
 c_vddio_100n.ref = "C42"
-P3V3 += c_vddio_100n[1]
+P3V3_IMU += c_vddio_100n[1]
 GND  += c_vddio_100n[2]
 
 # 2.2 µF X5R bulk on VDD (parallel with C41)
 c_vdd_bulk = Part("Device", "C", value="2.2uF", footprint=FP_C_0402)
 c_vdd_bulk.ref = "C43"
-P3V3 += c_vdd_bulk[1]
+P3V3_IMU += c_vdd_bulk[1]
 GND  += c_vdd_bulk[2]
 
 
@@ -238,7 +251,8 @@ GND  += c_vdd_bulk[2]
 
 
 # Shared rails for IMU2+IMU3 — both on the clean +3V3_IMU rail.
-P3V3_IMU = n("+3V3_IMU")   # sourced by LP5907 U13 in power_3b.py v1.1
+# (P3V3_IMU now defined at top of file alongside P3V3 — see 2026-05-23
+# amend that moved U3 from P3V3 to P3V3_IMU.)
 
 # SPI2 nets for IMU2 (BMI088).
 SPI2_SCK   = n("SPI2_SCK")
