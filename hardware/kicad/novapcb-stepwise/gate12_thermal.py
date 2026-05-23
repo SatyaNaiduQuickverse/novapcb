@@ -163,6 +163,13 @@ COMPONENT_PROFILES = {
     "Q3":  dict(body_x=5.0,  body_y=4.0,  power_W=0.050),
     "Q4":  dict(body_x=5.0,  body_y=4.0,  power_W=0.050),
     "Q5":  dict(body_x=3.0,  body_y=1.5,  power_W=0.0),    # IMU heater — 0W hot-case (thermostatic)
+    # D zone IMUs (added 2026-05-23 with D placement step 7)
+    "U3":  dict(body_x=3.0,  body_y=2.5,  power_W=0.010),  # ICM-42688-P (3mA × 3.3V)
+    "U8":  dict(body_x=4.5,  body_y=3.0,  power_W=0.010),  # BMI088 (~3mA × 3.3V)
+    "U9":  dict(body_x=3.0,  body_y=2.5,  power_W=0.010),  # LSM6DSV16X (~3mA × 3.3V)
+    # R61 heater: 0W hot-case (Q5 OFF when above thermostat setpoint).
+    # Cold-case sim (Phase 6 R61 value selection): R61 = 50Ω → I=0.1A → 0.5W
+    "R61": dict(body_x=6.3,  body_y=3.2,  power_W=0.0),    # heater R — hot-case 0W
 }
 
 
