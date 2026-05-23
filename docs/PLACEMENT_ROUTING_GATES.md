@@ -410,6 +410,52 @@ filter snippet in `hardware/kicad/novapcb-stepwise/gate14_drc.py`).
 run, the gate has NOT been verified — request the DRC output.
 "Parse-verified" (tracks exist in the file) is **not** "DRC-clean".
 
+### Gate 14.c — Rule 9 ELECTRICAL verification (master 2026-05-23)
+
+DRC GREEN is NECESSARY but NOT SUFFICIENT. For any PR that claims a
+net is "connected" or a function is "complete", verify the ARTIFACT
+(pcbnew electrical connectivity), not just the tool exit code.
+
+Required artifact checks:
+- **Per-net cluster walker**: each claimed-connected pin must
+  appear in the same physical cluster as its destination pad/via.
+  Manual graph traversal of pads + tracks + vias (KiCad's
+  `GetConnectedPads` API returns empty results on this build).
+- **Zone-fill check**: every declared zone must have
+  `GetFilledArea() > 0`. KiCad does NOT auto-fill on Save; outline
+  changes are silently ignored until explicit `UnFill()+Fill()`.
+- **Gerber visual verify** for KiCad DRC blind spots (T-junction
+  pedantic warnings, etc.): generate F.Cu gerber, render via
+  gerbv, confirm continuous copper at flagged locations.
+
+This caught the +5V_BEC plane connectivity lie in A↔B-3 review
+(zones DECLARED but unfilled → no real plane → board would have
+shipped dead). Apply pattern broadly.
+
+### Gate 14.d — pre-PR audit (master 2026-05-23)
+
+Run `scripts/audit_layout_compliance.py` before opening any
+placement/routing PR. 9 checks:
+
+1. Off-board components outside board outline + 2mm.
+2. Pad-overlap on same layer.
+3. A-subsystem symmetry mirror about X=52.5 (novapcb-specific).
+4. Passive anchoring (role+net-aware nearest-IC, ORPHANED/FAR
+   distinction, body-edge metric).
+5. Decoupling (every IC VDD pad ≤3mm body-edge from cap; LM74700-
+   aware VCAP cap acceptance).
+6. IMU stress-relief slot integrity (Edge.Cuts polygon detector).
+7. USB diff-pair geometry preservation (W=0.20mm on F.Cu).
+8. Mid-edge mounting-hole keep-out (DECISIONS §2).
+9. Zone-fill audit (every declared zone GetFilledArea > 0).
+
+Plus fab-exception count gate: lists DRU rules per region.
+WARN if >4 in any region (master accretion cap).
+
+Acceptance: PR description includes audit summary (PASS line OR
+explicit waiver of each fail with reason). New WARNs require
+review. >4 fab exceptions in any region requires master sign-off.
+
 ---
 
 ## Lifecycle A — single-subsystem placement PR
