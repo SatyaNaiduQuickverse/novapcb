@@ -272,3 +272,97 @@ or skip + document.
 ---
 
 **No layout touch until master sign-off on §9 decisions.**
+
+---
+
+# Amendment — master 2026-05-23 decisions baked in
+
+## All 6 decisions confirmed
+
+| # | Decision | Choice |
+|---|---|---|
+| D1 | Slot architecture | **(D) U-opens-west** — preserves PR #77/#78 routes, v1 mech-isolation is "add if no churn" not load-bearing |
+| D2 | Bridge placement for N-span crossings | Primary X=58..68 + per-net judgment for the 2 misfits |
+| D3 | Slot width | 1mm |
+| D4 | Bridge min width | 3mm |
+| D5 | Audit gate strictness | STRICT (4 criteria, FAIL not WARN) |
+| D6 | Re-route approach | SELECTIVE MANUAL (preserve PR #77/#78 routes, manual re-route 2 misfits) |
+
+## Final slot geometry (D + decisions)
+
+```
+Slot lines (Edge.Cuts polygons, 1mm width):
+- N span: Y=33, X=53..88, with BRIDGE GAP at X=58..68 (10mm wide)
+  → 2 sub-segments: (53..58) west of bridge, (68..88) east of bridge
+- E cut:  X=88, Y=33..65 (vertical)
+- S span: Y=65, X=53..88 (no bridge — south of board has no connections)
+Open west: X=53 west edge has no slot cut — D zone connects to board
+  via X=53..56 (3mm coupling band).
+
+Bridge:
+- X=58..68 (10mm wide) at Y=33
+- Minimum mechanical width 3mm verified
+- GND coverage In1.Cu + In4.Cu present at bridge (8494mm² zones cover X=58..68 Y=32..34)
+```
+
+D zone (X=56..86 Y=51..63) sits inside the ⊏ enclosure. Open mouth on
+west (X=53 line). North connection only through bridge X=58..68.
+
+## Per-net plan for the 2 N-span crossings
+
+Exact crossing X-coordinates (post-survey):
+
+1. **SPI3_SCK** (B.Cu) — segment (73.90, 50.56) → (50.57, 27.23) crosses Y=33 at **X=56.34**
+   - Currently in N-span W-half (X<58, outside bridge)
+   - Plan: **manual re-route, shift +1.66mm east** to cross at X=58 (bridge west edge)
+   - Effort: replace 1 segment endpoint OR insert intermediate vertex at (58, 33) — minor edit
+   - Approach: delete the existing crossing segment, replace with a 2-segment path that detours via X=58 at Y=33
+
+2. **+3V3_IMU** (B.Cu) — segment (65.93, 27.92) → (75.00, 37.00) crosses Y=33 at **X=71.01**
+   - Currently in N-span E-half (X>68, outside bridge)
+   - Plan: **manual re-route, shift -3.01mm west** to cross at X=68 (bridge east edge)
+   - Effort: similar — insert detour vertex at (68, 33) via 2-segment replacement
+   - Approach: same as SPI3_SCK pattern
+
+Both crossings are MINOR shifts (1.66mm and 3.01mm). No layer changes needed.
+
+## Layout execution sequence (resumed per master 2026-05-23)
+
+1. Define slot polygon on Edge.Cuts (3 sub-polygons: N-W-half + N-E-half + E + S — actually 3 separate Edge.Cuts polylines/segments since slot opens west)
+   - Alternative: 1 closed polygon for the ⊏ shape with proper vertex ordering
+2. Re-fill all zones (UnFill → Fill → SaveBoard) — slot cuts copper everywhere
+3. Manually re-route SPI3_SCK + +3V3_IMU crossings (use existing B.Cu, just shift X via intermediate vertex)
+4. gate12 thermal sanity re-run (expect +0.1-0.5°C MCU rise, conservative)
+5. Audit gate flip: `IMU-SLOT` info-only → ACTIVE with 4 STRICT criteria per D5
+
+## Updated audit gate spec (D5 STRICT)
+
+```python
+def check_imu_slot():
+    # STRICT criteria — all 4 must PASS, else FAIL the gate (not WARN)
+    # 1. Slot polygon present on Edge.Cuts at the (D)-architecture coords:
+    #    N-W (53..58, 33), N-E (68..88, 33), E (88, 33..65), S (53..88, 65)
+    # 2. No signal traces cross slot outside the defined bridge X=58..68
+    #    (iterate all PCB_TRACK on F.Cu/B.Cu; for each crossing slot line,
+    #    require X in [58, 68] at Y=33 crossing)
+    # 3. Bridge width >= 3mm at all measured cross-sections
+    # 4. GND coverage continuity: each bridge has In1.Cu or In4.Cu zone
+    #    fill area >= bridge_width × 1mm beneath the bridge footprint
+```
+
+## 5 master merge gates (mapping to this PR)
+
+1. DRC ≤ baseline 10 (0 net new) — verify slot doesn't introduce edge-clearance fails
+2. STACKUP-SPEC-MATCH PASS (unchanged — no zone net/layer changes)
+3. MIRROR_PAIRS 11/11 PASS (no A-zone touched)
+4. DECOUPLING unchanged (no D-zone caps touched)
+5. **NEW: IMU-SLOT ACTIVE PASS** (4 criteria above)
+
+---
+
+**Ready for layout execution.** Next commits on this branch:
+- Slot polygon + zone refill
+- 2 manual re-routes (SPI3_SCK + +3V3_IMU)
+- Audit gate update
+- PR doc
+
