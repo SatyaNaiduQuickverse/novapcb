@@ -66,7 +66,9 @@ def get_net(brd, name):
     # Iterate pad nets to find by name; avoids SwigPyObject issue with
     # GetNetsByName().asdict() on this pcbnew build.
     seen = {}
-    for fp in brd.GetFootprints():
+    for fp in list(brd.GetFootprints()):
+        if not hasattr(fp, "GetReference") or not hasattr(fp, "Pads"):
+            continue
         for pad in fp.Pads():
             n = pad.GetNet()
             if n is not None:
@@ -75,7 +77,9 @@ def get_net(brd, name):
 
 
 def get_pad(brd, ref, pin):
-    for fp in brd.GetFootprints():
+    for fp in list(brd.GetFootprints()):
+        if not hasattr(fp, "GetReference") or not hasattr(fp, "Pads"):
+            continue
         if fp.GetReference() == ref:
             for pad in fp.Pads():
                 if pad.GetPadName() == pin:
@@ -87,6 +91,22 @@ def get_pad(brd, ref, pin):
 def main():
     print("=== A↔B-2: OR-FET fanout (via-in-pad GATE + offset stubs) ===", flush=True)
     brd = pcbnew.LoadBoard(PCB)
+
+    # Snapshot pad coords BEFORE strip operations (strip+modify may invalidate
+    # iterator state in this pcbnew build).
+    u11 = {pn: get_pad(brd, "U11", pn) for pn in "123456"}
+    u12 = {pn: get_pad(brd, "U12", pn) for pn in "123456"}
+    c73 = get_pad(brd, "C73", "1")
+    c74 = get_pad(brd, "C74", "1")
+    c75 = get_pad(brd, "C75", "1")
+    c76 = get_pad(brd, "C76", "1")
+    # c74 from pre-snapshot
+    # c75 from pre-snapshot
+    # c76 from pre-snapshot
+    q3_5 = get_pad(brd, "Q3", "5")
+    q4_8 = get_pad(brd, "Q4", "8")
+    print(f"U11 pads pre-strip: {u11}")
+    print(f"U12 pads pre-strip: {u12}")
 
     # Remove redundant +5V_BEC vias at U11.4 (34.15, 5.95) and U12.4
     # (73.15, 5.95) added by PR #74. They conflict with the new GATE
@@ -177,11 +197,7 @@ def main():
     n_5vb = get_net(brd, "+5V_BEC_B")
     n_5v = get_net(brd, "+5V_BEC")
 
-    # U11 pads (rot=0): pad i at original positions
-    u11 = {pn: get_pad(brd, "U11", pn) for pn in "123456"}
-    u12 = {pn: get_pad(brd, "U12", pn) for pn in "123456"}
-    print(f"U11 pads: {u11}")
-    print(f"U12 pads: {u12}")
+    # u11/u12 already snapshotted pre-strip
 
     # Critical routes only — GATE + VCAP (without these, OR-FET non-functional)
     # +5V_BEC_A/B chains already wired in PR #74 to Q3/Q4 source bridges.
@@ -191,7 +207,6 @@ def main():
     # 1. ORING_A_VCAP: U11.1 (31.85, 4.05) → C73.1 (35.52, 4)
     print("[1] ORING_A_VCAP: U11.1 → C73.1 (B.Cu)", flush=True)
     add_via(brd, *u11["1"], n_vca)
-    c73 = get_pad(brd, "C73", "1")
     add_via(brd, *c73, n_vca)
     add_track(brd, u11["1"][0], u11["1"][1], c73[0], c73[1], n_vca)
 
@@ -225,7 +240,7 @@ def main():
     # 4. ORING_B_VCAP: U12.1 (70.85, 4.05) → C75.1 (68.52, 4)
     print("[4] ORING_B_VCAP: U12.1 → C75.1 (B.Cu)", flush=True)
     add_via(brd, *u12["1"], n_vcb)
-    c75 = get_pad(brd, "C75", "1")
+    # c75 from pre-snapshot
     add_via(brd, *c75, n_vcb)
     add_track(brd, u12["1"][0], u12["1"][1], c75[0], c75[1], n_vcb)
 
@@ -283,7 +298,7 @@ def main():
     # North-around shorts C73 (35.52, 4) ORING_A_VCAP — vertical at X=35.52
     # crosses C73.1 pad. South-around clears C73 + the rest of the U11 cluster.
     print("[7c] +5V_BEC_A: C74.1 → F.Cu south to Y=9 trunk", flush=True)
-    c74 = get_pad(brd, "C74", "1")
+    # c74 from pre-snapshot
     if c74:
         add_track(brd, c74[0], c74[1], c74[0], 9.0, n_5va, layer=F_CU, w_mm=W_SIG)
         add_track(brd, c74[0], 9.0, 29.85, 9.0, n_5va, layer=F_CU, w_mm=W_SIG)
@@ -307,10 +322,52 @@ def main():
     # going east-towards-U12.6-line works only if line extends west of 73.15.
     # Simpler: C76 → F.Cu DIRECT south (68.52, 6) → (68.52, 9) → east to (70.85, 9).
     print("[7f] +5V_BEC_B: C76.1 → F.Cu south to trunk", flush=True)
-    c76 = get_pad(brd, "C76", "1")
+    # c76 from pre-snapshot
     if c76:
         add_track(brd, c76[0], c76[1], c76[0], 9.0, n_5vb, layer=F_CU, w_mm=W_SIG)
         add_track(brd, c76[0], 9.0, 70.85, 9.0, n_5vb, layer=F_CU, w_mm=W_SIG)
+
+    # Extend +5V_BEC zone outline Y top from 6→4.5 if needed (covers U11.4
+    # and U12.4 via-in-pad at Y=5.95). Per master 2026-05-23 Rule 9: prior
+    # zone outline excluded U11.4/U12.4 by 0.05mm.
+    print("[zone-extend] +5V_BEC outline check...", flush=True)
+    for z in brd.Zones():
+        if z.GetNetname() != "+5V_BEC": continue
+        if z.GetLayer() != pcbnew.In2_Cu: continue
+        outline = z.Outline()
+        # Find min Y across all outline points; if > 5.0mm, extend
+        min_y_nm = None
+        for i in range(outline.OutlineCount()):
+            poly = outline.Outline(i)
+            for j in range(poly.PointCount()):
+                p = poly.CPoint(j)
+                if min_y_nm is None or p.y < min_y_nm:
+                    min_y_nm = p.y
+        if min_y_nm is None: continue
+        min_y_mm = min_y_nm / 1e6
+        if min_y_mm > 5.0:
+            print(f"  +5V_BEC zone min_y={min_y_mm:.2f}mm; replacing outline Y top with 4.5mm")
+            # Rebuild outline: extend Y top to 4.5
+            new_o = pcbnew.SHAPE_POLY_SET()
+            new_o.NewOutline()
+            for x, y in [(18.0, 4.5), (82.0, 4.5), (82.0, 24.0), (18.0, 24.0)]:
+                new_o.Append(pcbnew.FromMM(x), pcbnew.FromMM(y))
+            z.SetOutline(new_o)
+        else:
+            print(f"  +5V_BEC zone already extended (min_y={min_y_mm:.2f}mm)")
+
+    # Explicit zone fill. CRITICAL: must UnFill() first — otherwise Fill
+    # uses cached old filled polygon and doesn't pick up outline changes.
+    # Master 2026-05-23 Rule 9 zone-fill audit.
+    print("[fill] unfill + refill all zones...", flush=True)
+    try:
+        for z in brd.Zones():
+            if hasattr(z, 'UnFill'):
+                z.UnFill()
+        filler = pcbnew.ZONE_FILLER(brd)
+        filler.Fill(list(brd.Zones()))
+    except Exception as e:
+        print(f"  zone fill skipped: {e}")
 
     pcbnew.SaveBoard(PCB, brd)
     print(f"\n  Saved {PCB}")

@@ -70,7 +70,9 @@ def add_via(brd, x, y, net_obj, dia=VIA_DIA, drill=VIA_DRILL):
 
 def get_net(brd, name):
     seen = {}
-    for fp in brd.GetFootprints():
+    for fp in list(brd.GetFootprints()):
+        if not hasattr(fp, "GetReference") or not hasattr(fp, "Pads"):
+            continue
         for pad in fp.Pads():
             n = pad.GetNet()
             if n is not None:
@@ -79,7 +81,9 @@ def get_net(brd, name):
 
 
 def get_pad(brd, ref, pin):
-    for fp in brd.GetFootprints():
+    for fp in list(brd.GetFootprints()):
+        if not hasattr(fp, "GetReference") or not hasattr(fp, "Pads"):
+            continue
         if fp.GetReference() == ref:
             for pad in fp.Pads():
                 if pad.GetPadName() == pin:
@@ -224,6 +228,17 @@ def main():
         add_track_nm(brd, junction_scl[0], junction_scl[1], u4_4[0], u4_4[1], n_scl, F_CU, W_SIG)
     if junction_sda:
         add_track_nm(brd, junction_sda[0], junction_sda[1], u4_3[0], u4_3[1], n_sda, F_CU, W_SIG)
+
+    # Explicit zone fill — unfill first then fill (master 2026-05-23 Rule 9).
+    print("[fill] unfill + refill all zones...", flush=True)
+    try:
+        for z in brd.Zones():
+            if hasattr(z, 'UnFill'):
+                z.UnFill()
+        filler = pcbnew.ZONE_FILLER(brd)
+        filler.Fill(list(brd.Zones()))
+    except Exception as e:
+        print(f"  zone fill skipped: {e}")
 
     pcbnew.SaveBoard(PCB, brd)
     print(f"\n  Saved {PCB}")

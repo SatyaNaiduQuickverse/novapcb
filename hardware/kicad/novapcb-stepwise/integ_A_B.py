@@ -63,10 +63,13 @@ W_SIG = 0.20
 VIA_DIA = 0.50
 VIA_DRILL = 0.30
 
-# +5V_BEC plane: spans Y=6..24 (north band of B zone), X=18..82.
+# +5V_BEC plane: spans Y=4.5..24, X=18..82.
+# Y=4.5 chosen (was Y=6) to cover U11.4 (34.15, 5.95) and U12.4 (73.15, 5.95)
+# via-in-pad locations. A↔B-3 master 2026-05-23: zone-fill Rule 9 check
+# revealed U11.4/U12.4 vias were OUTSIDE plane outline by 0.05mm.
 PLUS5V_PLANE_OUTLINE = [
-    (18.0, 6.0),
-    (82.0, 6.0),
+    (18.0, 4.5),
+    (82.0, 4.5),
     (82.0, 24.0),
     (18.0, 24.0),
 ]
