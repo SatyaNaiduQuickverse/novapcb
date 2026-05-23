@@ -22,3 +22,24 @@
 (rule "usbc-bridge-clearance"
     (constraint clearance (min 0.13mm))
     (condition "(A.NetName == 'USBC_D_M_PRE' || A.NetName == 'USBC_D_P_PRE') && (B.NetName == 'USBC_D_M_PRE' || B.NetName == 'USBC_D_P_PRE')"))
+
+# Via-in-pad rule — scope-bounded to ORING_A/B_GATE (U11.5/U12.5 GATE
+# pads in SOT-23-6 LM74700-Q1). Per master 2026-05-23 Option B decision:
+# allow 0.25mm drill / 0.45mm via OD for via-on-pad-center.
+# SOT-23-6 0.95mm pitch + 0.53mm pad narrow direction — standard 0.30/0.50
+# via fails adjacent-pad clearance by 0.035mm. 0.25/0.45 via-in-pad
+# clearance: (0.95 - 0.45 - 0.265 - 0.20)/2 = 0.035mm margin — PASSES.
+# Fab process: REQUIRES JLC "via filled and capped" (~$30-50/board).
+# DECISIONS.md fab-process entry to be added.
+
+(rule "via-in-pad-orfet-hole"
+    (constraint hole_size (min 0.25mm))
+    (condition "(A.NetName == 'ORING_A_GATE' || A.NetName == 'ORING_B_GATE')"))
+
+(rule "via-in-pad-orfet-diameter"
+    (constraint via_diameter (min 0.45mm))
+    (condition "(A.NetName == 'ORING_A_GATE' || A.NetName == 'ORING_B_GATE')"))
+
+(rule "via-in-pad-orfet-hole-clearance"
+    (constraint hole_clearance (min 0.20mm))
+    (condition "(A.NetName == 'ORING_A_GATE' || A.NetName == 'ORING_B_GATE')"))

@@ -82,8 +82,22 @@ def get_pad(brd, ref, pin):
 
 
 def main():
-    print("=== A↔B-2: OR-FET fanout (rot=0 + via-on-pad-center) ===", flush=True)
+    print("=== A↔B-2: OR-FET fanout (via-in-pad GATE + offset stubs) ===", flush=True)
     brd = pcbnew.LoadBoard(PCB)
+
+    # Remove redundant +5V_BEC vias at U11.4 (34.15, 5.95) and U12.4
+    # (73.15, 5.95) added by PR #74. They conflict with the new GATE
+    # via-in-pad at U11.5/U12.5. Offset stub vias added below replace them.
+    to_remove = []
+    for t in brd.GetTracks():
+        if isinstance(t, pcbnew.PCB_VIA) and t.GetNetname() == "+5V_BEC":
+            p = t.GetPosition()
+            x, y = round(p.x/1e6, 2), round(p.y/1e6, 2)
+            if (x, y) in ((34.15, 5.95), (73.15, 5.95)):
+                to_remove.append(t)
+    for t in to_remove:
+        brd.Remove(t)
+    print(f"  removed {len(to_remove)} redundant +5V_BEC vias at U11.4/U12.4")
 
     n_vca = get_net(brd, "ORING_A_VCAP")
     n_vcb = get_net(brd, "ORING_B_VCAP")
@@ -111,16 +125,19 @@ def main():
     add_via(brd, *c73, n_vca)
     add_track(brd, u11["1"][0], u11["1"][1], c73[0], c73[1], n_vca)
 
-    # 2. ORING_A_GATE: DEFERRED.
-    # Via-on-pad U11.5 (34.15, 5.0) → adjacent U11.4 (34.15, 5.95)
-    # pad clearance fails by 0.035mm (0.95mm pitch vs 0.985mm
-    # required via+pad+clearance).
-    # F.Cu stub east + via at (35, 5.0) + B.Cu diagonal passes too
-    # close to U11.4 via at (34.7, 5.95) — 0.55mm vs 0.55 needed,
-    # marginal. Each iteration surfaces new clearance issue.
-    # Needs U11/U12 placement nudge (e.g. shift U11.5 column south
-    # to give GATE clear escape) — track for A↔B-2 extension.
-    print("[2] ORING_A_GATE: DEFERRED (via-on-pad cascading clearance)")
+    # 2. ORING_A_GATE: U11.5 → Q3.4 (via-in-pad, master Option B)
+    # Via 0.45mm OD / 0.25mm drill per DRU rule "via-in-pad-orfet*"
+    # (KiCad design rules scoped to ORING_A_GATE / ORING_B_GATE nets).
+    # JLC via-filled-and-capped process required at fab order.
+    print("[2] ORING_A_GATE: U11.5 → Q3.4 (via-in-pad)", flush=True)
+    v = pcbnew.PCB_VIA(brd)
+    v.SetPosition(pcbnew.VECTOR2I(_mm(u11["5"][0]), _mm(u11["5"][1])))
+    v.SetWidth(_mm(0.45))
+    v.SetDrill(_mm(0.25))
+    v.SetNet(n_ga)
+    brd.Add(v)
+    add_via(brd, 28.9, 12.57, n_ga)
+    add_track(brd, u11["5"][0], u11["5"][1], 28.9, 12.57, n_ga, layer=B_CU, w_mm=W_SIG)
 
     # 3. +5V_BEC plane via via F.Cu stub east of U11.4 (via-on-pad fails
     # clearance to U11.5 ORING_A_GATE at 0.95mm pitch — 0.035mm short)
@@ -136,9 +153,16 @@ def main():
     add_via(brd, *c75, n_vcb)
     add_track(brd, u12["1"][0], u12["1"][1], c75[0], c75[1], n_vcb)
 
-    # 5. ORING_B_GATE: U12.5 (73.15, 5.0) → Q4.4 (79.9, 12.57)
-    # 5. ORING_B_GATE: DEFERRED (mirror of [2])
-    print("[5] ORING_B_GATE: DEFERRED (mirror of GATE_A)")
+    # 5. ORING_B_GATE: U12.5 → Q4.4 (via-in-pad, mirror)
+    print("[5] ORING_B_GATE: U12.5 → Q4.4 (via-in-pad)", flush=True)
+    v = pcbnew.PCB_VIA(brd)
+    v.SetPosition(pcbnew.VECTOR2I(_mm(u12["5"][0]), _mm(u12["5"][1])))
+    v.SetWidth(_mm(0.45))
+    v.SetDrill(_mm(0.25))
+    v.SetNet(n_gb)
+    brd.Add(v)
+    add_via(brd, 79.9, 12.57, n_gb)
+    add_track(brd, u12["5"][0], u12["5"][1], 79.9, 12.57, n_gb, layer=B_CU, w_mm=W_SIG)
 
     # 6. +5V_BEC plane via at U12.4 — F.Cu east stub then via (mirror)
     print("[6] +5V_BEC: U12.4 → F.Cu stub → via → In2.Cu plane", flush=True)
