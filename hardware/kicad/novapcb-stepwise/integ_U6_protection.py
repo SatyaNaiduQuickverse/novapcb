@@ -139,7 +139,7 @@ def main():
         (38.32, 22.75), (38.35, 22.75),
         (28.75, 15.50), (28.75, 14.50),
         (28.25, 15.50), (28.25, 14.50), (28.25, 13.00),
-        (24.00, 13.00), (24.00, 13.10), (22.0, 12.5), (23.57, 19.23),
+        (24.00, 13.00), (24.00, 13.10), (21.0, 12.5), (23.57, 19.23),
         (27.00, 15.50), (30.00, 15.50),
         (32.49, 24.00), (32.52, 24.00), (31.49, 22.00),
     }
@@ -206,16 +206,16 @@ def main():
     # clears Q3.3 (27.63, 12.57) by 5.68mm and sense row R41 (24, 14.5)
     # by 1.5mm Y. Diagonal F.Cu from (28.25, 15.4) to (24, 13) passes
     # at Y=14.5 X=26.66 — clear of sense row (R42 west at X=20).
-    print("[DVDT] U6.18 → C7.1 via WEST-OF-Q3 via at (22, 12.5)", flush=True)
+    print("[DVDT] U6.18 → C7.1 via WEST-OF-Q3 via at (21, 12.5)", flush=True)
     # Via at (22, 12.5): farther WEST + slightly NORTH to clear Q3.1 pad
     # (Q3.1 pad Y extends to 13.593 due to large 2.045mm Y dimension).
     # F.Cu trace from (28.25, 15.4) → (22, 12.5) at X=25.10 Y=13.94 —
     # 0.45mm gap to Q3.1 pad south edge (was 0.003 fail with via at
     # (24, 13.10)).
     add_track(brd, u6_18[0], u6_18[1], 28.25, EXIT_Y, n_dvdt, F_CU, W_4MIL)
-    add_track(brd, 28.25, EXIT_Y, 22.0, 12.5, n_dvdt, F_CU, W_SIG)
-    add_via(brd, 22.0, 12.5, n_dvdt)
-    add_track(brd, 22.0, 12.5, c7_1[0], c7_1[1], n_dvdt, B_CU, W_SIG)
+    add_track(brd, 28.25, EXIT_Y, 21.0, 12.5, n_dvdt, F_CU, W_SIG)
+    add_via(brd, 21.0, 12.5, n_dvdt)
+    add_track(brd, 21.0, 12.5, c7_1[0], c7_1[1], n_dvdt, B_CU, W_SIG)
 
     # Zone fill + save
     print("[fill] unfill + refill all zones...", flush=True)
