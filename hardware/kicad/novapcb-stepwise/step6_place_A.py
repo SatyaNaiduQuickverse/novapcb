@@ -57,7 +57,7 @@ ANCHORS = {
     "U11": (33.0, 5.0, 0.0),       # LM74700-Q1 OR-FET ctrl west (SOT-23-6) — kept rot=0 (rot=90 trial had B.Cu crossings; via-on-pad-center fits cleanly per A↔B-2)
     "C73": (36.0, 4.0, 0.0),       # U11 VCAP, NE of U11
     "C74": (36.0, 6.0, 0.0),       # U11 bypass
-    "Q3":  (27.0, 9.5, 0.0),       # OR-FET N-channel SO-8 west — MOVED 10.0→9.5 (NORTH 0.5mm) per master 2026-05-23 Option (E) to clear corridor between Q3.1 south edge and sense row for DVDT routing. Symmetry with Q4 preserved.
+    "Q3":  (27.0, 10.0, 0.0),      # OR-FET N-channel SO-8 west — REVERTED to (27, 10) — Y=9.5 broke thermal LOCK by +8.5°C MCU. Master 2026-05-23 directive: thermal LOCK load-bearing on Q3 Y=10. DVDT routes via west-around-U6 instead.
     # R42 + C62 RELOCATED WEST (master 2026-05-23 selective B re-place).
     # Original positions (28, 14.5) and (30, 14.5) sat DIRECTLY ABOVE U6
     # north pin column (X=27.25..28.75) blocking 3 of 4 EFUSE protection
