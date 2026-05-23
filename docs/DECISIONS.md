@@ -19,7 +19,18 @@ All 9 scoping decisions for the v1 FC, signed off 2026-05-18. Each section shows
 
 **SUPERSEDED 2026-05-20 (Sai pivot, mid-Phase-4)**: the 36×36 / 30.5×30.5 M3 v1 spec is set aside. New direction:
 
-**v1.1 = 105 × 85 mm RECTANGULAR** (LOCKED 2026-05-23 by master after corrected gate12 v3 + rigorous-powers thermal sweep). A new airframe tray is required (v1 is functional drop-in, not mechanical).
+> **⚠ LOCK INVALIDATED 2026-05-23 (later)** — the "MCU=73.98°C / +6.02°C
+> margin" basis for the 105 × 85 mm LOCK below was a PLANNED-positions
+> sweep artifact; reproducing the sweep on the ACTUAL board placement
+> gives MCU=82.5°C (over the 80°C ceiling). The LOCK is RESCINDED
+> pending Sai pick of architecture option (A / B / C). See
+> `docs/THERMAL_ARCHITECTURE_DECISION.md` for full sweep + Option-B
+> (105×85 + buck, MCU=63.7°C, +16.3°C margin) recommendation. The
+> board-size table further below records the historical sweep with
+> planned positions — preserved verbatim for traceability, but the
+> "LOCK ✓" markers no longer apply.
+
+**v1.1 = 105 × 85 mm RECTANGULAR** (LOCKED 2026-05-23 by master after corrected gate12 v3 + rigorous-powers thermal sweep — **but the underlying thermal number was later invalidated; see banner above**). A new airframe tray is required (v1 is functional drop-in, not mechanical).
 
 **v1.1 outline evolution (kept for full traceability):**
 

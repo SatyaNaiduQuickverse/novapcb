@@ -360,17 +360,29 @@ this envelope; it's a planning input not a commitment.
 
 ## 5. Mounting holes
 
-### 5.1 Pattern — DECIDED 2026-05-23
+### 5.1 Pattern — DECIDED 2026-05-23, RE-SCALED for 105×85 same day
 
-**4× M3 corner-inset mounting holes** on the 90 × 70 mm board, **3 mm edge inset**.
+**4× M3 corner-inset mounting holes** on the **105 × 85 mm v1.1 final board**,
+**3.25 mm edge inset** (3.0 mm originally; bumped to 3.25 mm after discovery
+that 5.5 mm GND-pad lands would violate the 0.5 mm edge-clearance rule at
+3.0 mm inset — see `DECISIONS.md §2` for the geometry walk-through).
 
-Positions (mm, pcbnew Y-down): (3, 3), (87, 3), (3, 67), (87, 67).
+Positions (mm, pcbnew Y-down): (3.25, 3.25), (101.75, 3.25), (3.25, 81.75),
+(101.75, 81.75).
 
 **Centre-to-centre:**
-- Long axis (X): 90 − 2×3 = **84 mm**
-- Short axis (Y): 70 − 2×3 = **64 mm**
+- Long axis (X): 105 − 2×3.25 = **98.5 mm**
+- Short axis (Y): 85 − 2×3.25 = **78.5 mm**
 
-The Pixhawk-standard 30.5×30.5 M3 pattern is formally dropped for v1.1 (see `DECISIONS.md §2`). Per Sai 2026-05-23: no airframe size constraint, 90×70 final, new tray required (v1 is functional drop-in, not mechanical).
+The Pixhawk-standard 30.5×30.5 M3 pattern is formally dropped for v1.1
+(see `DECISIONS.md §2`). Per Sai 2026-05-23: no airframe size constraint,
+105×85 final, new tray required (v1 is functional drop-in, not mechanical).
+
+> ⚠ The 105 × 85 outline itself is under review — the thermal LOCK that
+> sized this board was invalidated 2026-05-23. See
+> `docs/THERMAL_ARCHITECTURE_DECISION.md` for sweep + Sai-pending architecture
+> pick. The mounting pattern above is valid for the 105 × 85 case (Option A
+> stays at 115×100 — different pattern needed if Sai picks A).
 
 ### 5.2 Hole specification
 
@@ -382,11 +394,11 @@ The Pixhawk-standard 30.5×30.5 M3 pattern is formally dropped for v1.1 (see `DE
 
 ### 5.3 Contingency — +2 mid-long-edge holes (sim-gated; placement reserves keep-out NOW)
 
-**Sim-gated 4-vs-6** (master 2026-05-23): if Phase 6 vibration modeling (Task #10) shows the 84×64 mm hole spacing leaves excessive board flex amplitude at the IMU location, add 2 more M3 holes at the midpoints of the long edges (total 6 holes).
+**Sim-gated 4-vs-6** (master 2026-05-23): if Phase 6 vibration modeling (Task #10) shows the 98.5×78.5 mm hole spacing leaves excessive board flex amplitude at the IMU location, add 2 more M3 holes at the midpoints of the long edges (total 6 holes).
 
 **Placement MUST reserve keep-out at the mid-edge positions NOW** so a sim-driven add doesn't trigger a re-place of B/A/D/H:
 
-- Mid-long-edge keep-out positions: (3, 35) west mid and (87, 35) east mid
+- Mid-long-edge keep-out positions: (3.25, 42.5) west mid and (101.75, 42.5) east mid
 - Keep-out diameter: 8 mm (M3 + GND-pad land + tolerance)
 - Subsystems B, A, D, H placement scripts MUST exclude these two circular regions
 

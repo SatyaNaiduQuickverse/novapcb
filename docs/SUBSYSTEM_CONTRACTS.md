@@ -67,14 +67,19 @@ These are the cross-cutting constraints. Each subsystem inherits them.
    the top of the drone. Cluster on an edge where the airframe
    canopy clears.
 
-5. **Mounting holes.** **4 corner-inset M3 holes** at ~5 mm inset
-   from each corner of the 90×70 board: **(5, 5), (85, 5), (5, 65),
-   (85, 65)**. Keep-out ≥1 mm around each hole. Master directive
-   2026-05-22: the `DECISIONS §2` 30.5×30.5 c-to-c pattern was for
-   the original 36×36 form factor; on a 90×70 board the centered
-   30.5×30.5 leaves ~30 mm overhang per side (mechanically poor).
-   See `docs/OPEN_QUESTIONS.md` entry "Mounting-hole-pattern-90x70"
-   for Sai's ratification of this supersession.
+5. **Mounting holes.** **4 corner-inset M3 holes** at 3.25 mm inset
+   from each corner of the **105 × 85 board**: **(3.25, 3.25),
+   (101.75, 3.25), (3.25, 81.75), (101.75, 81.75)** — c-to-c
+   98.5 × 78.5 mm. Keep-out ≥1 mm around each hole; 5.5 mm GND-pad
+   land. Per `DECISIONS §2`. The Pixhawk-standard 30.5×30.5 c-to-c
+   pattern was for the original 36×36 form factor and is formally
+   dropped for v1.1. Mid-long-edge keep-out reserved at (3.25, 42.5)
+   and (101.75, 42.5) for sim-gated +2 holes.
+
+   > ⚠ The 105 × 85 outline itself is under review per the 2026-05-23
+   > thermal LOCK invalidation — see `docs/THERMAL_ARCHITECTURE_DECISION.md`.
+   > Mounting positions above are for the 105 × 85 case (Sai's pending
+   > A/B/C pick may move to 115×100 — positions re-scale accordingly).
 
 6. **Reference teardowns (for Gate 6).** Pixhawk 6X (FMUv6X family),
    Holybro Kakute H7, mRo Control Zero H7, Matek H743-Slim. Each
