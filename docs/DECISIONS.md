@@ -398,12 +398,90 @@ A↔B-2 + A↔B-3 routing required two scope-bounded fab-process deviations to f
 
 **Order-time action** (Sai): none; standard fab capability covers this. The DRU rule is informational — the gerbers will simply have clearances down to 0.15mm in U11/U12 corners.
 
+### 13.3 U6 courtyard 4mil trace + clearance (master 2026-05-23 Option A)
+
+**Scope**: U6 (TPS25940A) courtyard interior — F.Cu exit traces for
+EFUSE protection-config nets (OVP/ILIM/DVDT/FLT).
+
+**Why**: WQFN-24 north pin row 0.5mm pitch + 0.30mm pad width = 0.20mm
+pad-pad gap. Standard 0.20mm trace + 2×0.20mm clearance = 0.60mm
+required, doesn't fit. 4mil trace (0.10mm) + 2×0.05mm clearance =
+0.20mm — fits between pads.
+
+**DRU rules**:
+- `u6-courtyard-4mil-track` — min track width 0.10mm, condition
+  `A.insideCourtyard('U6')`.
+- `u6-courtyard-4mil-clearance` — min clearance 0.05mm, both inside U6.
+
+**Fab requirement**: **JLC 4mil minimum trace process** (vs standard
+6mil). Cost bump ≈ $10–20/board flat.
+
+### 13.4 U6 extended-courtyard via-in-pad (master 2026-05-23 Option A.i)
+
+**Scope**: vias on EFUSE_OVP/ILIM/DVDT/FLT nets — small 0.45mm OD vias.
+
+**DRU rules**:
+- `u6-extended-courtyard-via-diameter` — min OD 0.45mm.
+- `u6-extended-courtyard-via-clearance` — min clearance 0.10mm
+  (insideCourtyard scope, applies between U6-internal pairs only).
+
+**Fab requirement**: same JLC via-in-pad tier as 13.1 (no new bump).
+
+### 13.5 Q3/Q4 OR-FET north 0.5mm (master 2026-05-23 Option E)
+
+**Scope**: Q3 (27, 10) → (27, 9.5). Q4 (78, 10) → (78, 9.5). Symmetric.
+
+**Why**: Opened corridor between Q3.1 pad south edge and sense row
+north edge from 0.408mm → 0.908mm. Enables DVDT routing without
+additional DRU exception.
+
+**Thermal**: Q3/Q4 are <0.1W static dissipation; 0.5mm closer to
+north adiabatic edge has negligible impact on the +5°C margin from
+gate12 v3 LOCK. No re-verify needed unless freeze-gate check requires.
+
+**No fab implication** — just a placement nudge.
+
 ### Combined cost impact
 
-Via-in-pad process bump: ~$30–50/board, one-time-per-order.
-Clearance relax: $0.
+| Item                                | Process bump |
+|-------------------------------------|--------------|
+| Via-in-pad (filled & capped, IPC-4761 Type 7) | ~$30–50/board flat |
+| 4mil min trace width                | ~$10–20/board flat |
+| Clearance relax (13.2 / 13.4)       | $0 (standard 0.10mm) |
+| Q3/Q4 placement nudge (13.5)        | $0 |
+| **Total**                           | **~$40–70/board flat** |
+
+### Fab exception count (master 2026-05-23 cap)
+
+Per master "4 fab exceptions per region max" cap:
+- **U11/U12 region: 4** (via-in-pad-orfet × 3 + fanout-relax × 1)
+- **U6 region: 4** (4mil-track + 4mil-clearance + ext-via-diameter + ext-via-clearance)
+
+Both regions AT cap. NO new fab exceptions permitted without master
+sign-off + Rule 8 re-place trigger.
+
+### Order-time checklist (Sai → JLC at fab order time)
+
+1. Upload gerbers + drill files + netlist.
+2. Specify **"Via in Pad: yes (IPC-4761 Type 7, filled & capped)"**.
+3. Specify **"Min trace width: 0.10mm (4mil)"**.
+4. Specify **"Min hole-to-hole / hole-to-trace clearance: 0.10mm"**.
+5. Expected total cost bump: **~$40–70/board flat**.
+6. If JLC asks about specific via locations or trace widths,
+   reference DRU rules in `hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_dru`.
 
 ### Verifier (Rule 9)
 
-After A↔B-3 commit, +5V_BEC plane In2.Cu cluster expected to include U11.4 and U12.4 via their via-in-pad through-hole vias connecting to the In2.Cu zone. The cluster walker reports each as 1-pad cluster (the walker doesn't traverse zone fills), but pcbnew DRC confirms zone-to-via connection during DRC's "unconnected items" check.
+After fab arrives, verify continuous copper at fab-spec-exception locations:
+- ORING_A/B_GATE via-in-pad (U11.5/U12.5) — filled + capped + plated.
+- U11.4/U12.4 +5V_BEC via-in-pad — same.
+- U6 north-row exit traces (4mil) — calipers or X-ray inspection.
+- U6 EFUSE-net exit vias (0.45mm OD).
+
+After A↔B-3 commit, +5V_BEC plane In2.Cu cluster expected to include
+U11.4 and U12.4 via their via-in-pad through-hole vias connecting to
+the In2.Cu zone. Per Rule 9 cluster walker + zone-fill audit (see
+scripts/audit_layout_compliance.py check 9): zone GetFilledArea > 0
+confirms physical fill; pad-via overlap + via-on-zone HitTestFilledArea
+confirms electrical connection.
 
