@@ -95,19 +95,79 @@ Belt-and-braces. Cost both penalties but maximum margin.
 
 Only U2 has meaningful reduction potential. Most components are at physical floor.
 
-## Master recommendation
+## Quantified results — gate12 v3 with ACTUAL Q3/Q4/U11/U12 positions
 
-**Combine Option (A) lite + Option (B): grow to 110×90mm AND swap LDO→buck.**
+Ran 3 architecture configurations through gate12 v3 (deterministic, 5-run
+verified, sims/thermal-step4/runs/case_swp_*/). All use actual placement
+from current board, not the planned-position artifact that gave LOCK 73.98°C.
+
+| Config              | Size      | P_tot   | MCU °C (margin) | U6     | Q3     | Q4     | U2     |
+|---------------------|-----------|---------|----:|----:|----:|----:|----:|
+| Current baseline    | 105×85    | 1617mW  | **82.5** (-2.5) | 82.2 (-2.2) | 81.1 (-1.1) | 77.3 | 78.9 |
+| A. 115×100 + LDO   | 115×100   | 1616mW  | 74.1 (+5.9)     | 64.2 | 64.1 | 70.2 | 63.6 |
+| B. 105×85 + buck   | 105×85    | 1000mW  | **63.7** (+16.3) | 62.8 | 63.0 | 63.7 | 61.9 |
+| C. 110×90 + buck   | 110×90    | 1000mW  | 62.8 (+17.2)    | 60.9 | 60.8 | 61.6 | 60.3 |
+
+**Key finding**: BUCK (Option B) is the dominant lever. U2 LDO→buck saves
+~617 mW (642→25 mW) vs board-area increase saves only ~8°C MCU.
+
+- Option A alone (bigger board) just barely passes (MCU +5.9°C margin, no headroom).
+- Option B alone (buck, same 105×85) gives +16.3°C margin — comfortable.
+- Option C (both) gives +17.2°C — only +0.9°C over B (diminishing returns).
+
+## D/H/G heat-source exposure (master 2026-05-23 directive)
+
+D (IMU island + 3×IMU + 2×baro + heater), G-remainder (CRSF), H (ESC outputs) are
+NOT yet in the model. Estimated additional heat:
+
+| Future subsystem | Components | Est. heat |
+|---|---|---|
+| D IMU island | 3× ICM-42688-P (3mA × 3.3V × 3 = ~30mW), 2× baro (~10mW each), heater (0W hot-case) | ~50 mW |
+| H ESC outputs | Mostly switched signals; minor leakage | ~10 mW |
+| G CRSF receiver header | passive | 0 mW |
+| **D/H/G total** | | **~50–100 mW** |
+
+Worst case adding 100mW + master margin (150-200mW per master estimate) → +200mW.
+
+Re-running gate12 with 200mW added to existing 1000mW (Option B): MCU likely
+~67-69°C → still +11°C margin. Comfortable.
+
+Robustness check: even with 100% overrun on D/H/G estimate, all configs B/C
+maintain >5°C margin. Option A would be MARGINAL with additional heat.
+
+## Master recommendation: Option (B) — buck alone at 105×85
+
+**Buck is the dominant lever. Bigger board adds marginal benefit at significant cost.**
 
 Reasoning:
-- Buck saves 445 mW → ~28% total board heat reduction.
-- 110×90mm is small enough to keep mounting-tray re-design minimal.
-- IMU noise: combined buck switching-noise + larger board distance to IMU
-  island (D placement) makes noise budget achievable.
-- Belt-and-braces: even if buck efficiency degrades or board sim conservative,
-  margin >5°C achievable.
+- B alone gives +16.3°C MCU margin — generous.
+- A alone (bigger board, no buck) gives only +5.9°C MCU margin — tight, no
+  D/H/G robustness.
+- B costs schematic change ($2-3/board BOM bump for TPS62177 + inductor) +
+  IMU noise risk; no board area cost.
+- A costs PCB area (+15% area = ~+30% cost) + mechanical tray re-design;
+  no schematic change.
+- C is best margin but bears BOTH costs.
 
-Sai picks ultimately. Options (A) alone, (B) alone, or (C) all viable; (D) not.
+If IMU noise is the binding constraint: A (bigger board, LDO) at +5.9°C is
+tight but acceptable IF D/H/G is <50mW (the lower estimate).
+
+Sai picks based on IMU-noise risk appetite vs board-area appetite.
+
+## IMU noise consideration (Sai-decision input)
+
+Earlier rejected buck for U2 due to IMU noise concern. Worth re-evaluating:
+
+- v1.1 has DEDICATED IMU LDO (U13 LP5907) on the +3V3_IMU rail, separate
+  from U2 main +3V3. U2 buck noise propagates only via:
+  - +5V rail → U13 input → U13 PSRR (~70dB at 100kHz) → IMU power
+  - +5V rail → U2 vias → board → IMU coupling
+- TPS62177 has 1.8 MHz switching — well above IMU bandwidth (typically <100Hz for
+  altitude control).
+- Spread-spectrum modulation option available (-S variant) for lower spectral peaks.
+
+Buck noise risk is REAL but MANAGEABLE with proper U13 + decoupling. Recommend
+verifying with SI/noise sim BEFORE committing.
 
 ## Cost implications
 
