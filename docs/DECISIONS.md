@@ -56,6 +56,61 @@ All 9 scoping decisions for the v1 FC, signed off 2026-05-18. Each section shows
 
 **v1.1 = 105 × 85 mm RECTANGULAR** (LOCKED 2026-05-23 by master after corrected gate12 v3 + rigorous-powers thermal sweep — **but the underlying thermal number was later invalidated; see banner above**). A new airframe tray is required (v1 is functional drop-in, not mechanical).
 
+### 2.1 IMU stress-relief slot — DEFERRED to v2 (master 2026-05-24)
+
+The IMU island stress-relief slot (Edge.Cuts U-kerf around D zone for
+mechanical vibration isolation) **is not part of v1**. Two layout
+attempts (sha 7c6b805 lineage on `hw/imu-slot-polygon`) failed:
+
+- **Y=33 latitude attempt**: 35 net new DRC violations. Root cause:
+  PR #76 stitching vias at Y=32 were placed without anticipating future
+  slot at Y=32.5..33.5 — 22 copper_edge_clearance failures within
+  0.25mm of slot. Plus pre-existing SPI3_SCK via at (58, 33) on slot
+  edge; 4 invalid_outline from overlapping rectangle corners.
+- **Y=45 latitude attempt** (β shift): 27 net new DRC violations. Root
+  cause: PR #77 Freerouting filled the bridge column X=58..68 densely;
+  adding 4 detours for the new slot-boundary crossings caused 11
+  tracks_crossing collisions with SPI2_MOSI/SPI2_MISO/SPI2_SCK/
+  IMU2_ACC_CS/IMU2_GYR_INT3 in the same region. Plus 11
+  copper_edge_clearance from pre-existing +3V3 traces at X=52.6 sitting
+  0.4mm from slot W edge.
+
+**Cosmetic-only alternative (F: S+E-only slot) rejected**: would have
+omitted the N cut entirely. N-side is the dominant flex-coupling path
+(MCU + power area = vibration sources, high mass), so cutting only
+S+E (mostly empty bands) gives ~10-15% useful isolation vs ~90% for
+full slot. Not worth audit-gate flip + maintenance for cosmetic gain.
+
+**Alignment with §2 scope statement** (locked 2026-05-18): v1 is
+"functional drop-in (electrical + software identical to the 6X),
+single-PCB" — explicitly NOT mechanical. v2 is "separate FMU +
+isolated-IMU boards, exact 6X mechanical match" where slot/isolation
+becomes a first-class constraint at routing time.
+
+**Residual cost (v1 ships without slot)**: under heavy prop vibration
+(motor RPM + frame harmonics), expect ~1-3 mdps/√Hz extra gyro noise
++ 10-50 µg/√Hz extra accel noise from board-flex coupling vs
+slotted-isolated baseline. **ArduPilot harmonic-notch + dynamic-notch
+filters compensate competently** at this magnitude — typical for
+single-board FCs without slots (MatekH743, Holybro Kakute, mRo Control
+Zero in some configs). Software mitigation is the v1 plan.
+
+**v2 groundwork preserved**: `docs/v2/D_SLOT_POLYGON_ANALYSIS.md` (494
+lines) — full 2-attempt analysis + per-net detour plans + audit gate
+criteria + (D) U-opens-west geometry. v2 plans slot as first-class
+routing constraint *before* Freerouting, avoiding the retrofit failure
+modes that hit v1.
+
+**Audit `IMU-SLOT` gate**: kept as info-only with message updated to
+cite this deferral (no removal — primed for v2 reactivation).
+
+**FUTURE-PROOFING NOTE** (Sai-visible): when a deferred mechanical
+constraint becomes relevant for a future board, it MUST be a
+first-class constraint at routing time, not a retrofit attempt. The
+2x v1 slot attempts cost ~3 hours of layout work; an
+upfront-as-constraint plan would have been ~30 min in v1 design
+phase.
+
 **v1.1 outline evolution (kept for full traceability):**
 
 | Iteration | Outline | Driver | Status |
