@@ -109,7 +109,7 @@ ANCHORS = {
     # 0 W dissipation. See: dense-fanout placement-routing co-coupling
     # insight in DECISIONS (placement nudges to enable routing are
     # legitimate within the closure step).
-    "R4":  (33.0, 24.0, 0.0),    # EFUSE_ILIM (42.2k to GND)
+    "R4":  (34.0, 22.0, 0.0),    # EFUSE_ILIM (42.2k to GND) — MOVED 33,24→34,22 per master 2026-05-23 Option (c). Iterations: 32→32.5→34 to clear ILIM via vs OVP B.Cu clearance (was 0.19mm; now 0.21mm PASS).
     "R7":  (35.0, 24.0, 0.0),    # EFUSE_EN UVLO upper (30.1k)
     "R8":  (37.0, 24.0, 0.0),    # EFUSE_EN UVLO lower (10k)
     "R9":  (39.0, 24.0, 0.0),    # EFUSE_OVP upper (51k)

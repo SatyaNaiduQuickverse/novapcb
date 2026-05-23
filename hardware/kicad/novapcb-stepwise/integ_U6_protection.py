@@ -119,28 +119,29 @@ def main():
 
     # Idempotency: strip prior U6-protection items
     owned_track_endpoints = {
-        # OVP path (east-exit)
-        (29.45, 17.25), (30.00, 17.25), (31.50, 17.25), (31.50, 22.50),
-        (32.00, 17.25), (32.00, 22.50),
+        # OVP path
+        (29.45, 17.25), (30.00, 17.25), (31.30, 17.25), (31.30, 22.50),
+        (31.50, 17.25), (31.50, 22.50), (32.00, 17.25), (32.00, 22.50),
         (38.32, 22.75), (38.35, 22.75), (39.48, 24.00), (39.51, 24.00),
-        # ILIM path (4mil north-exit)
+        # ILIM path
         (28.75, 16.05), (28.75, 15.40), (28.75, 14.50), (28.75, 15.50),
-        (32.49, 24.00), (32.52, 24.00),
-        # DVDT path (4mil north-exit, Y=13 stagger)
+        (32.49, 24.00), (32.52, 24.00), (31.49, 22.00),
+        # DVDT path (NEW: via at (24, 13) west of Q3)
         (28.25, 16.05), (28.25, 15.40), (28.25, 14.50), (28.25, 13.00), (28.25, 15.50),
-        (23.09, 18.75), (23.57, 19.23),
+        (24.00, 13.00), (24.00, 13.10), (23.09, 18.75), (23.57, 19.23),
         # Old C83 VBUS decap
         (74.52, 32.50), (75.48, 32.50), (74.14, 31.00), (71.86, 31.00),
         # Old OVP/ILIM/DVDT attempts
         (31.00, 17.25), (31.00, 22.50), (30.00, 15.50), (27.00, 15.50),
     }
     owned_via_coords = {
-        (31.00, 22.50), (31.50, 22.50), (32.00, 22.50),
+        (31.00, 22.50), (31.30, 22.50), (31.50, 22.50), (32.00, 22.50),
         (38.32, 22.75), (38.35, 22.75),
         (28.75, 15.50), (28.75, 14.50),
         (28.25, 15.50), (28.25, 14.50), (28.25, 13.00),
+        (24.00, 13.00), (24.00, 13.10), (22.0, 12.5), (23.57, 19.23),
         (27.00, 15.50), (30.00, 15.50),
-        (32.49, 24.00), (32.52, 24.00),
+        (32.49, 24.00), (32.52, 24.00), (31.49, 22.00),
     }
 
     to_remove = []
@@ -177,17 +178,16 @@ def main():
     W_4MIL = 0.10
     EXIT_Y = 15.4  # north of U6 north pin row Y=16.05, outside courtyard
 
-    # 2. EFUSE_OVP: U6.15 east-exit + south through corridor at X=31.5
-    # (was X=32 — collides D1 pad +5V_BEC_PROT at (33, 18) which extends
-    # to X=32 pad west edge). X=31.5: 1.5mm clearance to D1, 1.0mm
-    # separation from EN via at (30.5, 22.5).
-    print("[OVP] U6.15 → R10.1 + R9.2 (east-exit, corridor X=31.5)", flush=True)
+    # 2. EFUSE_OVP: U6.15 east-exit + south through corridor at X=31.30
+    # (was X=31.5 — D1.1 +5V_BEC_PROT pad west edge 31.75 only 0.15mm gap).
+    # X=31.30: trace east edge 31.40, D1 west 31.75 → 0.35mm clearance.
+    print("[OVP] U6.15 → R10.1 + R9.2 (east-exit, corridor X=31.30)", flush=True)
     add_track(brd, u6_15[0], u6_15[1], 30.0, 17.25, n_ovp, F_CU, W_4MIL)
-    add_track(brd, 30.0, 17.25, 31.5, 17.25, n_ovp, F_CU, W_SIG)
-    add_track(brd, 31.5, 17.25, 31.5, 22.5, n_ovp, F_CU, W_SIG)
-    add_via(brd, 31.5, 22.5, n_ovp)
+    add_track(brd, 30.0, 17.25, 31.30, 17.25, n_ovp, F_CU, W_SIG)
+    add_track(brd, 31.30, 17.25, 31.30, 22.5, n_ovp, F_CU, W_SIG)
+    add_via(brd, 31.30, 22.5, n_ovp)
     add_via(brd, r10_1[0], r10_1[1], n_ovp)
-    add_track(brd, 31.5, 22.5, r10_1[0], r10_1[1], n_ovp, B_CU, W_SIG)
+    add_track(brd, 31.30, 22.5, r10_1[0], r10_1[1], n_ovp, B_CU, W_SIG)
     # R10.1 ↔ R9.2 bridge
     add_track(brd, r10_1[0], r10_1[1], r9_2[0], r9_2[1], n_ovp, F_CU, W_SIG)
 
@@ -201,16 +201,21 @@ def main():
     add_via(brd, r4_1[0], r4_1[1], n_ilim)
     add_track(brd, 28.75, 14.5, r4_1[0], r4_1[1], n_ilim, B_CU, W_SIG)
 
-    # 4. EFUSE_DVDT: U6.18 NORTH-row pin. 4mil north exit + transition via
-    # at (28.25, 13.0) — 1.5mm Y staggered from ILIM via at (28.75, 14.5)
-    # for clearance. BATT_CURRENT_SENS sense net is on C62.1 (~29.52, 14.5)
-    # — DVDT via at (28.25, 13) clears (X gap 1.27, Y gap 1.5).
-    print("[DVDT] U6.18 → C7.1 (4mil north exit + B.Cu west, stagger Y)", flush=True)
+    # 4. EFUSE_DVDT: U6.18 → C7.1 via DIAGONAL F.Cu to via at (24, 13).
+    # Via location WEST of Q3 (Q3 X range 25..29). DVDT via at (24, 13)
+    # clears Q3.3 (27.63, 12.57) by 5.68mm and sense row R41 (24, 14.5)
+    # by 1.5mm Y. Diagonal F.Cu from (28.25, 15.4) to (24, 13) passes
+    # at Y=14.5 X=26.66 — clear of sense row (R42 west at X=20).
+    print("[DVDT] U6.18 → C7.1 via WEST-OF-Q3 via at (22, 12.5)", flush=True)
+    # Via at (22, 12.5): farther WEST + slightly NORTH to clear Q3.1 pad
+    # (Q3.1 pad Y extends to 13.593 due to large 2.045mm Y dimension).
+    # F.Cu trace from (28.25, 15.4) → (22, 12.5) at X=25.10 Y=13.94 —
+    # 0.45mm gap to Q3.1 pad south edge (was 0.003 fail with via at
+    # (24, 13.10)).
     add_track(brd, u6_18[0], u6_18[1], 28.25, EXIT_Y, n_dvdt, F_CU, W_4MIL)
-    add_track(brd, 28.25, EXIT_Y, 28.25, 13.0, n_dvdt, F_CU, W_SIG)
-    add_via(brd, 28.25, 13.0, n_dvdt, SMALL_VIA_DIA, SMALL_VIA_DRILL)
-    add_via(brd, c7_1[0], c7_1[1], n_dvdt)
-    add_track(brd, 28.25, 13.0, c7_1[0], c7_1[1], n_dvdt, B_CU, W_SIG)
+    add_track(brd, 28.25, EXIT_Y, 22.0, 12.5, n_dvdt, F_CU, W_SIG)
+    add_via(brd, 22.0, 12.5, n_dvdt)
+    add_track(brd, 22.0, 12.5, c7_1[0], c7_1[1], n_dvdt, B_CU, W_SIG)
 
     # Zone fill + save
     print("[fill] unfill + refill all zones...", flush=True)
