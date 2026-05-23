@@ -54,13 +54,18 @@ def add_track(brd, x1, y1, x2, y2, net, layer=F_CU, w_mm=W_SIG):
     brd.Add(t)
 
 
-def add_via(brd, x, y, net):
+def add_via(brd, x, y, net, dia=VIA_DIA, drill=VIA_DRILL):
     v = pcbnew.PCB_VIA(brd)
     v.SetPosition(pcbnew.VECTOR2I(_mm(x), _mm(y)))
-    v.SetWidth(_mm(VIA_DIA))
-    v.SetDrill(_mm(VIA_DRILL))
+    v.SetWidth(_mm(dia))
+    v.SetDrill(_mm(drill))
     v.SetNet(net)
     brd.Add(v)
+
+
+# Small via for U6 extended-courtyard exit (DRU u6-extended-courtyard-*)
+SMALL_VIA_DIA = 0.45
+SMALL_VIA_DRILL = 0.25
 
 
 def get_net(brd, name):
@@ -192,7 +197,7 @@ def main():
     print("[ILIM] U6.17 → R4.1 (4mil north exit + B.Cu south)", flush=True)
     add_track(brd, u6_17[0], u6_17[1], 28.75, EXIT_Y, n_ilim, F_CU, W_4MIL)
     add_track(brd, 28.75, EXIT_Y, 28.75, 14.5, n_ilim, F_CU, W_SIG)
-    add_via(brd, 28.75, 14.5, n_ilim)
+    add_via(brd, 28.75, 14.5, n_ilim, SMALL_VIA_DIA, SMALL_VIA_DRILL)
     add_via(brd, r4_1[0], r4_1[1], n_ilim)
     add_track(brd, 28.75, 14.5, r4_1[0], r4_1[1], n_ilim, B_CU, W_SIG)
 
@@ -203,7 +208,7 @@ def main():
     print("[DVDT] U6.18 → C7.1 (4mil north exit + B.Cu west, stagger Y)", flush=True)
     add_track(brd, u6_18[0], u6_18[1], 28.25, EXIT_Y, n_dvdt, F_CU, W_4MIL)
     add_track(brd, 28.25, EXIT_Y, 28.25, 13.0, n_dvdt, F_CU, W_SIG)
-    add_via(brd, 28.25, 13.0, n_dvdt)
+    add_via(brd, 28.25, 13.0, n_dvdt, SMALL_VIA_DIA, SMALL_VIA_DRILL)
     add_via(brd, c7_1[0], c7_1[1], n_dvdt)
     add_track(brd, 28.25, 13.0, c7_1[0], c7_1[1], n_dvdt, B_CU, W_SIG)
 

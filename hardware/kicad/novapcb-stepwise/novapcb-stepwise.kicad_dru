@@ -73,3 +73,20 @@
 (rule "u6-courtyard-4mil-clearance"
     (constraint clearance (min 0.05mm))
     (condition "A.insideCourtyard('U6') && B.insideCourtyard('U6')"))
+
+# U6 extended-courtyard via clearance — master 2026-05-23 Option (A.i):
+# extend U6 fab-spec exception to via transitions outside U6 courtyard.
+# Scope: via on EFUSE_OVP/ILIM/DVDT/FLT nets (the protection-config exits).
+# Allow 0.45 OD via with 0.10mm clearance to adjacent-net items.
+# JLC capability 0.10mm = at limit but achievable. Scope-bounded to
+# 4 nets only (the 4 U6 protection-config exits). No new fab process
+# bump — uses same JLC capability tier as existing via-in-pad + 4mil.
+(rule "u6-extended-courtyard-via-diameter"
+    (constraint via_diameter (min 0.45mm))
+    (condition "(A.NetName == 'EFUSE_OVP' || A.NetName == 'EFUSE_ILIM' ||
+                 A.NetName == 'EFUSE_DVDT' || A.NetName == 'EFUSE_FLT')"))
+
+(rule "u6-extended-courtyard-via-clearance"
+    (constraint clearance (min 0.10mm))
+    (condition "(A.NetName == 'EFUSE_OVP' || A.NetName == 'EFUSE_ILIM' ||
+                 A.NetName == 'EFUSE_DVDT' || A.NetName == 'EFUSE_FLT')"))
