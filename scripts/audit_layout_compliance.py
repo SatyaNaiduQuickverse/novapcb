@@ -520,8 +520,16 @@ def check_imu_slot():
     for d in board.GetDrawings():
         if d.GetLayer() == pcbnew.Edge_Cuts:
             edge_segments.append(d)
+    # v1 update 2026-05-24 — slot DEFERRED to v2 per DECISIONS.md §2.1.
+    # Two layout attempts (Y=33 + Y=45 latitudes) failed with 25-35 net
+    # new DRC violations from retrofit vs already-routed dense topology.
+    # v2 plans slot as first-class routing constraint (FMU↔IMU board
+    # separation pattern). This gate stays info-only; primed for
+    # reactivation when v2 picks up the slot work. See
+    # docs/v2/D_SLOT_POLYGON_ANALYSIS.md for v2 groundwork.
     if len(edge_segments) < 4:
-        info.append("IMU-SLOT: no Edge.Cuts shape complex enough to verify")
+        info.append("IMU-SLOT: DEFERRED to v2 per DECISIONS.md §2.1 "
+                    "(see docs/v2/D_SLOT_POLYGON_ANALYSIS.md)")
         return
     # Count distinct connected components of edge segments
     # (simplified: count segments not part of outer bbox)
