@@ -365,3 +365,45 @@ Two-phase strategy for getting to a fab order from a position of safety. Persist
 
 - DESIGN_PHASES.md §Phase 7 (split 7a freeze / 7b order) and §Phase 7.5 (shrink optimization).
 - The thermal sim regime that gates each shrink step is defined in SIMULATION_PLAN.md; shrink-step sims re-use that protocol.
+
+## 13. U11/U12 fab-process exceptions (master 2026-05-23)
+
+A↔B-2 + A↔B-3 routing required two scope-bounded fab-process deviations to fit the LM74700-Q1 SOT-23-6 dense fanout. Both consolidated here as the single doc anchor visible at fab-order time (vs scattered across DRU comments + commit messages).
+
+### 13.1 Via-in-pad (filled & capped) — ORING_A/B_GATE + +5V_BEC pad-center vias
+
+**Scope**: U11.4, U11.5, U12.4, U12.5 pad-center vias. 4 vias total (out of board total — small fraction of any fab order).
+
+**Why**: SOT-23-6 0.95mm pin pitch + 0.53mm pad narrow direction; standard 0.30mm drill / 0.50mm OD via fails adjacent-pad clearance by 0.035mm. Custom 0.25mm drill / 0.45mm OD via with via-in-pad construction PASSES.
+
+**DRU rules** (`hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_dru`):
+- `via-in-pad-orfet-hole` — min hole 0.25mm, condition ORING_A/B_GATE.
+- `via-in-pad-orfet-diameter` — min OD 0.45mm, same condition.
+- `via-in-pad-orfet-hole-clearance` — min hole_clearance 0.20mm, same condition.
+
+**Fab requirement**: **JLC "Via in Pad" process** = filled + capped + plated. JLC catalog name: "Via Filled & Capped (Type 7 IPC-4761)". Cost bump ≈ $30–50/board flat fee.
+
+**Order-time action** (Sai): when generating gerbers + uploading to JLC, select "Via in Pad" = yes. JLC will recognize the 4 sub-spec vias and apply the process board-wide where indicated. If JLC asks "any vias smaller than 0.30mm drill?" — answer YES, point at the DRU rule + 4 locations.
+
+### 13.2 SOT-23-6 fanout clearance relax — U11/U12 courtyard
+
+**Scope**: U11/U12 courtyard only. ALL pad/track/via clearance inside U11 or U12 courtyard is 0.15mm instead of 0.20mm netclass-Default.
+
+**Why**: A↔B-3 closure for U11.4/U12.4 +5V_BEC plane connection — via-in-pad at pin-4 has 0.19mm clearance to adjacent pin-5 (different net), failing 0.20mm rule by 0.01mm. Outside-courtyard routing paths each conflict with GATE B.Cu or SENSE F.Cu (geometric — see A↔B-3 PR doc). Master 2026-05-23 Option (i) approval: scope-bounded clearance relax mirrors via-in-pad scope-bounded DRU precedent.
+
+**DRU rule** (`hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_dru`):
+- `u11-u12-fanout-clearance-relax` — min clearance 0.15mm, condition `A.insideCourtyard('U11') || A.insideCourtyard('U12')` AND same for B.
+
+**Fab requirement**: standard JLC capability is 0.10mm minimum trace/space; 0.15mm has 0.05mm fab margin. **No process bump** (within standard JLC06161H).
+
+**Order-time action** (Sai): none; standard fab capability covers this. The DRU rule is informational — the gerbers will simply have clearances down to 0.15mm in U11/U12 corners.
+
+### Combined cost impact
+
+Via-in-pad process bump: ~$30–50/board, one-time-per-order.
+Clearance relax: $0.
+
+### Verifier (Rule 9)
+
+After A↔B-3 commit, +5V_BEC plane In2.Cu cluster expected to include U11.4 and U12.4 via their via-in-pad through-hole vias connecting to the In2.Cu zone. The cluster walker reports each as 1-pad cluster (the walker doesn't traverse zone fills), but pcbnew DRC confirms zone-to-via connection during DRC's "unconnected items" check.
+

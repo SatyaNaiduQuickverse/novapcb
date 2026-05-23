@@ -43,3 +43,15 @@
 (rule "via-in-pad-orfet-hole-clearance"
     (constraint hole_clearance (min 0.20mm))
     (condition "(A.NetName == 'ORING_A_GATE' || A.NetName == 'ORING_B_GATE')"))
+
+# A↔B-3: SOT-23-6 U11/U12 fanout clearance relax — scoped to U11/U12
+# courtyards. Per master 2026-05-23 Option (i) approval. SOT-23-6
+# 0.95mm pin pitch + 0.535mm pad half-height leaves 0.19mm via-to-
+# adjacent-pad clearance for via-on-pad on U11.4/U12.4 (+5V_BEC plane
+# connection). Relax to 0.15mm in U11/U12 courtyards only. JLC's
+# manufacturing capability is 0.10mm so 0.15mm has 0.05mm fab margin.
+# Mirrors via-in-pad scope-bounded DRU precedent.
+(rule "u11-u12-fanout-clearance-relax"
+    (constraint clearance (min 0.15mm))
+    (condition "(A.insideCourtyard('U11') || A.insideCourtyard('U12'))
+                && (B.insideCourtyard('U11') || B.insideCourtyard('U12'))"))

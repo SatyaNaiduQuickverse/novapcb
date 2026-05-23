@@ -63,12 +63,15 @@ def add_via(brd, x, y, net_obj):
 
 
 def get_net(brd, name):
-    nets = brd.GetNetsByName().asdict()
-    for k, v in nets.items():
-        kv = k.value() if hasattr(k, 'value') else str(k)
-        if kv == name:
-            return v
-    return None
+    # Iterate pad nets to find by name; avoids SwigPyObject issue with
+    # GetNetsByName().asdict() on this pcbnew build.
+    seen = {}
+    for fp in brd.GetFootprints():
+        for pad in fp.Pads():
+            n = pad.GetNet()
+            if n is not None:
+                seen[pad.GetNetname()] = n
+    return seen.get(name)
 
 
 def get_pad(brd, ref, pin):
@@ -105,7 +108,7 @@ def main():
     ab2_owned_nets = {"ORING_A_VCAP", "ORING_B_VCAP", "ORING_A_GATE", "ORING_B_GATE"}
     # Coord-set of THIS-script-added +5V_BEC stub vias at U11.4 / U12.4 offsets
     # AND +5V_BEC_A/B SENSE additions
-    ab2_offset_5v_vias = {(34.70, 5.95), (75.00, 5.95), (71.50, 5.95), (74.50, 5.95), (74.55, 5.95), (34.15, 7.0), (73.15, 7.0)}
+    ab2_offset_5v_vias = {(34.70, 5.95), (75.00, 5.95), (71.50, 5.95), (74.50, 5.95), (74.55, 5.95), (34.15, 7.0), (73.15, 7.0), (34.15, 5.95), (73.15, 5.95)}
     # Footprint-bounded region for +5V_BEC_A SENSE additions
     def in_u11_sense_box(x, y):
         return 27.0 <= x <= 36.0 and 2.5 <= y <= 9.5
@@ -116,8 +119,11 @@ def main():
     for t in brd.GetTracks():
         net = t.GetNetname()
         if isinstance(t, pcbnew.PCB_VIA):
-            p = t.GetPosition()
-            x, y = round(p.x/1e6, 2), round(p.y/1e6, 2)
+            try:
+                p = t.GetPosition()
+                x, y = round(p.x/1e6, 2), round(p.y/1e6, 2)
+            except (AttributeError, TypeError):
+                continue
             if net in ab2_owned_nets:
                 to_remove.append(t); continue
             if net == "+5V_BEC" and (x, y) in ab2_offset_5v_vias:
@@ -130,9 +136,15 @@ def main():
             if net in ab2_owned_nets:
                 to_remove.append(t); continue
             # +5V_BEC_A/B SENSE tracks fully inside footprint-bounded box:
-            s = t.GetStart(); e = t.GetEnd()
-            sx, sy = s.x/1e6, s.y/1e6
-            ex, ey = e.x/1e6, e.y/1e6
+            # Skip arcs (PCB_ARC has no simple Start/End)
+            if not hasattr(t, 'GetStart') or isinstance(t, pcbnew.PCB_ARC):
+                continue
+            try:
+                s = t.GetStart(); e = t.GetEnd()
+                sx, sy = s.x/1e6, s.y/1e6
+                ex, ey = e.x/1e6, e.y/1e6
+            except (AttributeError, TypeError):
+                continue
             if net == "+5V_BEC_A" and in_u11_sense_box(sx, sy) and in_u11_sense_box(ex, ey):
                 # exclude PR #74 trunk that ends at (27.63, 9) — trunk is X<28
                 if sx >= 27.7 and ex >= 27.7:
@@ -197,23 +209,18 @@ def main():
     add_via(brd, 28.9, 12.57, n_ga)
     add_track(brd, u11["5"][0], u11["5"][1], 28.9, 12.57, n_ga, layer=B_CU, w_mm=W_SIG)
 
-    # 3. +5V_BEC: U11.4 → plane connection — DEFERRED to A↔B-3.
-    # ROOT CAUSE: SOT-23-6 0.95mm pin pitch leaves no via-in-pad option
-    # without DRU clearance relaxation (0.19mm vs 0.20mm rule). External
-    # via paths each conflict:
-    #   - East stub via in U11-C73/C74 gap: clears GATE B.Cu only at
-    #     X=74.55+ which leaves <0.20mm to SENSE F.Cu at X=75.15.
-    #   - F.Cu/B.Cu diagonal U11.4 → Q3.5: ALWAYS crosses GATE B.Cu
-    #     because both diverge from same X column to same X column with
-    #     different slopes (U11.4 starts SOUTH of GATE, ends NORTH).
-    #   - F.Cu detour south-around-Q3-then-up: 19.87mm path length and
-    #     conflicts with SENSE F.Cu vertical clearance.
-    # Resolution requires either (a) DRU clearance-relax to 0.15mm
-    # scoped to U11/U12 courtyard (master OK needed), or (b) U11 placement
-    # shift to add 0.1mm Y spacing (revisits Step 6 placement),
-    # or (c) switch SENSE to B.Cu vertical to free F.Cu corner.
-    # ESCALATING to master with options.
-    print("[3] +5V_BEC: U11.4 DEFERRED — escalating to master (clearance constraint)", flush=True)
+    # 3. +5V_BEC: U11.4 via-in-pad (A↔B-3 — master 2026-05-23 Option (i) approved).
+    # DRU rule "u11-u12-fanout-clearance-relax" reduces clearance to 0.15mm
+    # inside U11/U12 courtyard, so 0.19mm via-to-U11.5-pad PASSES.
+    # Via 0.45 OD / 0.25 drill (matches GATE via-in-pad scope, same JLC
+    # via-filled-and-capped fab process).
+    print("[3] +5V_BEC: U11.4 via-in-pad (A↔B-3)", flush=True)
+    v = pcbnew.PCB_VIA(brd)
+    v.SetPosition(pcbnew.VECTOR2I(_mm(u11["4"][0]), _mm(u11["4"][1])))
+    v.SetWidth(_mm(0.45))
+    v.SetDrill(_mm(0.25))
+    v.SetNet(n_5v)
+    brd.Add(v)
 
     # 4. ORING_B_VCAP: U12.1 (70.85, 4.05) → C75.1 (68.52, 4)
     print("[4] ORING_B_VCAP: U12.1 → C75.1 (B.Cu)", flush=True)
@@ -233,8 +240,14 @@ def main():
     add_via(brd, 79.9, 12.57, n_gb)
     add_track(brd, u12["5"][0], u12["5"][1], 79.9, 12.57, n_gb, layer=B_CU, w_mm=W_SIG)
 
-    # 6. +5V_BEC: U12.4 → plane DEFERRED (mirror of U11.4 deferral)
-    print("[6] +5V_BEC: U12.4 DEFERRED — escalating to master", flush=True)
+    # 6. +5V_BEC: U12.4 via-in-pad (A↔B-3, mirror of U11.4)
+    print("[6] +5V_BEC: U12.4 via-in-pad (A↔B-3)", flush=True)
+    v = pcbnew.PCB_VIA(brd)
+    v.SetPosition(pcbnew.VECTOR2I(_mm(u12["4"][0]), _mm(u12["4"][1])))
+    v.SetWidth(_mm(0.45))
+    v.SetDrill(_mm(0.25))
+    v.SetNet(n_5v)
+    brd.Add(v)
 
     # 7. SENSE pin connections — Rule 9 push-back from master 2026-05-23.
     # U11.3/U11.6 + U12.3/U12.6 are LM74700 source-feedback (SENSE) pins;
