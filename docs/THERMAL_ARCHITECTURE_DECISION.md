@@ -253,9 +253,21 @@ within-tolerance placeholders that match final intent).
 - Task #16: RF-3 doc hygiene
 - Task #90 audit codify refinement (script-level, no board impact)
 
+## Sai narrowing 2026-05-23 — Option A ruled out
+
+Per /loop input "Check Sai verdict on thermal architecture (B / C)" —
+Sai narrowed to **B or C**. **Option A (115×100 LDO) is RULED OUT**;
+margin too tight (+5.9°C with no D/H/G robustness headroom). Final
+pick between B (105×85 + buck, +16.3°C margin) and C (110×90 + buck,
++17.2°C margin) still pending.
+
+Practical difference between B and C: +0.9°C margin for +5% board area.
+B is the master recommendation; C is the safety-margin variant.
+
 ## Sign-off required
 
-- [ ] Sai picks Option A / B / C / D
+- [x] ~~Option A~~ ruled out 2026-05-23
+- [ ] Sai picks Option B or C
 - [ ] Master sign-off on resulting plan
 - [ ] DECISIONS.md §2 corrected with actual-placement-verified board size
 - [ ] INTEGRATION_LOG.md #M / #7 corrected (LOCK numbers were planned-position artifacts)
