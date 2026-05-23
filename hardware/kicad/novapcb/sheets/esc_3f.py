@@ -1,8 +1,8 @@
 """
-novapcb Phase 3f — ESC outputs sheet (8 DShot channels to motor solder pads).
+novapcb Phase 3f — ESC outputs sheet (8 DShot channels to JST-GH motor connectors).
 
-Wires the 8 motor output pins (Phase 2e bdshot-locked) to 8 motor output
-pad pairs (signal + GND per motor). No series resistors per
+Wires the 8 motor output pins (Phase 2e bdshot-locked) to 8 JST-GH
+1x02 connectors (signal + GND per motor). No series resistors per
 MatekH743-bdshot inheritance; no power passthrough (ESCs powered directly
 from the main battery, not through the FC).
 
@@ -37,23 +37,29 @@ because telemetry returns on the same wire.
 
 ### ESC connector / termination type (esc-connector-type fork)
 
-**Solder pads** (16 pads total: 8 motor signals + 8 GND returns).
+**JST-GH 1x02 horizontal** per motor (8 connectors total: signal + GND).
 
 Reasoning:
-  - MatekH743 reference convention: mini-FC motor outputs are solder pads,
-    not connectors (smaller footprint, lower profile, lower BOM cost).
-  - Phase 2.5 P0.4 inventory explicitly noted "JST-SH or solder pads —
-    connector type TBD"; the placement-fit sketch used 2× JST-SH 4-pin
-    because they had ready KiCad footprints, but the fit check passes
-    just as well (or better) with solder pads since pads take less area.
-  - Production ESC wires are hand-soldered to the pads — standard
-    workflow for Matek-class mini-FCs.
-  - Phase 4 layout decides exact pad geometry (typical 2.5×1.5 mm pads
-    at 2.5 mm pitch); this sub-phase captures the topology only.
+  - `DECISIONS.md §7` (locked 2026-05-18) mandates JST-GH (Pixhawk
+    family) for ALL FC connectors — "matches every harness on the
+    existing airframe; bring-up must not also require re-crimping
+    cables." The earlier solder-pad choice on this sheet was a
+    placeholder inconsistent with that contract; this amend restores
+    alignment.
+  - Horizontal (right-angle / side-entry) variant chosen so motor leads
+    exit parallel to the south board edge — same convention as the
+    other JST-GH connectors on this design (telem 3i, power 3h, GPS).
+  - Pixhawk DS-009 reference: motor outputs on FMUv6 family use JST-GH
+    1x02 per channel for individual motor harness routing.
+  - Footprint: `Connector_JST:JST_GH_SM02B-GHS-TB_1x02-1MP_P1.25mm_Horizontal`
+    (KiCad 9 stock). 1.25 mm pitch, SMT, vertical-mount with
+    horizontal wire entry.
 
-Each motor pad pair = signal + GND. 8 motors × 2 pads = 16 pads total.
-Schematic models each pair as `Connector_Generic:Conn_01x02` for
-netlist clarity (pin 1 = motor signal, pin 2 = GND).
+Each motor connector = 1 signal pad + 1 GND pad. 8 motors × 1 connector
+× 2 pads = 16 pads total (same netlist count as the earlier solder-pad
+placeholder). Schematic models each connector as
+`Connector_Generic:Conn_01x02` for netlist clarity (pin 1 = motor
+signal, pin 2 = GND).
 
 ### Series resistors on DShot lines (dshot-series-r fork)
 
@@ -131,25 +137,25 @@ for idx, mcu_pin, _bidir in motor_map:
     mot_nets[idx] = net
 
 
-# ---- motor output pads (8× Conn_01x02 = 8 motors × (signal + GND)) ----
-# Each "connector" represents a solder-pad PAIR: pin 1 = motor signal,
-# pin 2 = GND. Footprint placeholder for Phase 4 layout — production
-# pad geometry (2.5×1.5 mm at 2.5 mm pitch, or equivalent) decided
-# there; the schematic only fixes the topology.
+# ---- motor output connectors (8× JST-GH 1x02 = 8 motors × (signal + GND)) ----
+# Each connector: pin 1 = motor signal, pin 2 = GND return. Per
+# DECISIONS.md §7 (locked 2026-05-18), all FC connectors use JST-GH
+# (Pixhawk-family standard) — matches every existing airframe harness;
+# bring-up must not require re-crimping cables. Horizontal (right-angle,
+# side-entry) variant chosen so motor leads exit parallel to the south
+# board edge, same convention as the existing JST-GH telem/power/GPS
+# connectors on other sheets.
 #
 # Reference designators J11..J18 (J1-J9 already in use: J1 USB-C, J2
 # microSD, J3 telem, J4 power, J5 GPS, J6 CAN/aux, J7 ESC1-4 stub from
 # Phase 2.5 placement, J8 ESC5-8 stub, J9 SWD). The Phase 2.5 J7/J8
 # were placement-fit-only stubs; Phase 4 layout uses J11..J18 (one per
-# motor) instead, with the solder-pad approach decided this sheet.
+# motor).
 for idx in range(1, 9):
     pad = Part(
         "Connector_Generic", "Conn_01x02",
-        # Placeholder footprint — Phase 4 layout decides actual pad geometry.
-        # Using a generic header footprint for now; Phase 4 swaps to the
-        # production solder-pad land pattern.
-        footprint="Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
-        value=f"ESC{idx}_PAD",
+        footprint="Connector_JST:JST_GH_SM02B-GHS-TB_1x02-1MP_P1.25mm_Horizontal",
+        value=f"ESC{idx}",
     )
     pad.ref = f"J{10 + idx}"   # J11..J18
     mot_nets[idx] += pad[1]    # pin 1 = motor signal
