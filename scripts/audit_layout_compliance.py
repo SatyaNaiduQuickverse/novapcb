@@ -146,17 +146,59 @@ def check_pad_overlap(items):
             fails.append(f"  {r1}.{p1} <-> {r2}.{p2}")
 
 
-# ----- check 3: A-subsystem symmetry (novapcb-specific) -----
-# Mirror about X=52.5 (board center): J4↔J19, Q3↔Q4, U11↔U12, D5↔D7, D6↔D8
-A_MIRROR_PAIRS = [("J4", "J19"), ("Q3", "Q4"), ("U11", "U12"), ("D5", "D7"), ("D6", "D8")]
+# ----- check 3: A-subsystem symmetry + 3-bucket quadrant classifier -----
+# Adopted from pcb.ai master rules-2026-05-23 (R1/R2/R3). See
+# docs/MASTER_PROCESS_RULES.md §"Symmetry refinements (pcb.ai R1/R2/R3)".
+#
+# Mirror about X=52.5 (board center). Full A-subsystem pair list per master
+# 2026-05-23 directive (11 pairs covering OR-FETs, transceivers, sense
+# resistors, sense filter caps, U11/U12 decoupling caps).
+A_MIRROR_PAIRS = [
+    ("J4", "J19"),   # Mauch power connectors
+    ("Q3", "Q4"),    # OR-FETs
+    ("U11", "U12"),  # LM74700 OR-FET controllers
+    ("D5", "D7"),    # TVS diode pair 1
+    ("D6", "D8"),    # TVS diode pair 2
+    ("R41", "R43"),  # V-sense divider
+    ("R42", "R44"),  # I-sense shunt
+    ("C61", "C81"),  # V-sense filter
+    ("C62", "C82"),  # I-sense filter
+    ("C73", "C75"),  # U11 decap
+    ("C74", "C76"),  # U12 decap
+]
 A_MIRROR_X = 52.5
 A_MIRROR_TOL_MM = 0.5
 
+# SINGLE_INSTANCE bucket — components with NO mirror partner BY DESIGN.
+# Per pcb.ai R3 (structural-asymmetry doctrine): EXEMPT from symmetry,
+# central-spine placement is correct by function. Forcing mirror would
+# break electrical role (e.g., U1 MCU is unique, IMU island is unique).
+SINGLE_INSTANCE = {
+    "U1",   # STM32H743 MCU
+    "U2",   # POWER_REG_3V3 (LDO → buck per Option B)
+    "U3", "U7", "U16",  # IMU island (3× ICM-42688-P)
+    "U4",   # DPS310 baro
+    "U6",   # TPS25940A eFuse
+    "U13",  # LP5907 IMU LDO
+    "U5",   # USBLC6 ESD
+    "U8",   # RM3100 mag (E zone)
+    "U14",  # CAN transceiver
+    "U15",  # CAN ESD
+    "J1", "J2", "J3", "J5", "J9", "J10", "J18", "J20",  # all single connectors
+    "FB2",  # ferrite bead, IMU rail
+    "Y1",   # HSE crystal
+    "L1",   # buck inductor (Option B)
+    "Q1", "Q2", "Q5",  # P-FETs (single-instance: input gate, OR-bridge, heater)
+}
+
+
 def check_a_symmetry(items):
+    """Pair-delta check per pcb.ai R2 (ZERO threshold relaxation, hard FAIL)."""
     dev = []
+    skipped = []
     for west, east in A_MIRROR_PAIRS:
         if west not in items or east not in items:
-            warns.append(f"A-SYMMETRY: {west} or {east} not placed; skip")
+            skipped.append((west, east))
             continue
         wx, wy = items[west]["x"], items[west]["y"]
         ex, ey = items[east]["x"], items[east]["y"]
@@ -164,14 +206,50 @@ def check_a_symmetry(items):
         dx, dy = abs(ex - expected_ex), abs(ey - wy)
         if dx > A_MIRROR_TOL_MM or dy > A_MIRROR_TOL_MM:
             dev.append((west, east, wx, wy, ex, ey, expected_ex, dx, dy))
+    if skipped:
+        # Pair not yet placed = informational, not a fail
+        for w, e in skipped:
+            info.append(f"A-SYMMETRY: pair {w}↔{e} not both placed; skip")
     if dev:
-        # Master 2026-05-23 ack: A symmetry refactor pending task #22.
-        # Report as WARN (not FAIL) until task #22 lands.
-        warns.append(f"A-SYMMETRY: {len(dev)} pairs deviate >{A_MIRROR_TOL_MM}mm "
-                     f"(pending task #22 explicit mirror refactor)")
+        # Per master pcb.ai R2 + R3 adoption 2026-05-23: HARD FAIL.
+        # Mirror-pair symmetry is the contract that lets per-pair sims compose.
+        # No threshold relaxation; redo placement if violated.
+        fails.append(f"A-SYMMETRY: {len(dev)} mirror-pair(s) deviate >{A_MIRROR_TOL_MM}mm (HARD FAIL per pcb.ai R2)")
         for w, e, wx, wy, ex, ey, ee, dx, dy in dev:
-            warns.append(f"  {w}@({wx:.1f},{wy:.1f}) ↔ {e}@({ex:.1f},{ey:.1f}) "
-                         f"expected ({ee:.1f},{wy:.1f}) dev=({dx:.2f},{dy:.2f})")
+            fails.append(f"  {w}@({wx:.2f},{wy:.2f}) ↔ {e}@({ex:.2f},{ey:.2f}) "
+                         f"expected ({ee:.2f},{wy:.2f}) dev=({dx:.2f},{dy:.2f})")
+
+
+def check_quadrant_balance(items, bbox):
+    """3-bucket quadrant-count classifier (pcb.ai R1).
+    - MIRROR_PAIR bucket: enforced by check_a_symmetry; not re-counted here.
+    - SINGLE_INSTANCE bucket: EXEMPT — central-spine placement correct.
+    - AUTO bucket (debris): quadrant-count delta WARN-only with structural
+      reason documented in PR doc.
+    """
+    cx = (bbox[0] + bbox[2]) / 2.0
+    cy = (bbox[1] + bbox[3]) / 2.0
+    pair_refs = {r for pair in A_MIRROR_PAIRS for r in pair}
+    auto_counts = {"NW": 0, "NE": 0, "SW": 0, "SE": 0}
+    for ref, it in items.items():
+        if ref in pair_refs or ref in SINGLE_INSTANCE:
+            continue
+        x, y = it["x"], it["y"]
+        if x <= cx and y <= cy:
+            auto_counts["NW"] += 1
+        elif x > cx and y <= cy:
+            auto_counts["NE"] += 1
+        elif x <= cx and y > cy:
+            auto_counts["SW"] += 1
+        else:
+            auto_counts["SE"] += 1
+    info.append(f"QUADRANT-AUTO: NW={auto_counts['NW']} NE={auto_counts['NE']} "
+                f"SW={auto_counts['SW']} SE={auto_counts['SE']}")
+    # WARN-only threshold per pcb.ai R1: imbalance >5 across any pair flags WARN
+    spread = max(auto_counts.values()) - min(auto_counts.values())
+    if spread > 5:
+        warns.append(f"QUADRANT-AUTO: spread {spread} across quadrants — "
+                     f"document structural reason in PR doc per pcb.ai R1 (warn-only)")
 
 
 # ----- check 4: passive anchoring (role + ORPHANED/FAR) -----
@@ -683,6 +761,7 @@ bbox = get_outline_bbox()
 check_off_board(items, bbox)
 check_pad_overlap(items)
 check_a_symmetry(items)
+check_quadrant_balance(items, bbox)
 check_passive_anchoring(items)
 check_decoupling(items)
 check_imu_slot()

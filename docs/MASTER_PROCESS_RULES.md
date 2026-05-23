@@ -176,6 +176,58 @@ never deferred without explicit tracking, never waved off as "probably
 fine" or "the fab handles it", never compromised to hit a schedule. (Sai,
 2026-05-21.)
 
+## Symmetry refinements (pcb.ai R1/R2/R3 — adopted 2026-05-23)
+
+Reinforcement of the existing "symmetry as explicit transforms" rule
+(Rule 2). pcb.ai master delivered three refinements 2026-05-23 caught
+during PR-A4-integrate review. Adopted into novapcb's audit script +
+docs same day.
+
+### R1 — 3-bucket quadrant-balance classifier
+
+Replace the flat "≤2 NW/NE/SW/SE component-count delta" check with three
+buckets that match how components actually relate to placement intent:
+
+- **MIRROR_PAIR bucket** — named pair components mirrored across the
+  board midline (novapcb: 11 pairs listed in
+  `scripts/audit_layout_compliance.py:A_MIRROR_PAIRS`). Subject to the
+  strict ≤0.5mm pair-delta rule (R2 below).
+- **SINGLE_INSTANCE bucket** — components with NO mirror partner BY
+  DESIGN (MCU, USB, eFuse, IMU island, single connectors, etc).
+  **EXEMPT** from symmetry — central-spine placement is correct by
+  function. Forcing mirror would break electrical role.
+- **AUTO bucket** — generic debris (IC decoupling, pull resistors,
+  test points). **WARN-only** with structural reason required in PR
+  doc when quadrant counts imbalance.
+
+Why: one flat threshold misses real channel asymmetry while flagging
+acceptable debris imbalance.
+
+### R2 — Mirror-pair symmetry has ZERO threshold relaxation
+
+For MIRROR_PAIR bucket: pair-delta MUST be ≤0.5mm (novapcb spec; pcb.ai
+uses ≤2 component-count delta for their CHANNEL bucket — semantics
+identical: mirror is the CONTRACT). If a mirror pair deviates, REDO
+without hesitation — this is what makes per-pair/per-channel sims
+compose to whole-board. Don't trade it away for debris-balance metrics.
+
+`scripts/audit_layout_compliance.py:check_a_symmetry()` enforces this
+as a HARD FAIL (raised from WARN 2026-05-23 per pcb.ai R2 adoption).
+
+### R3 — Structural-asymmetry doctrine
+
+When components have NO mirror partner BY DESIGN (unique-net debug TPs,
+single-instance IC decoupling, RESET/BOOT0 pulls), forcing mirror would
+violate the decoupling/passive-distance rule (≤8mm from parent IC) which
+BREAKS electrical function.
+
+Accept structural asymmetry. Document the reason in PR doc. Do NOT
+contort placement to satisfy unattainable balance. Engineering reality
+> visual aesthetic.
+
+Cross-ref: `scripts/audit_layout_compliance.py:SINGLE_INSTANCE` is the
+explicit exempt list for novapcb (~20 refs as of 2026-05-23).
+
 ---
 
 ## How rules apply to PR docs
