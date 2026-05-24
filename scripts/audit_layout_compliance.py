@@ -157,8 +157,11 @@ A_MIRROR_PAIRS = [
     ("J4", "J19"),   # Mauch power connectors
     ("Q3", "Q4"),    # OR-FETs
     ("U11", "U12"),  # LM74700 OR-FET controllers
-    ("D5", "D7"),    # TVS diode pair 1
-    ("D6", "D8"),    # TVS diode pair 2
+    # NOTE 2026-05-24: D5/D6/D7/D8 were listed as A-subsystem TVS pairs but
+    # current SKiDL ownership has them as GPS ESDs (gps_mag_3e.py). A subsystem
+    # uses only D1 = SMAJ6.0A bulk clamp (no per-pin TVS pairs). Removed
+    # to prevent false-positive A-SYMMETRY warnings on GPS ESD placement.
+    # (Audit-vs-SKiDL drift, Rule-18 corollary.)
     ("R41", "R43"),  # V-sense divider
     ("R42", "R44"),  # I-sense shunt
     ("C61", "C81"),  # V-sense filter
