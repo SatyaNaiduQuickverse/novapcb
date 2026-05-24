@@ -149,4 +149,77 @@ After re-routes above land:
 
 ---
 
-**Awaiting master sign-off on §6 decisions before corridor-clear execution.**
+## 8. (α-revised) refinement — 4th escalation 2026-05-24
+
+### Why the original (α) corridor clear is INSUFFICIENT
+
+Survey of I²C2 endpoint discovered: **U4 BARO at (43.5, 47.5) sits
+INSIDE the corridor Y=44..48**. The I²C2_SCL/SDA traces in the band
+are not relocatable in isolation — they're the U4 baro connection.
+Moving I²C2 out of the band requires moving U4, which is substantial
+E-subsystem re-placement (touches PR #72/#73).
+
+Master signed off (α-revised) — keep U4, route MOT3-6 AROUND U4
+cluster instead.
+
+### Rule-19 Y=45.5 cross-section survey (master gate #1)
+
+Y=45.5 cross-section (X=37..56) enumerated via pcbnew — RESULT: **BLOCKED**.
+
+Existing tracks crossing Y=45.5 X=37..56:
+
+| Layer | Net | Segment |
+|---|---|---|
+| F.Cu | I²C2_SCL | (44.67, 45.50)-(44.67, 47.80) |
+| F.Cu | I²C2_SCL | (46.51, 46.50)-(46.51, 45.50) |
+| F.Cu | I²C2_SCL | (46.51, 45.50)-(44.67, 45.50) |
+| B.Cu | I²C2_SCL | (47.00, 44.00)-(47.50, 46.50) |
+| B.Cu | I²C2_SDA | (52.00, 44.00)-(52.00, 47.30) |
+| F.Cu | IMU1_CS | (46.40, 55.18)-(31.29, 40.07) — diagonal crosses Y=45.5 |
+| B.Cu | IMU2_ACC_INT1 | (48.49, 46.21)-(48.49, 44.59) |
+| B.Cu | IMU2_GYR_CS | (47.17, 37.98)-(62.80, 53.62) — diagonal |
+| F.Cu | IMU3_CS | (30.89, 41.67)-(50.78, 61.56) — diagonal |
+| F.Cu | SPI1_MISO | (41.00, 47.31)-(41.00, 42.67) |
+| F.Cu | SPI1_MOSI | (47.72, 45.78)-(46.40, 44.45) |
+| F.Cu | SPI1_SCK | (40.56, 44.60)-(40.56, 47.50) |
+| B.Cu | SPI3_MOSI | (52.22, 48.31)-(48.89, 44.99) |
+| B.Cu | SPI3_SCK | (73.90, 50.56)-(50.57, 27.23) — long diagonal |
+
+Pads in band Y=44..47 X=37..56:
+
+| Component | Pad | Position | Net |
+|---|---|---|---|
+| C12 | 1, 2 | (39, 45) | +3V3, GND |
+| U4 BARO | 5-8 | (42-44, 46.2) | GND, +3V3 (I²C2 endpoint) |
+| C17 VCAP | 1, 2 | (49, 45) | VCAP1, GND |
+| C13 | 1, 2 | (50.5, 45) | +3V3, GND |
+| **R12** | 1, 2 | **(46.51, 46.5)** | **+3V3, I²C2_SCL — IN MOT4 COLUMN** |
+| R11 | 1, 2 | (52.51, 46.5) | +3V3, I²C2_SDA |
+| U7 LPS22HB | 1, 7-10 | (54-56, 46.2-46.75) | (I²C1 baro — not in corridor itself) |
+
+**CRITICAL**: **R12 at (46.51, 46.5) directly blocks MOT4 (PE11) S
+fanout** — MOT4 pad at X=46.5, R12 at X=46.51 = 0.01mm spacing →
+guaranteed clearance fail.
+
+R11 at (52.51, 46.5) less critical (no MOT pad column at X=52.5 — MOT8
+is at X=41 N edge).
+
+### Per master's gate clarification #1 directive
+
+"If Y=45.5 cross-section survey reveals a NEW blocker, do Rule-13
+stop-and-ping. Don't iterate blind."
+
+**5th H↔C escalation sent to master 2026-05-24** with 3 options:
+- (ε) Stay-west-of-D: MOT3-6 thread between R12/U4 cluster — adds
+  1-2mm bends, complex routing
+- (ζ) Layer-split-around: 12 vias, B.Cu detour past Y=50, F.Cu after
+- **(η) Move R11/R12 pulls east** (recommend): 4.7k I²C pulls are
+  passive — relocate to X=60 Y=46.5 (10mm east). I²C2 traces re-route
+  ~5mm longer (negligible at 400kHz). Doesn't touch U4 baro placement.
+
+**Awaiting master sign-off on (ε/ζ/η) before execution.**
+
+---
+
+**Original sign-off (§6) ratified 2026-05-24; (α-revised) refinement
++ Y=45.5 survey result + (ε/ζ/η) pick added in this amendment.**
