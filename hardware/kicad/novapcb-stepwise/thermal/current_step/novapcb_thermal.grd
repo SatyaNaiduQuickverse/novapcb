@@ -2,8 +2,8 @@
 Version = 210903
 Coordinate System = Cartesian 3D
 Subcell Divisions in 3D = 1 1 1
-Subcell Sizes 1 = 0.09
-Subcell Sizes 2 = 0.07
+Subcell Sizes 1 = 0.105
+Subcell Sizes 2 = 0.085
 Subcell Sizes 3 = 0.0016
 Material Structure in 2D
   1
@@ -20,6 +20,6 @@ Numbering = Horizontal
 Element Degree = 1
 Element Innernodes = False
 Triangles = False
-Element Divisions 1 = 45
-Element Divisions 2 = 35
+Element Divisions 1 = 280
+Element Divisions 2 = 226
 Element Divisions 3 = 4

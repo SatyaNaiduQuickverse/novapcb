@@ -12,10 +12,102 @@ Simulation
 End
 
 Body 1
+  Name = "U12"
   Equation = 1
   Material = 1
   Body Force = 1
 End
+
+Body 2
+  Name = "U6"
+  Equation = 1
+  Material = 1
+  Body Force = 2
+End
+
+Body 3
+  Name = "U9"
+  Equation = 1
+  Material = 1
+  Body Force = 3
+End
+
+Body 4
+  Name = "U3"
+  Equation = 1
+  Material = 1
+  Body Force = 4
+End
+
+Body 5
+  Name = "U14"
+  Equation = 1
+  Material = 1
+  Body Force = 5
+End
+
+Body 6
+  Name = "U8"
+  Equation = 1
+  Material = 1
+  Body Force = 6
+End
+
+Body 7
+  Name = "Q3"
+  Equation = 1
+  Material = 1
+  Body Force = 7
+End
+
+Body 8
+  Name = "Q4"
+  Equation = 1
+  Material = 1
+  Body Force = 8
+End
+
+Body 9
+  Name = "U1"
+  Equation = 1
+  Material = 1
+  Body Force = 9
+End
+
+Body 10
+  Name = "U13"
+  Equation = 1
+  Material = 1
+  Body Force = 10
+End
+
+Body 11
+  Name = "U11"
+  Equation = 1
+  Material = 1
+  Body Force = 11
+End
+
+Body 12
+  Name = "U2"
+  Equation = 1
+  Material = 1
+  Body Force = 12
+End
+
+Body 13
+  Name = "Q2"
+  Equation = 1
+  Material = 1
+  Body Force = 13
+End
+
+Body 14
+  Name = "Background"
+  Equation = 1
+  Material = 1
+End
+
 
 Equation 1
   Active Solvers(2) = 1 2
@@ -50,9 +142,70 @@ Material 1
 End
 
 Body Force 1
-  Heat Source = Variable Coordinate
-    Real MATC "q=0; if (abs(tx(0)-0.02800)<0.00150 & abs(tx(1)-0.01800)<0.00200) q=q+3.750e+02; if (abs(tx(0)-0.04500)<0.00700 & abs(tx(1)-0.03500)<0.00700) q=q+8.929e+02; if (abs(tx(0)-0.06000)<0.00145 & abs(tx(1)-0.02600)<0.00080) q=q+2.694e+03; if (abs(tx(0)-0.02400)<0.00125 & abs(tx(1)-0.02500)<0.00150) q=q+1.983e+04; if (abs(tx(0)-0.02313)<0.00150 & abs(tx(1)-0.02150)<0.00075) q=q+3.611e+02; q"
+  Name = "U12_source"
+  Heat Source = 1.384804e+03
 End
+
+Body Force 2
+  Name = "U6_source"
+  Heat Source = 3.988235e+02
+End
+
+Body Force 3
+  Name = "U9_source"
+  Heat Source = 3.165266e+02
+End
+
+Body Force 4
+  Name = "U3_source"
+  Heat Source = 3.165266e+02
+End
+
+Body Force 5
+  Name = "U14_source"
+  Heat Source = 3.165266e+03
+End
+
+Body Force 6
+  Name = "U8_source"
+  Heat Source = 1.846405e+02
+End
+
+Body Force 7
+  Name = "Q3_source"
+  Heat Source = 5.755029e+02
+End
+
+Body Force 8
+  Name = "Q4_source"
+  Heat Source = 5.755029e+02
+End
+
+Body Force 9
+  Name = "U1_source"
+  Heat Source = 8.592689e+02
+End
+
+Body Force 10
+  Name = "U13_source"
+  Heat Source = 2.769608e+03
+End
+
+Body Force 11
+  Name = "U11_source"
+  Heat Source = 1.384804e+03
+End
+
+Body Force 12
+  Name = "U2_source"
+  Heat Source = 6.924020e+02
+End
+
+Body Force 13
+  Name = "Q2_source"
+  Heat Source = 3.600490e+02
+End
+
 
 ! Edges 1-4: ADIABATIC (no h_conv)
 Boundary Condition 1
