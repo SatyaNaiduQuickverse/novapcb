@@ -19,7 +19,7 @@
 | E barometers (DPS310 on I²C2) | ✓ placed + routed |
 | F USB-C (J1 + ESD U5) | ✓ placed + routed |
 | H ESC outputs (J11 10-pin JST-GH SM10B-GHS-TB) | ✓ placed; routing in flight |
-| H↔C MOT* routing (8 + IMU3_INT1 + GND stitch) | 🟡 (η): move R11/R12 I²C2 pull-ups (passive, no net topology change) to free MOT3/MOT4 fanout columns; then route MOT* |
+| H↔C MOT* routing (8 + IMU3_INT1 + GND stitch) | 🟡 (θ) re-route IMU CS diagonals to perimeter — TIME-CAPPED 1 iteration; (λ) DRU-exception fallback |
 | CAN bus (U14 + U15 + term + J20 NE-corner) | ✓ placed (PR #84 merged) — routing next |
 | microSD (J2 east-band-south + SDMMC1 + length-match) | ✓ placed (PR #85 merged) — routing next |
 | G-GPS (J5 SW corner + ESD + pulls + safety test pads) | ✓ placed (PR #86) |
@@ -72,6 +72,7 @@ Each sub-step follows established pattern: up-front constraint analysis → mast
 
 | Time (UTC) | Event |
 |---|---|
+| 2026-05-24 05:50 | H↔C escalation #6 (corridor saturation real): picked (θ) IMU_CS re-route with HARD time-cap (1 iteration); (λ) DRU exceptions as fallback if it doesn't converge. Worker also dispatched in parallel on DRU cleanup (task #30) + U6 decoupling (task #91) — both small focused PRs. |
 | 2026-05-24 05:25 | H↔C escalation #5: Y=45.5 cross-section survey caught R11/R12 I²C2 pull-ups directly in MOT3/MOT4 fanout columns. Picked (η) move R11/R12 (south preferred) to free corridor. 5th H↔C iteration — each escalation has been caught by Rule-13 discipline + produced learning. |
 | 2026-05-24 05:08 | PRs #86 (GPS J5 SW) + #90 (CRSF/Telem/SWD + JST-GH amend) merged. 14 PRs landed today. All 7 connector subsystems now placed. H↔C escalation #4 caught U4 baro IS in corridor; pivoted to (α-revised) route-around U4. |
 | 2026-05-24 04:55 | PRs #88 (real-estate map) + #89 (H↔C corridor-clear survey) merged. 12 PRs landed today. 9 decisions ratified across both. Dispatched 3 parallel exec streams: GPS rebase+placement, CRSF/Telem/SWD layout, H↔C corridor-clear+MOT routing. GPS PR #86 branch needs rebase (stale base discovered). |
