@@ -28,18 +28,20 @@
 | SWD header (J9 N-middle west) | ✓ placed | routing dispatched (task #48 combined) |
 | DRU rule cleanup (10 pre-existing DRC) | ⬜ pending |
 | U6 decoupling fix (C9 moved to U6 +5V pads) | ✓ landed (PR #92) |
-| Full sim suite (Sim 1+2+5 NOW autonomous; 3+4 after routing) | 🟡 autonomous exec authorized (PR #93 plan) |
+| Full sim suite | Sim 1 ✓ +17.6°C margin; Sim 2 ✓ inherited; Sim 5 deferred; Sim 3+4 await routing |
 | JLCPCB DFM compliance (7 checks + script) | 🟡 autonomous exec authorized (PR #93 plan) |
 | Phase 7a freeze (Sai trigger) | ⬜ awaiting Sai |
 
 ## PR stack (most recent first)
 
-### `sch/option-b-buck` head — currently `684e605` (16 PRs landed today 2026-05-24)
+### `sch/option-b-buck` head — currently `684e605` (19 PRs landed today 2026-05-24)
 
 | # | Title | Type | Notes |
 |---|---|---|---|
 | #89 | docs: H↔C corridor-clear survey + per-net re-route plan | doc | Per-net plan for I²C2 south-detour + SPI1 small shifts to vacate Y=44..48 corridor |
 | #88 | docs: remaining real-estate map (post-GPS) for CRSF/Telem/SWD | doc | TELEM (95,38), SWD (45,8) west of CRSF (54,8) in N-middle band |
+| #95 | sim: 2 (USB Z_diff) PASS via PR #75 inheritance; 5 (PDN) defer | sim | Geometry unchanged so Z_diff stands; PDN deferred per audit-DECOUPLING proxy rationale |
+| #94 | sim: thermal (gate12 v3) PASS — Tj_Q2 62.40°C +17.6°C margin | sim | Final board with all 7 connector subsystems placed; thermal margin excellent |
 | #93 | docs: sim suite + JLCPCB DFM plans (pre Phase 7a) | doc | 5 sim categories + 7 DFM checks; 3 sims + DFM authorized for autonomous exec |
 | #92 | hw: U6 decoupling fix — move C9 closer to U6 +5V pads (task #91) | hw | DECOUPLING audit gate now clean for U6 |
 | #90 | hw: CRSF + TELEM + SWD placement + J10 footprint sync to JST-GH | placement + schema bundle | N-middle band; CRSF placeholder→JST-GH 4P (mirrors PR #80 pattern) |
@@ -74,6 +76,7 @@ Each sub-step follows established pattern: up-front constraint analysis → mast
 
 | Time (UTC) | Event |
 |---|---|
+| 2026-05-24 06:45 | Sim 2 (USB Z_diff) PASS via inheritance + Sim 5 (PDN) deferred with rationale. PR #95 merged. **19 PRs landed today.** Worker requested pause (context load); master throttling autonomous dispatch. CAN Freerouting still in flight (PID 2868029); other routings + DFM + DRU cleanup queued for Sai's return. |
 | 2026-05-24 06:25 | PR #93 (sim+DFM plans) merged. 16 PRs landed today. Authorized autonomous exec on Sim 1/2/5 + DFM checker. Discovered: subsystem ROUTINGS (CAN, microSD, GPS, CRSF/Telem/SWD) were never done — only placements landed. Dispatched 4 routing sub-steps in parallel; should be clean (different corridors from H↔C south). |
 | 2026-05-24 06:08 | H↔C 7th escalation: physical OVERLAP (not just clearance) — DRU exceptions can't fix. HALTED iteration; surfacing v1-scope question to Sai on return (recommend κ defer to v2). PR #92 (U6 decap) merged. PRs #87 + #91 closed (stale/superseded). 15 PRs landed today. Worker pivoting to full sim suite + JLCPCB DFM + DRU cleanup. |
 | 2026-05-24 05:50 | H↔C escalation #6 (corridor saturation real): picked (θ) IMU_CS re-route with HARD time-cap (1 iteration); (λ) DRU exceptions as fallback if it doesn't converge. Worker also dispatched in parallel on DRU cleanup (task #30) + U6 decoupling (task #91) — both small focused PRs. |
