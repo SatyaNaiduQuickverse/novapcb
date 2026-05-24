@@ -34,10 +34,12 @@
 
 ## PR stack (most recent first)
 
-### `sch/option-b-buck` head — currently `684e605` (10 PRs landed today 2026-05-24)
+### `sch/option-b-buck` head — currently `684e605` (12 PRs landed today 2026-05-24)
 
 | # | Title | Type | Notes |
 |---|---|---|---|
+| #89 | docs: H↔C corridor-clear survey + per-net re-route plan | doc | Per-net plan for I²C2 south-detour + SPI1 small shifts to vacate Y=44..48 corridor |
+| #88 | docs: remaining real-estate map (post-GPS) for CRSF/Telem/SWD | doc | TELEM (95,38), SWD (45,8) west of CRSF (54,8) in N-middle band |
 | #85 | docs+hw: microSD subsystem placement (J2 east-band-south + 5 pulls + decap) | placement | DRC 21→20 favorable; SDMMC1 length-matching deferred to routing sub-step |
 | #84 | docs+hw: CAN bus subsystem placement + U5 USB VBUS decap C85 fix | placement + schema bundle | NE-corner U14/U15/J20; C83 freed to its real CAN role per schema, new C85 added for U5 USB |
 | #83 | sch+fw: pin remap (R-broad) — SKiDL + hwdef + board nets | schematic + firmware | MOT3-6 → south-edge TIM1; MOT7-8 → north-edge TIM4; IMU3_INT1 cascade PE11→PB2. Routing deferred to follow-up. |
@@ -68,6 +70,7 @@ Each sub-step follows established pattern: up-front constraint analysis → mast
 
 | Time (UTC) | Event |
 |---|---|
+| 2026-05-24 04:55 | PRs #88 (real-estate map) + #89 (H↔C corridor-clear survey) merged. 12 PRs landed today. 9 decisions ratified across both. Dispatched 3 parallel exec streams: GPS rebase+placement, CRSF/Telem/SWD layout, H↔C corridor-clear+MOT routing. GPS PR #86 branch needs rebase (stale base discovered). |
 | 2026-05-24 04:42 | H↔C Freerouting aborted at 36min (47GB swap, no pass-2 convergence). Pivoted to (α) corridor clear — survey doc + master sign-off → execute pattern. GPS J5 relocated SW (15,75) after NW Rule-19 catch. CRSF/Telem/SWD pending real-estate map sub-step before exec. 3 parallel work streams dispatched. |
 | 2026-05-24 04:33 | PRs #85 (microSD) + #84 (CAN bus + C85 U5 decap fix) merged. Branch tip `684e605`. 10 PRs landed today. Worker chained to GPS + CRSF/Telem/SWD layouts. |
 | 2026-05-24 03:40 | PRs #86 (GPS) + #87 (CRSF/Telem/SWD) up-front analyses approved; CRSF schematic amend (JST-GH 4P, mirrors PR #80 pattern) bundled per merge-autonomous memory — not separate Sai-gated PR. H↔C Freerouting given hard abort criterion (>20 unrouted at end of pass 2 → pivot to α corridor clear). |
