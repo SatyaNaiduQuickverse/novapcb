@@ -19,13 +19,13 @@
 | E barometers (DPS310 on I²C2) | ✓ placed + routed |
 | F USB-C (J1 + ESD U5) | ✓ placed + routed |
 | H ESC outputs (J11 10-pin JST-GH SM10B-GHS-TB) | ✓ placed; routing in flight |
-| H↔C MOT* routing (8 signal + IMU3_INT1 + GND stitch) | 🟡 in flight (Freerouting first; corridor-clear fallback) |
-| CAN bus (U14 TJA1051 + U15 PESD2CAN + term + decaps) | ⬜ pending |
-| G-CRSF (J10 + ESD + dividers) | ⬜ pending |
-| G-GPS (J5 + ESD + I²C pulls) | ⬜ pending |
-| G-Telem UART (J3 + ESD) | ⬜ pending |
-| microSD (J2 + SDMMC1) | ⬜ pending |
-| SWD header (J9) | ⬜ pending |
+| H↔C MOT* routing (8 signal + IMU3_INT1 + GND stitch) | 🟡 in flight (Freerouting active β-strategy) |
+| CAN bus (U14 + U15 + term + J20 NE-corner) | 🟡 analysis approved (PR #84), layout executing |
+| microSD (J2 east-band-south + SDMMC1 + length-match) | 🟡 analysis approved (PR #85), layout executing |
+| G-GPS (J5 + ESD + I²C pulls) | ⬜ analysis drafting (PR #86 pending) |
+| G-CRSF (J10 + ESD + dividers) | ⬜ analysis drafting (PR #87 pending) |
+| G-Telem UART (J3 + ESD) | ⬜ analysis drafting (PR #88 pending) |
+| SWD header (J9) | ⬜ analysis drafting (PR #89 pending) |
 | DRU rule cleanup (10 pre-existing DRC) | ⬜ pending |
 | U6 decoupling fix | ⬜ pending |
 | Full sim suite (thermal + EMC + vibration) | ⬜ pending |
@@ -66,6 +66,8 @@ Each sub-step follows established pattern: up-front constraint analysis → mast
 
 | Time (UTC) | Event |
 |---|---|
+| 2026-05-24 03:10 | PRs #84 (CAN) + #85 (microSD) up-front analyses approved; worker dispatched parallel execution; 4 more analyses (GPS/CRSF/Telem/SWD) queued for drafting |
+| 2026-05-24 03:00 | Worker H↔C Freerouting started (PID 2846592, autonomous β-first strategy) |
 | 2026-05-24 02:35 | STATUS.md created; autonomous-loop running; PR #83 merged |
 | 2026-05-24 02:00 | PR #83 opened (pin remap, schematic + firmware change) |
 | 2026-05-24 01:00 | PR #82 (audit DRAFT) → closed; carried into PR #83 |
