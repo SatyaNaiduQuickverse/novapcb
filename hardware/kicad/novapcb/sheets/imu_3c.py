@@ -285,7 +285,10 @@ IMU2_GYR_INT3 = n("IMU2_GYR_INT3")
 IMU3_INT1     = n("IMU3_INT1")
 IMU2_ACC_INT1 += mcu["PE5"]
 IMU2_GYR_INT3 += mcu["PE6"]
-IMU3_INT1     += mcu["PE11"]
+# IMU3_INT1 was PE11 (pad 41 S); moved to PB2 (pad 36 S) per
+# docs/MCU_PIN_MAP_AUDIT.md (cascade — PE11 freed for MOT4 TIM1_CH2).
+# PB2 is a free GPIO on south edge, no peripheral conflict.
+IMU3_INT1     += mcu["PB2"]
 
 
 # --------------------------------------------------------------------

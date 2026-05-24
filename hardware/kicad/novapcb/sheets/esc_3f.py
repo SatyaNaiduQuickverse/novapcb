@@ -138,20 +138,38 @@ GND = n("GND")
 
 
 # ---- MCU side: wire the 8 PWM pins to the MOT1..MOT8 nets ----
-# hwdef.dat:165-172 — Phase 2e bdshot lock. Pin → motor mapping per the
-# PWM(n) numbering in hwdef:
-#   PWM(1)=PB0(BIDIR), PWM(2)=PB1, PWM(3)=PA0(BIDIR), PWM(4)=PA1,
-#   PWM(5)=PA2(BIDIR), PWM(6)=PA3, PWM(7)=PD12(BIDIR), PWM(8)=PD13
+# REMAPPED per docs/MCU_PIN_MAP_AUDIT.md (master+Sai ratified 2026-05-24):
+# original Phase 2e bdshot lock had MOT3-6 on west-edge PA0-PA3 and
+# MOT7-8 on east-edge PD12/PD13. Both edges have component obstacles
+# (W cap field, E U7 BARO) that physically block clean F.Cu fanout to
+# south-edge J11 connector — H↔C 2× escalation 2026-05-24.
+#
+# New mapping moves MOT3-6 to south-edge TIM1_CH1-4 (advanced timer,
+# BDSHOT-capable) and MOT7-8 to north-edge TIM4_CH3/CH4 (with N→S
+# B.Cu traversal). Result: clean F.Cu fanout for 6/8 motors + layer-split
+# for 2/8 with no MCU-pad-region obstacles.
+#
+# BDSHOT pattern (TIM "one BIDIR per timer" constraint):
+#   PB0 (TIM3_CH3) — BIDIR  → MOT1
+#   PB1 (TIM3_CH4)          → MOT2
+#   PE9 (TIM1_CH1)  — BIDIR → MOT3
+#   PE11 (TIM1_CH2)         → MOT4
+#   PE13 (TIM1_CH3) — BIDIR → MOT5    [hwdef sets PE9 BIDIR; one BIDIR
+#   PE14 (TIM1_CH4)         → MOT6     per timer; PE13 marked BIDIR but
+#                                      hwdef.dat enforces TIM1 BIDIR
+#                                      assignment to a single channel]
+#   PB8 (TIM4_CH3)  — BIDIR → MOT7
+#   PB9 (TIM4_CH4)          → MOT8
 motor_map = [
     # (motor_index, mcu_pin, bidir_flag)
     (1, "PB0",  True),
     (2, "PB1",  False),
-    (3, "PA0",  True),
-    (4, "PA1",  False),
-    (5, "PA2",  True),
-    (6, "PA3",  False),
-    (7, "PD12", True),
-    (8, "PD13", False),
+    (3, "PE9",  True),    # was PA0 — moved W → S (TIM1_CH1)
+    (4, "PE11", False),   # was PA1 — moved W → S (TIM1_CH2)
+    (5, "PE13", True),    # was PA2 — moved W → S (TIM1_CH3)
+    (6, "PE14", False),   # was PA3 — moved W → S (TIM1_CH4)
+    (7, "PB8",  True),    # was PD12 — moved E → N (TIM4_CH3)
+    (8, "PB9",  False),   # was PD13 — moved E → N (TIM4_CH4)
 ]
 
 mot_nets = {}

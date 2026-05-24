@@ -176,6 +176,58 @@ never deferred without explicit tracking, never waved off as "probably
 fine" or "the fab handles it", never compromised to hit a schedule. (Sai,
 2026-05-21.)
 
+## Rule 18 — Fanout-reach audits enumerate TRACKS AND COMPONENT PADS
+
+When auditing whether a net can fan out from MCU pin to a destination
+connector / sensor, **both existing tracks AND component pads in the
+corridor are physical obstacles**. Track-only surveys miss decap
+halos, sensor pads, crystal pads, connector pads — all of which block
+routing at DRC clearance distance.
+
+Caught in H↔C 2× escalation 2026-05-24: original analysis surveyed
+fanout corridor for tracks (found clean), missed 8 caps + crystal +
+R2 at MCU west edge (X=33..37 Y=25..50) that physically blocked MOT3-6
+F.Cu fanout. Spent 3 routing iterations + 4 hours discovering this.
+
+**Checklist for every up-front fanout analysis:**
+1. Survey all F.Cu / B.Cu tracks in corridor (start..end)
+2. Survey all component pads in corridor (footprint + footprint bbox)
+3. Survey existing vias in corridor (intersect all layers)
+4. State the corridor clearance budget vs net width + clearance × N nets
+
+(Master, 2026-05-24.)
+
+## Rule 19 — Fanout-reach audits also enumerate EXISTING ROUTED NETS
+
+Rule 18 + 19 are siblings: Rule 18 covers component obstacles; Rule 19
+covers ROUTING obstacles. A net that can geometrically reach its
+destination but must cross dense existing routing has the same problem
+as one blocked by component pads. The corridor must have ENOUGH SPACE
+for the new nets to thread between the existing ones.
+
+Caught in pin-remap PR 3rd routing iteration 2026-05-24: after MCU
+pin remap moved MOT3-6 from west-edge to south-edge pads (Rule 18
+constraints satisfied), routing STILL failed because existing
+I2C2 SCL/SDA (E-going to baro) + SPI1 MISO/MOSI/SCK (S-going to IMU)
+traces at Y=44..48 constrict the south corridor that 6 new MOT* nets
++ 1 IMU3_INT1 needed to traverse.
+
+**Checklist additions to Rule 18:**
+5. Enumerate all routed nets currently in the corridor (by net name + path)
+6. Compute total trace lane count in narrowest cross-section vs
+   available width × (track + clearance)
+7. Flag any cross-section that cannot accommodate the planned new
+   nets without re-routing existing — escalate before commit
+
+When the constraint isn't met, options (in order of preference):
+- (a) Pick a different fanout corridor (different MCU pin set, different
+  destination, different layer)
+- (b) Re-route the existing constricting nets to vacate the corridor
+  (touches their PRs — regression risk; coordinate with original sub-step)
+- (c) Accept layer-split with documented DRU exceptions if both fail
+
+(Master, 2026-05-24 — pin-remap PR 3rd-iteration failure was the source.)
+
 ## Symmetry refinements (pcb.ai R1/R2/R3 — adopted 2026-05-23)
 
 Reinforcement of the existing "symmetry as explicit transforms" rule

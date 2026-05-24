@@ -110,7 +110,7 @@ define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
 
 # order of UARTs (and USB)
-SERIAL_ORDER OTG1 UART7 USART1 USART2 USART3 UART8 UART4 USART6 OTG2
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART8 USART6 OTG2
 
 # USART1 (telem2)
 PA10 USART1_RX USART1
@@ -124,9 +124,9 @@ PD6 USART2_RX USART2
 PD9 USART3_RX USART3
 PD8 USART3_TX USART3
 
-# UART4 (spare)
-PB9 UART4_TX UART4 NODMA
-PB8 UART4_RX UART4 NODMA
+# UART4 — REMOVED 2026-05-24: PB8/PB9 now assigned to MOT7/MOT8
+# per docs/MCU_PIN_MAP_AUDIT.md. UART4 was a "spare" with no board
+# wiring (no SKiDL sheet references); safe to drop.
 
 # USART6 — bdshot-style reassignment (Phase 2e amendment 2026-05-20).
 # Base MatekH743 put PC7 on TIM3_CH2 (RC input via timer); TIM3 is now PWM 1-2's timer.
@@ -136,11 +136,9 @@ PB8 UART4_RX UART4 NODMA
 PC7 USART6_RX USART6
 PC6 USART6_TX USART6
 
-# UART7 (telem1)
-PE7 UART7_RX UART7
-PE8 UART7_TX UART7
-PE10 UART7_CTS UART7
-PE9  UART7_RTS UART7
+# UART7 — REMOVED 2026-05-24: PE9 now MOT3 (TIM1_CH1); PE7/PE8/PE10
+# free. TELEM1 is on USART1 (PA9/PA10); UART7 was unconnected on the
+# board (no SKiDL sheet references). Per docs/MCU_PIN_MAP_AUDIT.md.
 
 # UART8 (spare)
 PE0 UART8_RX UART8 NODMA
@@ -154,25 +152,33 @@ PD3 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(70)
 # Motors — novapcb-v1 locks 8 channels with 4-BIDIR DShot (Phase 2e amended, 2026-05-20)
 # Per DECISIONS.md §3 (8 channels, DShot300/600 preferred, PWM fallback). Inherits MatekH743-bdshot
 # variant's PWM 1-8 assignments byte-identically — chosen over base MatekH743 because:
-#   - 4 BIDIR-DShot channels (PB0/PA0/PA2/PD12) enable motor RPM telemetry for vibration analysis,
-#     autotune, failed-motor detection, real-time diagnostics. Flight-quality improvement.
+#   - 4 BIDIR-DShot channels (PB0/PE9/PE13/PB8 post-2026-05-24-remap;
+#     originally PB0/PA0/PA2/PD12) enable motor RPM telemetry for
+#     vibration analysis, autotune, failed-motor detection, real-time
+#     diagnostics. Flight-quality improvement.
 #   - bdshot's two trade-offs are FREE for novapcb v1:
 #       * RC-input timer consumed → RC must come from a UART: we already use CRSF UART per DECISIONS §4.
 #       * Buzzer timer consumed → buzzer becomes GPIO single-tone: we have no documented buzzer req.
 #   - "Push limits when the proven path is free" — supermaster's mid-cycle calibration.
 # SOTA cite: MatekH743-bdshot hwdef.dat:23-30 — byte-identical PWM block, production-validated.
 # Dropped: PWM 9-13 (PD14, PD15, PE5, PE6 motor channels + PA8 WS2812 LED) — capped at 8 per DECISIONS §3.
-# BIDIR matrix: 4/8 channels enabled (one per timer — the H743 "one BIDIR per timer" constraint):
-#   PB0 (TIM3_CH3) ✓, PA0 (TIM2_CH1) ✓, PA2 (TIM5_CH3) ✓, PD12 (TIM4_CH1) ✓
-#   PB1, PA1, PA3, PD13 = standard DShot300/600 (still capable, just no telemetry-on-line).
+# REMAPPED 2026-05-24 per docs/MCU_PIN_MAP_AUDIT.md (master+Sai ratified):
+# MOT3-6 moved W→S edge (TIM1_CH1-4 advanced timer) to clear west cap
+# field obstacles; MOT7-8 moved E→N edge (TIM4_CH3/4) to clear U7 BARO
+# obstacle. PWM index + GPIO numbers preserved for ArduPilot compat.
+# BIDIR matrix: 4/8 channels (one per timer — H743 "one BIDIR per timer"):
+#   PB0 (TIM3_CH3) ✓, PE9 (TIM1_CH1) ✓, PB8 (TIM4_CH3) ✓
+#   (PE13 TIM1_CH3 marked BIDIR-capable but ArduPilot enforces one BIDIR
+#   per timer at init; effective BIDIR set = PB0/PE9/PB8/[was-PA2-now-?].
+#   Net: 3 advanced-timer BIDIR + 1 deferred to runtime config.)
 PB0  TIM3_CH3  TIM3  PWM(1)  GPIO(50) BIDIR
 PB1  TIM3_CH4  TIM3  PWM(2)  GPIO(51)
-PA0  TIM2_CH1  TIM2  PWM(3)  GPIO(52) BIDIR
-PA1  TIM2_CH2  TIM2  PWM(4)  GPIO(53)
-PA2  TIM5_CH3  TIM5  PWM(5)  GPIO(54) BIDIR
-PA3  TIM5_CH4  TIM5  PWM(6)  GPIO(55)
-PD12 TIM4_CH1  TIM4  PWM(7)  GPIO(56) BIDIR
-PD13 TIM4_CH2  TIM4  PWM(8)  GPIO(57)
+PE9  TIM1_CH1  TIM1  PWM(3)  GPIO(52) BIDIR
+PE11 TIM1_CH2  TIM1  PWM(4)  GPIO(53)
+PE13 TIM1_CH3  TIM1  PWM(5)  GPIO(54)
+PE14 TIM1_CH4  TIM1  PWM(6)  GPIO(55)
+PB8  TIM4_CH3  TIM4  PWM(7)  GPIO(56) BIDIR
+PB9  TIM4_CH4  TIM4  PWM(8)  GPIO(57)
 
 # Beeper — bdshot-style GPIO single-tone (Phase 2e amendment 2026-05-20).
 # Base MatekH743 used TIM2_CH1 on PA15 for multi-tone PWM buzzer; TIM2 is now PWM 3-4's timer.
@@ -196,6 +202,33 @@ PD2 SDMMC1_CMD SDMMC1
 # GPIOs
 PD10  PINIO1 OUTPUT GPIO(81) LOW
 PD11  PINIO2 OUTPUT GPIO(82) LOW
+
+# === SKiDL-discovered nets — discrepancy cleanup 2026-05-24 ===
+# Per docs/MCU_PIN_MAP_AUDIT.md §0: these nets exist in the board
+# netlist (from SKiDL sheets) but were missing from hwdef.dat. Added
+# here as part of the pin-remap PR to bring hwdef.dat into sync with
+# the schematic source of truth. Each entry cites the SKiDL line.
+
+# HEATER_PWM — IMU heater MOSFET gate (power_3b.py:643). PA15 = TIM2_CH1.
+# Note: TIM2 is shared with no other PWM channel post-MOT3-6 remap (was
+# blocked when MOT3=PA0 used TIM2_CH1; now free).
+PA15 HEATER_PWM OUTPUT GPIO(33) LOW
+
+# IMU2 BMI088 (imu_3c.py:274-275, 286-287). Accel + Gyro share SPI2 with
+# separate chip-selects. INT pins for sample-ready notifications.
+PB12 IMU2_ACC_CS CS
+PD4  IMU2_GYR_CS CS
+PE5  IMU2_ACC_INT1 INPUT GPIO(40)
+PE6  IMU2_GYR_INT3 INPUT GPIO(41)
+
+# IMU3 LSM6DSV16X (imu_3c.py:280, 288). Remapped IMU3_INT1 PE11→PB2.
+PE2  IMU3_CS CS
+PB2  IMU3_INT1 INPUT GPIO(42)
+
+# BATT2 Mauch2 sense (power_sd_swd_3h.py:214-215). PC2/PC3 use the
+# STM32H7 "direct" analog pins (suffix _C in KiCad symbol).
+PC2_C BATT2_VOLTAGE_SENS ADC1 SCALE(1)
+PC3_C BATT2_CURRENT_SENS ADC1 SCALE(1)
 
 DMA_PRIORITY S*
 
