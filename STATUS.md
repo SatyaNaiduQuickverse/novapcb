@@ -19,7 +19,7 @@
 | E barometers (DPS310 on I²C2) | ✓ placed + routed |
 | F USB-C (J1 + ESD U5) | ✓ placed + routed |
 | H ESC outputs (J11 10-pin JST-GH SM10B-GHS-TB) | ✓ placed; routing in flight |
-| H↔C MOT* routing (8 + IMU3_INT1 + GND stitch) | 🟡 **T3 attempt 2 (micro-PR cascade)** — attempt 1 too coarse (148 DRC, reverted); split into 5 small per-class PRs (2a-2e) |
+| H↔C MOT* routing (8 + IMU3_INT1 + GND stitch) | 🟡 **T3 focused survey** — earlier escalations conflated corridor density w/ MOT3-6 blockers; survey identifying ACTUAL blockers; expected scope drop |
 | CAN bus (U14 + U15 + term + J20) | ✓ placed | routing dispatched (task #45) |
 | microSD (J2 + SDMMC1 + pull-ups) | ✓ placed | routing dispatched (task #46) |
 | G-GPS (J5 SW corner + ESD + pulls + test pads) | ✓ placed | routing dispatched (task #47) |
@@ -76,6 +76,7 @@ Each sub-step follows established pattern: up-front constraint analysis → mast
 
 | Time (UTC) | Event |
 |---|---|
+| 2026-05-24 07:55 | T3 attempt 2 sequence pivot: 2a (I²C2) deferred + 2b (IMU CS) attempt failed at D-zone destination vias. KEY INSIGHT — earlier H↔C escalations conflated 'corridor density' with 'MOT3-6 blockers'. Dispatched FOCUSED OBSTACLE SURVEY: identify which nets actually cross MOT3-6 column X=45.5..48 vs merely-adjacent. Scope may shrink dramatically. |
 | 2026-05-24 07:35 | T3 attempt 1: 148 new DRC, REVERTED clean. Strategy right (corridor redesign) but granularity wrong (17 nets at once too coarse). Dispatched T3 attempt 2 as 5 micro-PR cascade (2a I²C2 pulls / 2b IMU CS B.Cu / 2c SPI1 B.Cu / 2d MOT3-6 fanout / 2e MOT7-8+INT+GND). |
 | 2026-05-24 07:15 | Sai rejected (κ) defer: 'without motors there is no FC.' Picked (T3) south-corridor full redesign. UNHALTED H↔C. Worker dispatched on Y=44..48 corridor redesign — throw away all routes (SPI1+IMU_CS+I²C2+3V3_IMU), re-allocate lanes with MOT3-6 as first-class. No hard time-cap (Sai quality-first). |
 | 2026-05-24 06:45 | Sim 2 (USB Z_diff) PASS via inheritance + Sim 5 (PDN) deferred with rationale. PR #95 merged. **19 PRs landed today.** Worker requested pause (context load); master throttling autonomous dispatch. CAN Freerouting still in flight (PID 2868029); other routings + DFM + DRU cleanup queued for Sai's return. |
