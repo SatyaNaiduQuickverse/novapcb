@@ -19,7 +19,7 @@
 | E barometers (DPS310 on I²C2) | ✓ placed + routed |
 | F USB-C (J1 + ESD U5) | ✓ placed + routed |
 | H ESC outputs (J11 10-pin JST-GH SM10B-GHS-TB) | ✓ placed; routing in flight |
-| H↔C MOT* routing (8 + IMU3_INT1 + GND stitch) | 🟡 (θ) re-route IMU CS diagonals to perimeter — TIME-CAPPED 1 iteration; (λ) DRU-exception fallback |
+| H↔C MOT* routing (8 + IMU3_INT1 + GND stitch) | ⏸ **HALTED after 7 escalations** — corridor over-saturated; physical OVERLAP not just clearance. Awaiting Sai v1-scope decision (recommend κ defer to v2). |
 | CAN bus (U14 + U15 + term + J20 NE-corner) | ✓ placed (PR #84 merged) — routing next |
 | microSD (J2 east-band-south + SDMMC1 + length-match) | ✓ placed (PR #85 merged) — routing next |
 | G-GPS (J5 SW corner + ESD + pulls + safety test pads) | ✓ placed (PR #86) |
@@ -27,19 +27,20 @@
 | G-Telem UART (J3 E-mid + ESD) | ✓ placed (PR #90) |
 | SWD header (J9 N-middle west) | ✓ placed (PR #90) |
 | DRU rule cleanup (10 pre-existing DRC) | ⬜ pending |
-| U6 decoupling fix | ⬜ pending |
+| U6 decoupling fix (C9 moved to U6 +5V pads) | ✓ landed (PR #92) |
 | Full sim suite (thermal + EMC + vibration) | ⬜ pending |
 | JLCPCB DFM compliance | ⬜ pending |
 | Phase 7a freeze (Sai trigger) | ⬜ awaiting Sai |
 
 ## PR stack (most recent first)
 
-### `sch/option-b-buck` head — currently `684e605` (14 PRs landed today 2026-05-24)
+### `sch/option-b-buck` head — currently `684e605` (15 PRs landed today 2026-05-24)
 
 | # | Title | Type | Notes |
 |---|---|---|---|
 | #89 | docs: H↔C corridor-clear survey + per-net re-route plan | doc | Per-net plan for I²C2 south-detour + SPI1 small shifts to vacate Y=44..48 corridor |
 | #88 | docs: remaining real-estate map (post-GPS) for CRSF/Telem/SWD | doc | TELEM (95,38), SWD (45,8) west of CRSF (54,8) in N-middle band |
+| #92 | hw: U6 decoupling fix — move C9 closer to U6 +5V pads (task #91) | hw | DECOUPLING audit gate now clean for U6 |
 | #90 | hw: CRSF + TELEM + SWD placement + J10 footprint sync to JST-GH | placement + schema bundle | N-middle band; CRSF placeholder→JST-GH 4P (mirrors PR #80 pattern) |
 | #86 | hw: GPS+MAG+Buzzer placement (J5 SW corner) | placement | NW Rule-19 catch → re-zoned to SW (15,75); safety test pads + audit-fix (D5-9 are GPS ESDs not A TVS) |
 | #85 | docs+hw: microSD subsystem placement (J2 east-band-south + 5 pulls + decap) | placement | DRC 21→20 favorable; SDMMC1 length-matching deferred to routing sub-step |
@@ -72,6 +73,7 @@ Each sub-step follows established pattern: up-front constraint analysis → mast
 
 | Time (UTC) | Event |
 |---|---|
+| 2026-05-24 06:08 | H↔C 7th escalation: physical OVERLAP (not just clearance) — DRU exceptions can't fix. HALTED iteration; surfacing v1-scope question to Sai on return (recommend κ defer to v2). PR #92 (U6 decap) merged. PRs #87 + #91 closed (stale/superseded). 15 PRs landed today. Worker pivoting to full sim suite + JLCPCB DFM + DRU cleanup. |
 | 2026-05-24 05:50 | H↔C escalation #6 (corridor saturation real): picked (θ) IMU_CS re-route with HARD time-cap (1 iteration); (λ) DRU exceptions as fallback if it doesn't converge. Worker also dispatched in parallel on DRU cleanup (task #30) + U6 decoupling (task #91) — both small focused PRs. |
 | 2026-05-24 05:25 | H↔C escalation #5: Y=45.5 cross-section survey caught R11/R12 I²C2 pull-ups directly in MOT3/MOT4 fanout columns. Picked (η) move R11/R12 (south preferred) to free corridor. 5th H↔C iteration — each escalation has been caught by Rule-13 discipline + produced learning. |
 | 2026-05-24 05:08 | PRs #86 (GPS J5 SW) + #90 (CRSF/Telem/SWD + JST-GH amend) merged. 14 PRs landed today. All 7 connector subsystems now placed. H↔C escalation #4 caught U4 baro IS in corridor; pivoted to (α-revised) route-around U4. |
