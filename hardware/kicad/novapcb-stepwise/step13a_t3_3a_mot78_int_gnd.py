@@ -35,34 +35,36 @@ ROUTES = {
     # - MOT8 at Y=70 hit GND via (40,70). Push MOT8 to Y=72.
     # - MOT7 keep Y=68 to avoid GND via at (40,70) too.
     # - IMU3_INT1 diagonal passed GND via at (58,48). Shift diagonal.
-    # Iter 3 fix: NW diagonal from N-edge pads clips adjacent N-pad bbox.
-    # NORTH-first stub avoids clipping neighbor pads.
+    # Iter 4 fixes:
+    # - Y-stagger MOT7 (Y=25.5) vs MOT8 (Y=24.5) W stubs — was same-Y overlap
+    # - MOT8 B.Cu corridor shift X=37.5→36.5 to clear BATT_VOLTAGE_SENS at X=37.14
     "MOT7": [
-        ("track", 41.500, 27.320, 41.500, 25.500, F),       # F.Cu N stub (clear neighbor pads)
-        ("track", 41.500, 25.500, 40.000, 25.500, F),       # W at Y=25.5 (north of N pad row Y=26.52)
+        ("track", 41.500, 27.320, 41.500, 25.500, F),       # N stub
+        ("track", 41.500, 25.500, 40.000, 25.500, F),       # W at Y=25.5
         ("via",   40.000, 25.500),
         ("track", 40.000, 25.500, 40.000, 55.000, B),
-        ("track", 40.000, 55.000, 41.000, 56.000, B),
+        ("track", 40.000, 55.000, 41.000, 56.000, B),       # dodge E around GND via at (40,60)
         ("track", 41.000, 56.000, 41.000, 68.000, B),
-        ("track", 41.000, 68.000, 54.375, 68.000, B),
+        ("track", 41.000, 68.000, 54.375, 68.000, B),       # E at Y=68
         ("via",   54.375, 68.000),
         ("track", 54.375, 68.000, 54.375, 78.150, F),
     ],
     "MOT8": [
-        ("track", 41.000, 27.320, 41.000, 25.500, F),       # N stub
-        ("track", 41.000, 25.500, 37.500, 25.500, F),       # W at Y=25.5
-        ("via",   37.500, 25.500),
-        ("track", 37.500, 25.500, 37.500, 72.000, B),
-        ("track", 37.500, 72.000, 55.625, 72.000, B),
+        ("track", 41.000, 27.320, 41.000, 24.500, F),       # N stub (Y-staggered from MOT7 Y=25.5)
+        ("track", 41.000, 24.500, 36.500, 24.500, F),       # W at Y=24.5 (clear of MOT7 W stub at Y=25.5)
+        ("via",   36.500, 24.500),
+        ("track", 36.500, 24.500, 36.500, 72.000, B),       # B.Cu S at X=36.5 (1mm W of MOT7 X=40, clear of BATT B.Cu at X=37.14)
+        ("track", 36.500, 72.000, 55.625, 72.000, B),       # E at Y=72 (Y-staggered from MOT7 Y=68)
         ("via",   55.625, 72.000),
         ("track", 55.625, 72.000, 55.625, 78.150, F),
     ],
     "IMU3_INT1": [
         ("track", 44.000, 42.670, 44.000, 43.500, F),       # F.Cu pad stub
         ("via",   44.000, 43.500),
-        ("track", 44.000, 43.500, 56.000, 47.000, B),       # B.Cu SE — shorter first leg
-        ("track", 56.000, 47.000, 60.000, 50.000, B),       # SE through clear area (south of GND via at 58,48)
-        ("track", 60.000, 50.000, 79.000, 55.000, B),       # B.Cu SE to NW of U9
+        # Iter 4 kink: dodge GND via at (58, 48) — route through (56, 46) NORTH of via
+        ("track", 44.000, 43.500, 56.000, 46.000, B),       # B.Cu SE — exits NORTH of GND via at 58,48
+        ("track", 56.000, 46.000, 60.000, 50.000, B),       # SE down past via
+        ("track", 60.000, 50.000, 79.000, 55.000, B),
         ("via",   79.000, 55.000),
         ("track", 79.000, 55.000, 79.170, 56.250, F),
     ],
