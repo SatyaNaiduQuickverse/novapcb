@@ -20,26 +20,27 @@
 | F USB-C (J1 + ESD U5) | ✓ placed + routed |
 | H ESC outputs (J11 10-pin JST-GH SM10B-GHS-TB) | ✓ placed; routing in flight |
 | H↔C MOT* routing (8 + IMU3_INT1 + GND stitch) | ⏸ **HALTED after 7 escalations** — corridor over-saturated; physical OVERLAP not just clearance. Awaiting Sai v1-scope decision (recommend κ defer to v2). |
-| CAN bus (U14 + U15 + term + J20 NE-corner) | ✓ placed (PR #84 merged) — routing next |
-| microSD (J2 east-band-south + SDMMC1 + length-match) | ✓ placed (PR #85 merged) — routing next |
-| G-GPS (J5 SW corner + ESD + pulls + safety test pads) | ✓ placed (PR #86) |
-| G-CRSF (J10 N-middle east + ESD + dividers + JST-GH 4P amend bundled) | ✓ placed (PR #90) |
-| G-Telem UART (J3 E-mid + ESD) | ✓ placed (PR #90) |
-| SWD header (J9 N-middle west) | ✓ placed (PR #90) |
+| CAN bus (U14 + U15 + term + J20) | ✓ placed | routing dispatched (task #45) |
+| microSD (J2 + SDMMC1 + pull-ups) | ✓ placed | routing dispatched (task #46) |
+| G-GPS (J5 SW corner + ESD + pulls + test pads) | ✓ placed | routing dispatched (task #47) |
+| G-CRSF (J10 N-middle east + ESD + dividers + JST-GH 4P) | ✓ placed | routing dispatched (task #48) |
+| G-Telem UART (J3 E-mid + ESD) | ✓ placed | routing dispatched (task #48 combined) |
+| SWD header (J9 N-middle west) | ✓ placed | routing dispatched (task #48 combined) |
 | DRU rule cleanup (10 pre-existing DRC) | ⬜ pending |
 | U6 decoupling fix (C9 moved to U6 +5V pads) | ✓ landed (PR #92) |
-| Full sim suite (thermal + EMC + vibration) | ⬜ pending |
-| JLCPCB DFM compliance | ⬜ pending |
+| Full sim suite (Sim 1+2+5 NOW autonomous; 3+4 after routing) | 🟡 autonomous exec authorized (PR #93 plan) |
+| JLCPCB DFM compliance (7 checks + script) | 🟡 autonomous exec authorized (PR #93 plan) |
 | Phase 7a freeze (Sai trigger) | ⬜ awaiting Sai |
 
 ## PR stack (most recent first)
 
-### `sch/option-b-buck` head — currently `684e605` (15 PRs landed today 2026-05-24)
+### `sch/option-b-buck` head — currently `684e605` (16 PRs landed today 2026-05-24)
 
 | # | Title | Type | Notes |
 |---|---|---|---|
 | #89 | docs: H↔C corridor-clear survey + per-net re-route plan | doc | Per-net plan for I²C2 south-detour + SPI1 small shifts to vacate Y=44..48 corridor |
 | #88 | docs: remaining real-estate map (post-GPS) for CRSF/Telem/SWD | doc | TELEM (95,38), SWD (45,8) west of CRSF (54,8) in N-middle band |
+| #93 | docs: sim suite + JLCPCB DFM plans (pre Phase 7a) | doc | 5 sim categories + 7 DFM checks; 3 sims + DFM authorized for autonomous exec |
 | #92 | hw: U6 decoupling fix — move C9 closer to U6 +5V pads (task #91) | hw | DECOUPLING audit gate now clean for U6 |
 | #90 | hw: CRSF + TELEM + SWD placement + J10 footprint sync to JST-GH | placement + schema bundle | N-middle band; CRSF placeholder→JST-GH 4P (mirrors PR #80 pattern) |
 | #86 | hw: GPS+MAG+Buzzer placement (J5 SW corner) | placement | NW Rule-19 catch → re-zoned to SW (15,75); safety test pads + audit-fix (D5-9 are GPS ESDs not A TVS) |
@@ -73,6 +74,7 @@ Each sub-step follows established pattern: up-front constraint analysis → mast
 
 | Time (UTC) | Event |
 |---|---|
+| 2026-05-24 06:25 | PR #93 (sim+DFM plans) merged. 16 PRs landed today. Authorized autonomous exec on Sim 1/2/5 + DFM checker. Discovered: subsystem ROUTINGS (CAN, microSD, GPS, CRSF/Telem/SWD) were never done — only placements landed. Dispatched 4 routing sub-steps in parallel; should be clean (different corridors from H↔C south). |
 | 2026-05-24 06:08 | H↔C 7th escalation: physical OVERLAP (not just clearance) — DRU exceptions can't fix. HALTED iteration; surfacing v1-scope question to Sai on return (recommend κ defer to v2). PR #92 (U6 decap) merged. PRs #87 + #91 closed (stale/superseded). 15 PRs landed today. Worker pivoting to full sim suite + JLCPCB DFM + DRU cleanup. |
 | 2026-05-24 05:50 | H↔C escalation #6 (corridor saturation real): picked (θ) IMU_CS re-route with HARD time-cap (1 iteration); (λ) DRU exceptions as fallback if it doesn't converge. Worker also dispatched in parallel on DRU cleanup (task #30) + U6 decoupling (task #91) — both small focused PRs. |
 | 2026-05-24 05:25 | H↔C escalation #5: Y=45.5 cross-section survey caught R11/R12 I²C2 pull-ups directly in MOT3/MOT4 fanout columns. Picked (η) move R11/R12 (south preferred) to free corridor. 5th H↔C iteration — each escalation has been caught by Rule-13 discipline + produced learning. |
