@@ -214,3 +214,24 @@ for ref, net_obj in (("D5", GPS1_TX),
     esd.ref = ref
     net_obj += esd[1]
     GND     += esd[2]
+
+
+# ---- Test pads (master 2026-05-24 sign-off: 5× Φ1.5mm) ----
+# Standard Pixhawk practice — exposed test pads near J5 for Phase 9
+# bench bring-up + factory test access. SAFETY_SW/LED have no MCU pin
+# (hwdef-unassigned) so test pads are the ONLY way to verify those
+# signals; remaining 3 are quick-probe access to common debug signals.
+for ref, net_obj, label in (
+    ("TP1", SAFETY_SW_TP,  "SAFETY_SW"),
+    ("TP2", SAFETY_LED_TP, "SAFETY_LED"),
+    ("TP3", GPS1_TX,       "GPS_TX"),
+    ("TP4", I2C1_SCL,      "I2C1_SCL"),
+    ("TP5", BUZZER,        "BUZZER"),
+):
+    tp = Part(
+        "Connector", "TestPoint",
+        value=label,
+        footprint="TestPoint:TestPoint_Pad_D1.5mm",
+    )
+    tp.ref = ref
+    net_obj += tp[1]
