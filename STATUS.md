@@ -19,13 +19,13 @@
 | E barometers (DPS310 on I²C2) | ✓ placed + routed |
 | F USB-C (J1 + ESD U5) | ✓ placed + routed |
 | H ESC outputs (J11 10-pin JST-GH SM10B-GHS-TB) | ✓ placed; routing in flight |
-| H↔C MOT* routing (8 signal + IMU3_INT1 + GND stitch) | 🟡 in flight (Freerouting active β-strategy) |
+| H↔C MOT* routing | 🟡 (β) Freerouting FAILED at 36min; pivoting to (α) corridor clear via survey + re-route I²C2/SPI1 in Y=44..48 |
 | CAN bus (U14 + U15 + term + J20 NE-corner) | ✓ placed (PR #84 merged) — routing next |
 | microSD (J2 east-band-south + SDMMC1 + length-match) | ✓ placed (PR #85 merged) — routing next |
-| G-GPS (J5 + ESD + I²C pulls + safety test pads) | 🟡 analysis approved (PR #86), layout in flight |
-| G-CRSF (J10 + ESD + dividers + JST-GH 4P amend) | 🟡 analysis approved (PR #87 combined), pending exec |
-| G-Telem UART (J3 + ESD) | 🟡 analysis approved (in PR #87 combined), pending exec |
-| SWD header (J9 NE corner) | 🟡 analysis approved (in PR #87 combined), pending exec |
+| G-GPS (J5 + ESD + I²C pulls + safety test pads) | 🟡 analysis re-zoned NW→SW corner (15,75) after Rule-19 catch; layout executing |
+| G-CRSF (J10 + ESD + dividers + JST-GH 4P amend) | 🟡 awaiting remaining-real-estate map sub-step before exec |
+| G-Telem UART (J3 + ESD) | 🟡 awaiting real-estate map before exec |
+| SWD header (J9) | 🟡 awaiting real-estate map (NE corner taken by CAN; need re-zone) before exec |
 | DRU rule cleanup (10 pre-existing DRC) | ⬜ pending |
 | U6 decoupling fix | ⬜ pending |
 | Full sim suite (thermal + EMC + vibration) | ⬜ pending |
@@ -68,6 +68,7 @@ Each sub-step follows established pattern: up-front constraint analysis → mast
 
 | Time (UTC) | Event |
 |---|---|
+| 2026-05-24 04:42 | H↔C Freerouting aborted at 36min (47GB swap, no pass-2 convergence). Pivoted to (α) corridor clear — survey doc + master sign-off → execute pattern. GPS J5 relocated SW (15,75) after NW Rule-19 catch. CRSF/Telem/SWD pending real-estate map sub-step before exec. 3 parallel work streams dispatched. |
 | 2026-05-24 04:33 | PRs #85 (microSD) + #84 (CAN bus + C85 U5 decap fix) merged. Branch tip `684e605`. 10 PRs landed today. Worker chained to GPS + CRSF/Telem/SWD layouts. |
 | 2026-05-24 03:40 | PRs #86 (GPS) + #87 (CRSF/Telem/SWD) up-front analyses approved; CRSF schematic amend (JST-GH 4P, mirrors PR #80 pattern) bundled per merge-autonomous memory — not separate Sai-gated PR. H↔C Freerouting given hard abort criterion (>20 unrouted at end of pass 2 → pivot to α corridor clear). |
 | 2026-05-24 03:10 | PRs #84 (CAN) + #85 (microSD) up-front analyses approved; worker dispatched parallel execution; 4 more analyses (GPS/CRSF/Telem/SWD) queued for drafting |
