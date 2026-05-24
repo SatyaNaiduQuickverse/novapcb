@@ -119,7 +119,7 @@ ESD path).
 import skidl
 from skidl import Part, Net
 
-from sheets.common import setup, n, FP_R_0402
+from sheets.common import setup, n, FP_R_0402, FP_C_0402
 from sheets.mcu_3a import mcu
 
 setup()
@@ -212,6 +212,15 @@ for gp in ("A1", "A12", "B1", "B12", "S1"):
     GND += usbc[gp]
 for vp in ("A4", "A9", "B4", "B9"):
     P5V += usbc[vp]   # VBUS = +5V from USB host (bench bring-up only per CLAUDE.md §3.6)
+
+# USB-C VBUS decoupling — added 2026-05-24 to fix DECOUPLING gate regression
+# discovered during CAN placement. Original Phase 3g placeholder used CAN's
+# C83 as misuse — moved C83 to its declared CAN U14.VCC role + add proper
+# named U5/J1 VBUS decap here. 100nF 0402 close to U5 USB ESD chip body.
+c_usb_vbus = Part("Device", "C", value="100nF", footprint=FP_C_0402)
+c_usb_vbus.ref = "C85"
+P5V += c_usb_vbus[1]
+GND += c_usb_vbus[2]
 
 USBC_D_P_PRE += usbc["A6"]
 USBC_D_P_PRE += usbc["B6"]
