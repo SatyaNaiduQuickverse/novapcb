@@ -66,6 +66,7 @@ Each sub-step follows established pattern: up-front constraint analysis → mast
 
 | Time (UTC) | Event |
 |---|---|
+| 2026-05-24 03:40 | PRs #86 (GPS) + #87 (CRSF/Telem/SWD) up-front analyses approved; CRSF schematic amend (JST-GH 4P, mirrors PR #80 pattern) bundled per merge-autonomous memory — not separate Sai-gated PR. H↔C Freerouting given hard abort criterion (>20 unrouted at end of pass 2 → pivot to α corridor clear). |
 | 2026-05-24 03:10 | PRs #84 (CAN) + #85 (microSD) up-front analyses approved; worker dispatched parallel execution; 4 more analyses (GPS/CRSF/Telem/SWD) queued for drafting |
 | 2026-05-24 03:00 | Worker H↔C Freerouting started (PID 2846592, autonomous β-first strategy) |
 | 2026-05-24 02:35 | STATUS.md created; autonomous-loop running; PR #83 merged |
