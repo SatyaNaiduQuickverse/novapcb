@@ -117,7 +117,10 @@ PA10 USART1_RX USART1
 PA9  USART1_TX USART1
 
 # USART2 (GPS1)
-PD5 USART2_TX USART2
+# GPS1_TX repinned PD5->PA2 (2026-05-26, task #47): PD5 N-edge pad boxed by
+# BATT2 sense verticals, unroutable to J5. PA2 = other USART2_TX (AF7), free
+# (MOT5 vacated, PR#83->PE13), W-edge clean exit. PD5 reverts to free GPIO.
+PA2 USART2_TX USART2
 PD6 USART2_RX USART2
 
 # USART3 (GPS2)
@@ -191,8 +194,11 @@ PB9  TIM4_CH4  TIM4  PWM(8)  GPIO(57)
 # v1.1 SKiDL re-mux 2026-05-22: BUZZER moved PA15 → PD7 (PA15
 # freed by SPI1_MOSI departing; HEATER_PWM was supposed to take
 # PA15 but timer conflict — see OPEN_QUESTIONS hwdef-heater-pwm-pa15).
-PD7 BUZZER OUTPUT GPIO(32) LOW
-define HAL_BUZZER_PIN 32
+# BUZZER MCU driver DEFERRED to v2 (2026-05-26, task #47): GPS N-edge
+# congestion; non-flight-critical audio. PD7 reverts to free GPIO.
+# v2: bind a free GPIO + restore HAL_BUZZER_PIN.
+# PD7 BUZZER OUTPUT GPIO(32) LOW
+# define HAL_BUZZER_PIN 32
 
 # microSD support
 PC8 SDMMC1_D0 SDMMC1
