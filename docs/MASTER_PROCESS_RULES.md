@@ -120,6 +120,22 @@ Specific patterns master has caught (2026-05-23):
 Per Rule 9: artifact-level verification is mandatory for any claim that
 gates downstream work.
 
+**Rule 9 corollary — gate on the ELECTRICAL margin, not the paper-spec tightness.**
+A match/skew/clearance gate inherited as a fixed number may be far tighter than
+the physics requires. When a converged result "fails" such a gate, compute the
+actual margin from first principles before re-working:
+- microSD SDMMC1 @ 48 MHz (CAN/microSD routing, 2026-05-26): the inherited
+  ±0.5mm (then ±5/±10mm) length-match gate vs reality — 25.9mm skew = 180 ps =
+  9% of the ~2000 ps setup/hold window → **91% timing margin remaining**. The
+  paper-spec "FAIL" was not an electrical fail; the Freerouting result was
+  accepted rather than re-routing 3 nets through a dense corridor for a
+  marginal, already-ample improvement.
+Set match/skew gates from clock + setup/hold math; accept an auto-route within
+the electrical margin even if it exceeds the spec-doc number. Re-derive per
+interface — a higher-speed v2 bus needs its own (tighter) budget.
+
+(Master + worker, 2026-05-26 — microSD routing.)
+
 ## Rule 10 — Comments are for non-obvious WHY, not WHAT
 
 Don't comment `// read CRSF channel` above `read_crsf_channel()`. Do comment
