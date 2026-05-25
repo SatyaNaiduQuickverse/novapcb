@@ -142,12 +142,13 @@ GPS1_RX  += mcu["PD6"]
 # hwdef.dat:60-61 — I²C1
 I2C1_SCL += mcu["PB6"]
 I2C1_SDA += mcu["PB7"]
-# BUZZER MCU driver DEFERRED to v2 (2026-05-26, task #47): the GPS N-edge
-# cluster is congested and BUZZER (audio feedback only, not flight-critical)
-# was the lowest-priority net. ArduPilot runs without a buzzer bound. The
-# BUZZER net stays defined (J5.9 + ESD D9 + TP5) but is NOT driven by the MCU
-# in v1 — PD7 reverts to a free GPIO. v2: bind a free GPIO to drive BUZZER.
-# (was: BUZZER += mcu["PD7"])  — master-approved v2 defer.
+# BUZZER re-pinned PD7 -> PA3 (2026-05-26, Sai directive: route BUZZER in v1,
+# no v2 defer). PD7 (N-edge pad X=45.0) was boxed by the BATT2 sense-trace
+# verticals (same wall as GPS1_TX/PD5). PA3 is a free W-edge GPIO (MOT6 vacated
+# it, PR #83 -> PE14) with a clean SW corridor to J5 — Freerouting routes it
+# like GPS1_TX/PA2. BUZZER is a plain GPIO output (HAL_BUZZER_PIN), no
+# peripheral constraint, so any free GPIO works.
+BUZZER   += mcu["PA3"]
 
 
 # ---- testpoints (hwdef-unassigned safety pins) ----
