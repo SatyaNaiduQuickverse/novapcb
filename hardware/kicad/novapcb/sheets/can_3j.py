@@ -11,7 +11,8 @@ adjudication 2026-05-21 for the v2/LQFP-144-repackage deferral.
   - `firmware/hwdef-novapcb/hwdef.dat` — AUTHORITATIVE for FDCAN1 pin map:
     hwdef.dat:144  `PD0 CAN1_RX CAN1`
     hwdef.dat:145  `PD1 CAN1_TX CAN1`
-    hwdef.dat:146  `PD3 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(70)`
+    (CAN silent/standby S pin: hard-tied to GND = NORMAL MODE for v1, no MCU
+     GPIO — see u14[8] note. PD3/PD15 GPIO line removed from hwdef 2026-05-26.)
   - NXP TJA1051TK/3 datasheet TJA1051 rev 6 §6 (pinning) — chip pin map
   - NXP PESD2CAN datasheet TVS array — CAN ESD protection
   - Pixhawk Connector Standard DS-009 — 4-pin JST-GH CAN connector pinout
@@ -23,7 +24,7 @@ adjudication 2026-05-21 for the v2/LQFP-144-repackage deferral.
 |---|---|---|
 | CAN1_RX | PD0 | 144 |
 | CAN1_TX | PD1 | 145 |
-| GPIO_CAN1_SILENT | PD3 | 146 |
+| (S pin -> GND) | — | — | hard-tied GND = normal mode (v1), no MCU GPIO |
 
 ## TJA1051TK/3 pin map (NXP DS rev 6 §6)
 
@@ -36,7 +37,7 @@ adjudication 2026-05-21 for the v2/LQFP-144-repackage deferral.
 | 5 | VIO | I/O voltage reference | +3V3 (for 3.3V MCU logic) |
 | 6 | CANL | CAN bus low | CANL_NET (to connector pin 2) |
 | 7 | CANH | CAN bus high | CANH_NET (to connector pin 3) |
-| 8 | S | Standby mode select | GPIO_CAN1_SILENT (MCU PD3 — software-controlled silent) |
+| 8 | S | Standby mode select | GND (hard-tied = normal mode, v1; software silent deferred v2) |
 
 The TJA1051TK/3 (the /3 variant) provides a separate VIO pin so the
 logic-level interface to the MCU is at 3.3V while the bus VCC is 5V.
@@ -44,9 +45,11 @@ This gives better noise margin than a 3.3V-only transceiver and is the
 master-approved choice (2026-05-21).
 
 Pin 8 S = standby: HIGH → standby (transceiver dormant), LOW → normal
-mode. Wired to PD3 which hwdef.dat:146 already declares as
-GPIO_CAN1_SILENT — ArduPilot can put the bus in silent mode via this
-GPIO. Default state LOW (active per hwdef PUSHPULL LOW).
+mode. For v1 the S pin is hard-tied to GND (= normal mode), the industry-
+default for CAN nodes that don't need software silent control. ArduPilot
+DroneCAN does not use silent mode in flight. Software silent-mode control
+(MCU GPIO on S) is deferred to v2 — see the binding note below for why the
+PD15 route was infeasible.
 
 ## JST-GH 4P CAN connector pinout (Pixhawk DS-009)
 
@@ -120,11 +123,20 @@ P5V  = n("+5V")
 # FDCAN1 nets (hwdef.dat:144-146).
 CAN1_RX             = n("CAN1_RX")
 CAN1_TX             = n("CAN1_TX")
-GPIO_CAN1_SILENT    = n("GPIO_CAN1_SILENT")
 
 CAN1_RX          += mcu["PD0"]
 CAN1_TX          += mcu["PD1"]
-GPIO_CAN1_SILENT += mcu["PD3"]
+# SILENT (TJA1051 pin8 S) is hard-tied to GND = NORMAL MODE for v1 (see u14[8]
+# below). The MCU GPIO control net was dropped 2026-05-26 (task #45): SILENT
+# was remapped PD3->PD15 to dodge the N-edge SPI3/pad/BATT2 block, but PD15->
+# U14.8 is unroutable — the MCU-east region is saturated on BOTH layers @Y~30-31
+# (USB diff pair F.Cu + SPI3_SCK/IMU2_GYR_INT3 B.Cu fanning to the IMU island),
+# leaving no crossing point on either layer for any free E-edge pin. ArduPilot
+# DroneCAN does not use CAN silent mode in flight, so hard-tie S=LOW (normal
+# mode) and defer software silent-control to v2 (master-approved; analogous to
+# the MOT7/8 v2 deferral). PD15 reverts to a free GPIO.
+# v2 option: stuff an R-NC pulldown to GND with an optional MCU pull-high for
+# software silent-mode control.
 
 
 # ---- TJA1051TK/3,118 transceiver (U14) ----
@@ -150,7 +162,7 @@ CAN1_RX           += u14[4]   # pin 4: RXD
 P3V3              += u14[5]   # pin 5: VIO = +3V3
 CANL_NET          += u14[6]   # pin 6: CANL
 CANH_NET          += u14[7]   # pin 7: CANH
-GPIO_CAN1_SILENT  += u14[8]   # pin 8: S = standby/silent control
+GND               += u14[8]   # pin 8: S = silent — hard-tied GND = NORMAL MODE (v1; see note above)
 GND               += u14[9]   # pin 9: EP (exposed pad) — tie to GND for thermal + ESD
 
 
