@@ -76,6 +76,7 @@ Each sub-step follows established pattern: up-front constraint analysis → mast
 
 | Time (UTC) | Event |
 |---|---|
+| 2026-05-26 ~midnight | Worker session sign-off after 6-PR burst: #99 CAN routing, #100 microSD, #101 GPS, #102 BUZZER un-defer, #103 HSE crystal opt (Y1 rotate + IMU1_CS off-crystal + W-margin re-layout), #104 IMU decap audit. Rule 3 catch: triple-IMU is heterogeneous (U3 ICM-42688-P, U8 BMI088, U9 LSM6DSV16X), not 3x ICM. Branch tip 6a3084d. Awaiting fresh-context worker for T3 partial #49 (critical path). |
 | 2026-05-24 08:25 | T3 3a iter 4 REGRESSION (49 vs iter 3 46) PAUSED per master cap. Geometric wall on PB8/PB9 0.5mm pitch + BOOT0 + mounting hole. Worker session pause approved. AWAITING SAI for T3 strategy. |
 | 2026-05-24 07:55 | T3 attempt 2 sequence pivot: 2a (I²C2) deferred + 2b (IMU CS) attempt failed at D-zone destination vias. KEY INSIGHT — earlier H↔C escalations conflated 'corridor density' with 'MOT3-6 blockers'. Dispatched FOCUSED OBSTACLE SURVEY: identify which nets actually cross MOT3-6 column X=45.5..48 vs merely-adjacent. Scope may shrink dramatically. |
 | 2026-05-24 07:35 | T3 attempt 1: 148 new DRC, REVERTED clean. Strategy right (corridor redesign) but granularity wrong (17 nets at once too coarse). Dispatched T3 attempt 2 as 5 micro-PR cascade (2a I²C2 pulls / 2b IMU CS B.Cu / 2c SPI1 B.Cu / 2d MOT3-6 fanout / 2e MOT7-8+INT+GND). |
