@@ -39,7 +39,7 @@ docs:
 | Pin | Signal | Voltage | This-sheet wiring |
 |---|---|---|---|
 | 1 | VCC | +5V | +5V (BEC rail, sourced by Phase 3h power-monitor connector) |
-| 2 | UART TX (from FC) | +3V3 logic | GPS1_TX → MCU PD5 (USART2_TX) |
+| 2 | UART TX (from FC) | +3V3 logic | GPS1_TX → MCU PA2 (USART2_TX; repinned PD5→PA2 task #47) |
 | 3 | UART RX (to FC) | +3V3 logic | GPS1_RX → MCU PD6 (USART2_RX) |
 | 4 | I²C SCL | +3V3 logic | I2C1_SCL → MCU PB6 |
 | 5 | I²C SDA | +3V3 logic | I2C1_SDA → MCU PB7 |
@@ -125,23 +125,29 @@ P3V3     = n("+3V3")
 P5V      = n("+5V")
 I2C1_SCL = n("I2C1_SCL")
 I2C1_SDA = n("I2C1_SDA")
-GPS1_TX  = n("GPS1_TX")    # FC → GPS (from MCU PD5)
+GPS1_TX  = n("GPS1_TX")    # FC → GPS (from MCU PA2 / USART2_TX; repinned from PD5)
 GPS1_RX  = n("GPS1_RX")    # GPS → FC (to MCU PD6)
 BUZZER   = n("BUZZER")     # MCU PA15 GPIO output
 
 
 # ---- MCU side: wire GPS UART + I2C1 + buzzer pins to shared nets ----
-# hwdef.dat:117-118 — USART2 GPS1 TX/RX
-GPS1_TX  += mcu["PD5"]
+# USART2 GPS1 TX/RX. TX remapped PD5->PA2 (2026-05-26, task #47): PD5 (N-edge
+# pad X=46.0) is boxed by the BATT2 sense-trace verticals (B.Cu 45.1/45.4/46.5)
+# — unroutable to J5 (Freerouting 4 passes + manual all fail the N-edge exit).
+# PA2 is the only other USART2_TX pin on LQFP-100 (AF7), free since MOT5 vacated
+# it (PR #83 -> PE13), and on the W edge with a near-empty corridor to J5 SW.
+# Same UART2 peripheral as RX (PD6) — no firmware split. (master-approved repin.)
+GPS1_TX  += mcu["PA2"]
 GPS1_RX  += mcu["PD6"]
 # hwdef.dat:60-61 — I²C1
 I2C1_SCL += mcu["PB6"]
 I2C1_SDA += mcu["PB7"]
-# hwdef.dat:179 — BUZZER GPIO. Was PA15 but PA15 was re-muxed to
-# HEATER_PWM per master 2026-05-22 (HEATER_PWM had to vacate PA7 since
-# SPI1_MOSI moved there). BUZZER is plain digital output — any free
-# GPIO works. PD7 (pin 88, N) is freed by SPI1_MOSI's departure.
-BUZZER   += mcu["PD7"]
+# BUZZER MCU driver DEFERRED to v2 (2026-05-26, task #47): the GPS N-edge
+# cluster is congested and BUZZER (audio feedback only, not flight-critical)
+# was the lowest-priority net. ArduPilot runs without a buzzer bound. The
+# BUZZER net stays defined (J5.9 + ESD D9 + TP5) but is NOT driven by the MCU
+# in v1 — PD7 reverts to a free GPIO. v2: bind a free GPIO to drive BUZZER.
+# (was: BUZZER += mcu["PD7"])  — master-approved v2 defer.
 
 
 # ---- testpoints (hwdef-unassigned safety pins) ----
