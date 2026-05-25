@@ -19,14 +19,134 @@ All 9 scoping decisions for the v1 FC, signed off 2026-05-18. Each section shows
 
 **SUPERSEDED 2026-05-20 (Sai pivot, mid-Phase-4)**: the 36×36 / 30.5×30.5 M3 v1 spec is set aside. New direction:
 
-**v1 = RECTANGULAR, sized to the placement.** No standard-dimension constraint. Board outline shape (length × breadth) is an OUTPUT of deliberate physics-guided placement (Phase pivot Step 3), not a fixed input. Sai's explicit direction 2026-05-20 ("don't confine to Pixhawk 30.5 / 36×36"). Mounting pattern + airframe tray follow the resulting board outline; a new tray is acceptable.
+> **⚠ LOCK INVALIDATED 2026-05-23 (later)** — the "MCU=73.98°C / +6.02°C
+> margin" basis for the 105 × 85 mm LOCK below was a PLANNED-positions
+> sweep artifact; reproducing the sweep on the ACTUAL board placement
+> gives MCU=82.5°C (over the 80°C ceiling). The LOCK was RESCINDED
+> pending Sai pick of architecture option. The board-size table further
+> below records the historical sweep with planned positions — preserved
+> verbatim for traceability, but the "LOCK ✓" markers no longer apply.
+>
+> **✓ NEW LOCK 2026-05-23 (master decision, Sai-delegated): Option B —
+> 105 × 85 mm board + U2 LDO→buck (TPS62177)**. Projected MCU Tj = 63.7°C
+> (+16.3°C margin to 80°C), verified at actual placement geometry. See
+> `docs/THERMAL_ARCHITECTURE_DECISION.md` for full sweep + IMU noise
+> budget verification.
+>
+> **Master conditions on Option B (must be enforced before each gate)**:
+> 1. **IMU noise budget verification** — DONE 2026-05-23. Both gyro and
+>    accel show 580× and 7400× margin above master's 10× threshold.
+>    Worst-case at 1.8 MHz buck switching: accel 0.014% of intrinsic
+>    noise floor, gyro 0.17%. See `THERMAL_ARCHITECTURE_DECISION.md`
+>    §"IMU noise budget verification — 1.8 MHz worst-case".
+> 2. **Buck layout discipline** (audited at routing time): spread-spectrum
+>    enabled, switching loop minimized, magnetic axis not aimed at IMU,
+>    short/wide switch-node trace clear of analog, dedicated GND return,
+>    LP5907 post-regulator standard position, buck-to-IMU ≥ 25 mm,
+>    output filter bulk+HF caps placed per datasheet.
+> 3. **Schematic change** (SKiDL): U2 AP2112K-3.3 → TPS62177; add L1
+>    (~2.2µH), output bulk cap, HF cap, feedback divider (or fixed-3.3V
+>    variant). Update U2 dissipation to 25 mW. ERC clean. Separate branch.
+>    Master reviews against TPS62177 datasheet ref design before sign-off.
+> 4. **Re-layout U2 area** with new footprint + L1; re-run thermal at
+>    actual positions to confirm MCU ≈ 63.7°C; DRC 0; audit clean; Rule 9
+>    cluster walks on all new buck nets.
+> 5. **UNHALT forward work** only after (1)-(4) are signed off: resume
+>    U5 VBUS decap (#27) → sense sub-step → D placement.
+
+**v1.1 = 105 × 85 mm RECTANGULAR** (LOCKED 2026-05-23 by master after corrected gate12 v3 + rigorous-powers thermal sweep — **but the underlying thermal number was later invalidated; see banner above**). A new airframe tray is required (v1 is functional drop-in, not mechanical).
+
+### 2.1 IMU stress-relief slot — DEFERRED to v2 (master 2026-05-24)
+
+The IMU island stress-relief slot (Edge.Cuts U-kerf around D zone for
+mechanical vibration isolation) **is not part of v1**. Two layout
+attempts (sha 7c6b805 lineage on `hw/imu-slot-polygon`) failed:
+
+- **Y=33 latitude attempt**: 35 net new DRC violations. Root cause:
+  PR #76 stitching vias at Y=32 were placed without anticipating future
+  slot at Y=32.5..33.5 — 22 copper_edge_clearance failures within
+  0.25mm of slot. Plus pre-existing SPI3_SCK via at (58, 33) on slot
+  edge; 4 invalid_outline from overlapping rectangle corners.
+- **Y=45 latitude attempt** (β shift): 27 net new DRC violations. Root
+  cause: PR #77 Freerouting filled the bridge column X=58..68 densely;
+  adding 4 detours for the new slot-boundary crossings caused 11
+  tracks_crossing collisions with SPI2_MOSI/SPI2_MISO/SPI2_SCK/
+  IMU2_ACC_CS/IMU2_GYR_INT3 in the same region. Plus 11
+  copper_edge_clearance from pre-existing +3V3 traces at X=52.6 sitting
+  0.4mm from slot W edge.
+
+**Cosmetic-only alternative (F: S+E-only slot) rejected**: would have
+omitted the N cut entirely. N-side is the dominant flex-coupling path
+(MCU + power area = vibration sources, high mass), so cutting only
+S+E (mostly empty bands) gives ~10-15% useful isolation vs ~90% for
+full slot. Not worth audit-gate flip + maintenance for cosmetic gain.
+
+**Alignment with §2 scope statement** (locked 2026-05-18): v1 is
+"functional drop-in (electrical + software identical to the 6X),
+single-PCB" — explicitly NOT mechanical. v2 is "separate FMU +
+isolated-IMU boards, exact 6X mechanical match" where slot/isolation
+becomes a first-class constraint at routing time.
+
+**Residual cost (v1 ships without slot)**: under heavy prop vibration
+(motor RPM + frame harmonics), expect ~1-3 mdps/√Hz extra gyro noise
++ 10-50 µg/√Hz extra accel noise from board-flex coupling vs
+slotted-isolated baseline. **ArduPilot harmonic-notch + dynamic-notch
+filters compensate competently** at this magnitude — typical for
+single-board FCs without slots (MatekH743, Holybro Kakute, mRo Control
+Zero in some configs). Software mitigation is the v1 plan.
+
+**v2 groundwork preserved**: `docs/v2/D_SLOT_POLYGON_ANALYSIS.md` (494
+lines) — full 2-attempt analysis + per-net detour plans + audit gate
+criteria + (D) U-opens-west geometry. v2 plans slot as first-class
+routing constraint *before* Freerouting, avoiding the retrofit failure
+modes that hit v1.
+
+**Audit `IMU-SLOT` gate**: kept as info-only with message updated to
+cite this deferral (no removal — primed for v2 reactivation).
+
+**FUTURE-PROOFING NOTE** (Sai-visible): when a deferred mechanical
+constraint becomes relevant for a future board, it MUST be a
+first-class constraint at routing time, not a retrofit attempt. The
+2x v1 slot attempts cost ~3 hours of layout work; an
+upfront-as-constraint plan would have been ~30 min in v1 design
+phase.
+
+**v1.1 outline evolution (kept for full traceability):**
+
+| Iteration | Outline | Driver | Status |
+|---|---|---|---|
+| Original v1 | 36 × 36 mm | Pixhawk mini-FC standard | Superseded 2026-05-20 (Sai pivot — density drove Phase 6 P0 failures) |
+| STEP4 Path B | 80 × 60 mm | First Elmer-arbitrated grown size | Superseded 2026-05-23 (gate12 v3 finding — MATC bbox formulation was mesh-divergent → Path B 75.2°C was a sim artifact; corrected MCU = 84°C → FAILS 80°C) |
+| Interim v1.1 | 90 × 70 mm | Sai 2026-05-23 ("90×70 is final, no mechanical-fit check") | Superseded same-day (gate12 v3 + rigorous powers showed MCU=83.86°C on this size → FAILS 80°C target by 3.86°C) |
+| **v1.1 final** | **105 × 85 mm** | **gate12 v3 board-size sweep, master sign-off 2026-05-23** | **LOCKED** |
 
 **Reliability mandate** (Sai 2026-05-20, verbatim: "it working 100% is the priority", "strong resilient stuff that won't fail"): use the freed board area for generous spacing, clean subsystem separation, robust margins — design so EMI/EMC/thermal failure modes simply don't arise. Quality + real workability over time-to-build.
 
-**Open dimensions** (Sai's input pending — see `OPEN_QUESTIONS.md pivot-2026-05-20`):
-- Aspect ratio (the rectangle's length:breadth)
-- Layer count (4 vs 6 — Phase 0.6 pivot Step 3 assesses)
-- Mounting pattern (driven by the airframe envelope Sai will provide)
+**v1.1 final dimensions (105 × 85 mm — locked 2026-05-23):**
+- Board outline: 105 × 85 mm
+- Aspect ratio: 21:17 (consequence of outline)
+- Layer count: 4 vs 6 — still OPEN (Phase 0.6 pivot Step 3 assesses, see `OPEN_QUESTIONS.md pivot-2026-05-20` items 1-3)
+- **Mounting pattern: 4× M3 corner-inset holes** (master decision 2026-05-23): **3.25 mm edge inset, c-to-c 98.5 × 78.5 mm**, positions (3.25, 3.25), (101.75, 3.25), (3.25, 81.75), (101.75, 81.75). Hole spec per `PLACEMENT_STRATEGY.md §5.2`: 3.2mm drilled NPTH, through-plated, **5.5 mm** GND-pad land to chassis GND. (Originally specified as 3.0mm inset / 99×79 c-to-c / 5.0mm pad; on apply discovered the actual mounting-hole footprint uses 5.5mm pads, which at 3.0mm inset leaves only 0.25mm to board edge — violates 0.5mm edge-clearance rule. Shifted to 3.25mm inset; mechanical mounting tolerance accommodates the 0.5mm c-to-c shift.)
+  - +2 mid-long-edge holes (6 total) gated on Phase 6 vibration sim. Placement RESERVES keep-out at mid-edge positions (3.25, 42.5) and (101.75, 42.5) — 8mm circular keep-out for free sim-driven add later.
+  - Pixhawk-standard 30.5×30.5 M3 pattern formally dropped.
+
+**v1.1 thermal verification (the basis for the 105 × 85 sizing):**
+
+Board-size sweep with gate12 v3 (per-body Body Force assignment + energy-balance gate + min-mesh-density gate — see `hardware/kicad/novapcb-stepwise/gate12_thermal.py` commit `3f80f3b`) + rigorous powers (MCU = 0.700 W realistic-worst per `docs/MCU_POWER_BUDGET.md`; U2 LDO = 0.642 W absolute-worst per `docs/THERMAL_3V3_BUDGET.md`; Q5 IMU heater = 0 W hot-case thermostatic; all v1.1 sources):
+
+| Board | Area mm² | Tj_MCU °C | Margin to 80°C |
+|-------|----------|-----------|-----------------|
+| 90 × 70   | 6300  | 83.86 | -3.86 FAIL |
+| 95 × 75   | 7125  | 81.72 | -1.72 FAIL |
+| 100 × 80  | 8000  | 77.25 | +2.75 TIGHT |
+| **105 × 85** | **8925** | **73.98** | **+6.02 LOCK ≥5°C ✓** |
+| 110 × 90  | 9900  | 74.52 | +5.48 LOCK |
+| 115 × 95  | 10925 | 75.23 | +4.77 (sampling noise) |
+| 120 × 100 | 12000 | 74.04 | +5.96 LOCK |
+
+MCU asymptote ~74°C reached at ~9000 mm² (heat-spreading length scale of MCU at given k_xy reached). Sweep log: `sims/thermal-step4/runs/v11_sweep_2026-05-23.log`.
+
+**LDO survives at 105 × 85**: U2 Tj = 73.03°C (margin +6.97°C to 80°C). LDO → buck escalation **CLOSED** (see `OPEN_QUESTIONS.md phase5-thermal-ldo-vs-buck`).
 
 **v2 = FMUv6X mechanical drop-in** — still deferred (separate FMU + isolated-IMU boards, exact 6X mechanical match); see OPEN_QUESTIONS.
 
@@ -80,15 +200,75 @@ JST-GH (Pixhawk standard) vs JST-SH 1.0 vs solder pads. JST-GH is bulky but matc
 
 ## 8. PCB stack-up
 
-**SUPERSEDED 2026-05-20 (Sai pivot)**: 4-layer was right for the tight 36×36 board; the new rectangular roomier outline reopens the 4 vs 6 question. Phase 0.6 pivot Step 3 (placement) assesses which is appropriate given:
-- The reliability mandate ("won't fail") favors 6-layer if it materially reduces SI/EMI failure modes.
-- Phase 6k EMC analytical found 4 harmonics above -40 dB in GPS L1 / ELRS bands — a 6-layer with a second clean GND or split power plane can reduce those.
-- 6-layer ~25-40% more expensive at JLCPCB but trivial against the resilience priority.
+**LOCKED 2026-05-23** (master directive: explicit per-layer SI rationale).
 
-**Recommendation pending Step-3 analysis**: lean 6-layer if it provides quantifiable EMI/SI improvement; stay 4-layer if 6 only adds cost without measurable failure-mode reduction.
+### v1.1 final 6-layer stackup (JLC06161H-7628, 1.6mm total)
 
-**Original v1 record:**
-- *Resolved 2026-05-18*: 4-layer for v1 — clean ground plane under the IMU is the load-bearing requirement; 6-layer is reserved for a v2 spin only if on-board RF lands.
+| Layer | Name | Assignment | Adjacent reference for signals | Spacing to next |
+|-------|------|------------|-------------------------------|-----------------|
+| L1 | F.Cu | Components + high-speed signals (USB diff pair, I2C2, SPI bus, F.Cu power stubs) | refs L2 In1 GND ✓ | 0.21 mm prepreg |
+| L2 | In1.Cu | **GND plane** (primary) | n/a (plane) | 0.20 mm core |
+| L3 | In2.Cu | **+5V_BEC plane** (NEW for A↔B routing) | n/a (plane) | 0.20 mm core |
+| L4 | In3.Cu | **+3V3 plane** (MOVED from In4 — for B.Cu reference SI) | n/a (plane) | 0.20 mm core |
+| L5 | In4.Cu | **GND plane** (secondary) | n/a (plane) | 0.21 mm prepreg |
+| L6 | B.Cu | Signals (B.Cu USB sliver, I2C2 sliver, B.Cu component pads, future SDMMC1) | refs L5 In4 GND ✓ | n/a (bottom) |
+
+### Per-signal-layer SI verification
+
+**F.Cu signals (L1) — adjacent reference: L2 In1 GND (0.21 mm prepreg):**
+- USB 2.0 diff pair (USB_DM/DP, USBC_D_M_PRE/D_P_PRE) — high-speed (12 Mbps, harmonics to ~36 MHz); Z_diff 87 Ω computed assuming F.Cu→GND microstrip (`CONTROLLED_IMPEDANCE.md`). GND adjacent ✓.
+- I²C2 SDA/SCL (100-400 kHz) — slow; reference doesn't matter materially.
+- SPI bus to IMUs (8 MHz) — moderate-speed; GND reference improves return-path integrity ✓.
+- DShot ESC PWM (300/600 kHz, fast edges) — needs GND for clean returns ✓.
+- USART CRSF (420 kbaud) — slow.
+- F.Cu power stubs (+3V3 from MCU VDD to via, +3V3_IMU_PRE inter-cap) — power, not SI-critical.
+
+**B.Cu signals (L6) — adjacent reference: L5 In4 GND (0.21 mm prepreg):**
+- Short USB diff pair fan from U5 ESD to MCU side (1-2mm B.Cu segments) — high-speed but length too short for impedance discontinuity to matter materially. GND adjacent ✓.
+- I²C2 SDA/SCL slivers (3-mm) — slow; doesn't matter materially.
+- Future SDMMC1 (50 MHz writes) on B.Cu if routed — high-speed; needs GND ref ✓.
+- B.Cu component pads (U4 baro, C51/C52, J1 USB shield) — small SMD; not SI-critical individually.
+
+**Why move +3V3 from In4 to In3** (vs the original PR #72 placement):
+Original placement gave In4 = +3V3. With +3V3 on In4, B.Cu signals reference +3V3 (not GND). For the 1-2mm USB B.Cu slivers, this is "good enough" but not principled. Moving +3V3 to In3 and placing GND on In4 gives B.Cu a clean GND reference — better for future high-speed signals (SDMMC1) and removes the SI compromise.
+
+Cost of move: trivial — re-run `integ_C_B.py` with `IN3_CU` instead of `IN4_CU`. The thermal analysis is layer-independent.
+
+### Power-plane decoupling
+
+- **L3 (+5V_BEC)** ← L2 GND adjacent above ✓ + L4 +3V3 below (different rail).
+  - L2 GND provides primary return reference for +5V_BEC.
+  - +5V_BEC has bulk decoupling caps C7, C8 (at U6 eFuse), C73-76 (at U11/U12 ctrl), C61, C62, C81, C82 (sense filters) — all placed on F.Cu with vias dropping to L3.
+- **L4 (+3V3)** ← L5 GND adjacent below ✓ + L3 +5V_BEC above (different rail, derived via U2 LDO so not DC-isolated; inter-plane coupling acceptable).
+  - L5 GND provides primary return reference for +3V3.
+  - +3V3 has MCU decoupling halo (C11-C26), sensor decap (C41-96, C51-52, C71-72), U2 output caps (C31-34) — all placed on F.Cu with vias to L4.
+
+### Inter-plane considerations
+
+L3 (+5V_BEC) and L4 (+3V3) are adjacent power planes, separated by 0.20 mm core. This creates ~2 nF/cm² inter-plane capacitance — acts as a free decoupling cap between rails. Since +3V3 is derived from +5V_BEC via U2 LDO (not DC-isolated), this coupling is fine and beneficial (extra HF decoupling between rails).
+
+If the two rails NEEDED DC isolation (e.g., for galvanic-isolated subsystems), this stackup would be wrong. They don't — single power source through linear regulators — so OK.
+
+### EMC notes
+
+- Two GND planes (L2 + L5) provide stronger GND continuity, reducing common-mode currents on the IMU island and lowering radiated EMI.
+- All return-current loops are vertical-confined (L1↔L2, L6↔L5) — minimal loop area, low radiated emissions.
+- Phase 6k EMC harmonics in GPS L1 / ELRS bands benefit from this dual-GND geometry vs a single-GND 4-layer or a 6-layer with only 1 GND.
+
+### Justification vs alternatives
+
+| Alternative | Issue |
+|-------------|-------|
+| 1 GND + 2 power (e.g. In1=GND, In3=+5V, In4=+3V3) | B.Cu signals reference power; high-speed SI compromise |
+| GND-power-GND-power-GND-sig | Wastes 3 GND planes; reduces decoupling between power rails |
+| 4-layer (rejected) | Insufficient for 51mm Q3↔Q4 P5V_BEC plane + USB diff Z control + IMU GND quality |
+| Just route P5V_BEC as F.Cu trunk | Possible but adds top-side congestion in C zone; planes are cleaner for ≥3 A peak |
+
+### Original v1 record (kept for traceability)
+
+- *Resolved 2026-05-18*: 4-layer for v1 (the original 36×36 board) — superseded by 2026-05-20 pivot (90×70 then 105×85 rectangle).
+- *Interim 2026-05-20*: "6-layer for v1.1" decision without per-layer assignment.
+- **2026-05-23** (this entry): per-layer assignment locked with SI rationale.
 
 ## 9. USB VID/PID for the FC
 
@@ -275,3 +455,148 @@ Two-phase strategy for getting to a fab order from a position of safety. Persist
 
 - DESIGN_PHASES.md §Phase 7 (split 7a freeze / 7b order) and §Phase 7.5 (shrink optimization).
 - The thermal sim regime that gates each shrink step is defined in SIMULATION_PLAN.md; shrink-step sims re-use that protocol.
+
+## 13. U11/U12 fab-process exceptions (master 2026-05-23)
+
+A↔B-2 + A↔B-3 routing required two scope-bounded fab-process deviations to fit the LM74700-Q1 SOT-23-6 dense fanout. Both consolidated here as the single doc anchor visible at fab-order time (vs scattered across DRU comments + commit messages).
+
+### 13.1 Via-in-pad (filled & capped) — ORING_A/B_GATE + +5V_BEC pad-center vias
+
+**Scope**: U11.4, U11.5, U12.4, U12.5 pad-center vias. 4 vias total (out of board total — small fraction of any fab order).
+
+**Why**: SOT-23-6 0.95mm pin pitch + 0.53mm pad narrow direction; standard 0.30mm drill / 0.50mm OD via fails adjacent-pad clearance by 0.035mm. Custom 0.25mm drill / 0.45mm OD via with via-in-pad construction PASSES.
+
+**DRU rules** (`hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_dru`):
+- `via-in-pad-orfet-hole` — min hole 0.25mm, condition ORING_A/B_GATE.
+- `via-in-pad-orfet-diameter` — min OD 0.45mm, same condition.
+- `via-in-pad-orfet-hole-clearance` — min hole_clearance 0.20mm, same condition.
+
+**Fab requirement**: **JLC "Via in Pad" process** = filled + capped + plated. JLC catalog name: "Via Filled & Capped (Type 7 IPC-4761)". Cost bump ≈ $30–50/board flat fee.
+
+**Order-time action** (Sai): when generating gerbers + uploading to JLC, select "Via in Pad" = yes. JLC will recognize the 4 sub-spec vias and apply the process board-wide where indicated. If JLC asks "any vias smaller than 0.30mm drill?" — answer YES, point at the DRU rule + 4 locations.
+
+### 13.2 SOT-23-6 fanout clearance relax — U11/U12 courtyard
+
+**Scope**: U11/U12 courtyard only. ALL pad/track/via clearance inside U11 or U12 courtyard is 0.15mm instead of 0.20mm netclass-Default.
+
+**Why**: A↔B-3 closure for U11.4/U12.4 +5V_BEC plane connection — via-in-pad at pin-4 has 0.19mm clearance to adjacent pin-5 (different net), failing 0.20mm rule by 0.01mm. Outside-courtyard routing paths each conflict with GATE B.Cu or SENSE F.Cu (geometric — see A↔B-3 PR doc). Master 2026-05-23 Option (i) approval: scope-bounded clearance relax mirrors via-in-pad scope-bounded DRU precedent.
+
+**DRU rule** (`hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_dru`):
+- `u11-u12-fanout-clearance-relax` — min clearance 0.15mm, condition `A.insideCourtyard('U11') || A.insideCourtyard('U12')` AND same for B.
+
+**Fab requirement**: standard JLC capability is 0.10mm minimum trace/space; 0.15mm has 0.05mm fab margin. **No process bump** (within standard JLC06161H).
+
+**Order-time action** (Sai): none; standard fab capability covers this. The DRU rule is informational — the gerbers will simply have clearances down to 0.15mm in U11/U12 corners.
+
+### 13.3 U6 courtyard 4mil trace + clearance (master 2026-05-23 Option A)
+
+**Scope**: U6 (TPS25940A) courtyard interior — F.Cu exit traces for
+EFUSE protection-config nets (OVP/ILIM/DVDT/FLT).
+
+**Why**: WQFN-24 north pin row 0.5mm pitch + 0.30mm pad width = 0.20mm
+pad-pad gap. Standard 0.20mm trace + 2×0.20mm clearance = 0.60mm
+required, doesn't fit. 4mil trace (0.10mm) + 2×0.05mm clearance =
+0.20mm — fits between pads.
+
+**DRU rules**:
+- `u6-courtyard-4mil-track` — min track width 0.10mm, condition
+  `A.insideCourtyard('U6')`.
+- `u6-courtyard-4mil-clearance` — min clearance 0.05mm, both inside U6.
+
+**Fab requirement**: **JLC 4mil minimum trace process** (vs standard
+6mil). Cost bump ≈ $10–20/board flat.
+
+### 13.4 U6 extended-courtyard via-in-pad (master 2026-05-23 Option A.i)
+
+**Scope**: vias on EFUSE_OVP/ILIM/DVDT/FLT nets — small 0.45mm OD vias.
+
+**DRU rules**:
+- `u6-extended-courtyard-via-diameter` — min OD 0.45mm.
+- `u6-extended-courtyard-via-clearance` — min clearance 0.10mm
+  (insideCourtyard scope, applies between U6-internal pairs only).
+
+**Fab requirement**: same JLC via-in-pad tier as 13.1 (no new bump).
+
+### 13.5 Q3/Q4 OR-FET north 0.5mm — STANDS (load-bearing for U6 DVDT routing)
+
+**Status: STANDS.** Q3 at (27, 9.5), Q4 at (78, 9.5). Master-directed
+Option E placement nudge, committed in `hardware/kicad/novapcb-stepwise/
+novapcb-stepwise.kicad_pcb` at sha `76f096d`. **Note: earlier doc revision
+in this same session claimed "REVERTED" — that was a Rule-9 lapse on the
+worker's part (doc edit without board verification). Board state was never
+changed; Q3/Q4 are at the moved positions.**
+
+**Why the move stands**: U6 DVDT routing requires the 0.5mm-opened
+corridor between Q3.1 pad south edge and the sense row north edge. Without
+the move, the corridor is 0.408mm — too narrow for the DVDT via + trace
+geometry. With the move, corridor = 0.908mm, enabling the routing
+completed in `76f096d`. Reverting Q3/Q4 to (X, 10) would BREAK U6 DVDT
+routing and re-trigger a new fab exception or a routing iteration.
+
+**Thermal accounting (corrected)**:
+- The original "negligible thermal impact" claim was made before the LOCK
+  invalidation. The thermal sweep that DID run on the actual board
+  (`gate12_arch_sweep.py`, sha `eb51601`+) used Q3/Q4 at (X, 9.5) — so
+  the Option A/B/C numbers in `docs/THERMAL_ARCHITECTURE_DECISION.md`
+  ALREADY bake in the moved positions.
+- Implication: the +16.3°C margin for Option B and +17.2°C for Option C
+  are achievable WITH Q3/Q4 at (X, 9.5). No need to revisit the move.
+- Edge proximity caveat (per `feedback_adiabatic_edge_trap`): a 0.5mm
+  shift toward the adiabatic north edge does funnel some heat back, but
+  the sweep measurement captures this — it's not an unmodelled term.
+
+**The actual 82.46°C MCU regression** had a SEPARATE root cause: the
+LOCK sweep used PLANNED Q3 at (35, 8) vs ACTUAL Q3 at (27, 9.5) — an
+11mm-closer-to-MCU positional drift independent of the 0.5mm north move.
+
+**Cross-refs**:
+- `docs/THERMAL_ARCHITECTURE_DECISION.md` — full sweep + Option-B recommendation
+- `docs/INTEGRATION_LOG.md` — CRITICAL HALT note 2026-05-23
+- `scripts/audit_layout_compliance.py` check 10 — thermal-uses-actual-positions
+  audit gate that codified the prevention
+- Commit `76f096d` — Q3/Q4 north 0.5mm + DVDT cleared (the load-bearing move)
+
+### Combined cost impact
+
+| Item                                | Process bump |
+|-------------------------------------|--------------|
+| Via-in-pad (filled & capped, IPC-4761 Type 7) | ~$30–50/board flat |
+| 4mil min trace width                | ~$10–20/board flat |
+| Clearance relax (13.2 / 13.4)       | $0 (standard 0.10mm) |
+| Q3/Q4 placement nudge (13.5)        | $0 |
+| **Total**                           | **~$40–70/board flat** |
+
+### Fab exception count (master 2026-05-23 cap)
+
+Per master "4 fab exceptions per region max" cap:
+- **U11/U12 region: 4** (via-in-pad-orfet × 3 + fanout-relax × 1)
+- **U6 region: 4** (4mil-track + 4mil-clearance + ext-via-diameter + ext-via-clearance)
+
+Both regions AT cap. NO new fab exceptions permitted without master
+sign-off + Rule 8 re-place trigger.
+
+### Order-time checklist (Sai → JLC at fab order time)
+
+1. Upload gerbers + drill files + netlist.
+2. Specify **"Via in Pad: yes (IPC-4761 Type 7, filled & capped)"**.
+3. Specify **"Min trace width: 0.10mm (4mil)"**.
+4. Specify **"Min hole-to-hole / hole-to-trace clearance: 0.10mm"**.
+5. Expected total cost bump: **~$40–70/board flat**.
+6. If JLC asks about specific via locations or trace widths,
+   reference DRU rules in `hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_dru`.
+
+### Verifier (Rule 9)
+
+After fab arrives, verify continuous copper at fab-spec-exception locations:
+- ORING_A/B_GATE via-in-pad (U11.5/U12.5) — filled + capped + plated.
+- U11.4/U12.4 +5V_BEC via-in-pad — same.
+- U6 north-row exit traces (4mil) — calipers or X-ray inspection.
+- U6 EFUSE-net exit vias (0.45mm OD).
+
+After A↔B-3 commit, +5V_BEC plane In2.Cu cluster expected to include
+U11.4 and U12.4 via their via-in-pad through-hole vias connecting to
+the In2.Cu zone. Per Rule 9 cluster walker + zone-fill audit (see
+scripts/audit_layout_compliance.py check 9): zone GetFilledArea > 0
+confirms physical fill; pad-via overlap + via-on-zone HitTestFilledArea
+confirms electrical connection.
+

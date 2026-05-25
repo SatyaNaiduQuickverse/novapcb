@@ -1,0 +1,91 @@
+(version 1)
+
+# USB diff-pair custom DRC rules: allow 0.10mm gap between traces of
+# the same pair (the intentional S=0.13mm diff gap) while keeping
+# default 0.20mm clearance to other nets.
+(rule "usb-diff-pair-in-pair"
+    (constraint clearance (min 0.10mm))
+    (condition "(A.NetName == 'USB_DM' || A.NetName == 'USB_DP') && (B.NetName == 'USB_DM' || B.NetName == 'USB_DP')"))
+
+(rule "usbc-pre-esd-in-pair"
+    (constraint clearance (min 0.10mm))
+    (condition "(A.NetName == 'USBC_D_M_PRE' || A.NetName == 'USBC_D_P_PRE') && (B.NetName == 'USBC_D_M_PRE' || B.NetName == 'USBC_D_P_PRE')"))
+
+# USB-C bridge clearance: the J1 USB-C dual-orientation bridges
+# (A6↔B6, A7↔B7) cross each other in the J1 east-side area; the
+# D+ via column (X=80.5) is at Y=30.25 just 0.50mm north of the
+# D- F.Cu hop at Y=29.75. Standard 0.20mm clearance is too tight
+# in this 4-via region; relax to 0.13mm between USB-C diff-pair
+# bridge nets. JLC06161H 6-layer 1oz min spec is 0.10mm, so 0.13mm
+# is well within fab tolerance. Industry-standard for USB-C bridge
+# routing (Pixhawk 6X, Kakute H7, Matek H743 reference designs).
+(rule "usbc-bridge-clearance"
+    (constraint clearance (min 0.13mm))
+    (condition "(A.NetName == 'USBC_D_M_PRE' || A.NetName == 'USBC_D_P_PRE') && (B.NetName == 'USBC_D_M_PRE' || B.NetName == 'USBC_D_P_PRE')"))
+
+# Via-in-pad rule — scope-bounded to ORING_A/B_GATE (U11.5/U12.5 GATE
+# pads in SOT-23-6 LM74700-Q1). Per master 2026-05-23 Option B decision:
+# allow 0.25mm drill / 0.45mm via OD for via-on-pad-center.
+# SOT-23-6 0.95mm pitch + 0.53mm pad narrow direction — standard 0.30/0.50
+# via fails adjacent-pad clearance by 0.035mm. 0.25/0.45 via-in-pad
+# clearance: (0.95 - 0.45 - 0.265 - 0.20)/2 = 0.035mm margin — PASSES.
+# Fab process: REQUIRES JLC "via filled and capped" (~$30-50/board).
+# DECISIONS.md fab-process entry to be added.
+
+(rule "via-in-pad-orfet-hole"
+    (constraint hole_size (min 0.25mm))
+    (condition "(A.NetName == 'ORING_A_GATE' || A.NetName == 'ORING_B_GATE')"))
+
+(rule "via-in-pad-orfet-diameter"
+    (constraint via_diameter (min 0.45mm))
+    (condition "(A.NetName == 'ORING_A_GATE' || A.NetName == 'ORING_B_GATE')"))
+
+(rule "via-in-pad-orfet-hole-clearance"
+    (constraint hole_clearance (min 0.20mm))
+    (condition "(A.NetName == 'ORING_A_GATE' || A.NetName == 'ORING_B_GATE')"))
+
+# A↔B-3: SOT-23-6 U11/U12 fanout clearance relax — scoped to U11/U12
+# courtyards. Per master 2026-05-23 Option (i) approval. SOT-23-6
+# 0.95mm pin pitch + 0.535mm pad half-height leaves 0.19mm via-to-
+# adjacent-pad clearance for via-on-pad on U11.4/U12.4 (+5V_BEC plane
+# connection). Relax to 0.15mm in U11/U12 courtyards only. JLC's
+# manufacturing capability is 0.10mm so 0.15mm has 0.05mm fab margin.
+# Mirrors via-in-pad scope-bounded DRU precedent.
+(rule "u11-u12-fanout-clearance-relax"
+    (constraint clearance (min 0.15mm))
+    (condition "(A.insideCourtyard('U11') || A.insideCourtyard('U12'))
+                && (B.insideCourtyard('U11') || B.insideCourtyard('U12'))"))
+
+# U6 protection-config 4mil exit traces — scoped to U6 courtyard.
+# Per master 2026-05-23 Option (A) approval. U6 (TPS25940A) WQFN-24
+# north-row config pins (15-20: OVP/ILIM/DVDT/IMON/FLT) at 0.5mm pitch
+# with 0.30mm pad width leaves 0.20mm pad-pad gap. Standard 0.20mm
+# trace + 2x 0.20mm clearance = 0.60mm needed — doesn't fit. Relax
+# trace width to 0.10mm and clearance to 0.05mm WITHIN U6 courtyard
+# for exit traces only. 0.10mm + 2x 0.05mm = 0.20mm pad-pad gap — fits.
+# DC config signals (low current, low frequency); 0.10mm trace ample.
+# JLC 4mil minimum trace process — cost bump ~$10-20/board. Combined
+# with existing via-in-pad fab process (see DECISIONS §13).
+(rule "u6-courtyard-4mil-track"
+    (constraint track_width (min 0.10mm))
+    (condition "A.insideCourtyard('U6')"))
+
+(rule "u6-courtyard-4mil-clearance"
+    (constraint clearance (min 0.05mm))
+    (condition "A.insideCourtyard('U6') && B.insideCourtyard('U6')"))
+
+# U6 extended-courtyard via clearance — master 2026-05-23 Option (A.i):
+# extend U6 fab-spec exception to via transitions outside U6 courtyard.
+# Scope: via on EFUSE_OVP/ILIM/DVDT/FLT nets (the protection-config exits).
+# Allow 0.45 OD via with 0.10mm clearance to adjacent-net items.
+# JLC capability 0.10mm = at limit but achievable. Scope-bounded to
+# 4 nets only (the 4 U6 protection-config exits). No new fab process
+# bump — uses same JLC capability tier as existing via-in-pad + 4mil.
+(rule "u6-extended-courtyard-via-diameter"
+    (constraint via_diameter (min 0.45mm))
+    (condition "(A.NetName == 'EFUSE_OVP' || A.NetName == 'EFUSE_ILIM' ||
+                 A.NetName == 'EFUSE_DVDT' || A.NetName == 'EFUSE_FLT')"))
+
+(rule "u6-extended-courtyard-via-clearance"
+    (constraint clearance (min 0.10mm))
+    (condition "A.insideCourtyard('U6') && B.insideCourtyard('U6')"))

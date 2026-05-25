@@ -1,0 +1,12 @@
+{
+  "_comment": "Batch 1 revised — methodology proof. 3 +3V3 plane stitches (have a plane to land on) + HSE_IN/OUT. +3V3A pads need TRACE routing (no plane); deferred to batch 1b.",
+  "stitch_fails": [
+    ["R53", "1", "+3V3",   0.0, 1.0],
+    ["R54", "1", "+3V3",   0.0, 1.0],
+    ["U1",  "100", "+3V3", -1.5, 0.0]
+  ],
+  "nets": [
+    "HSE_IN",
+    "HSE_OUT"
+  ]
+}

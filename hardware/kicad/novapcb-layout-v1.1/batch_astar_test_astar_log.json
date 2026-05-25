@@ -1,0 +1,51 @@
+{
+  "baseline": {
+    "err": 61,
+    "unc": 44
+  },
+  "final": {
+    "err": 69,
+    "unc": 42
+  },
+  "delta_err": 8,
+  "delta_unc": -2,
+  "routed": 2,
+  "total": 3,
+  "results": [
+    {
+      "net": "USBC_CC1",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "J1.A5->R31.1",
+          "ok": true,
+          "tracks": 7,
+          "vias": 2
+        }
+      ]
+    },
+    {
+      "net": "USBC_CC2",
+      "ok": true,
+      "legs": [
+        {
+          "leg": "J1.B5->R32.1",
+          "ok": true,
+          "tracks": 12,
+          "vias": 2
+        }
+      ]
+    },
+    {
+      "net": "VCAP1",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "C17.1->U1.48",
+          "ok": false,
+          "reason": "no_path"
+        }
+      ]
+    }
+  ]
+}

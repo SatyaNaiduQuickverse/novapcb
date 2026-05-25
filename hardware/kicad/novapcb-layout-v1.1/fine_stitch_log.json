@@ -1,0 +1,64 @@
+{
+  "baseline": {
+    "err": 62,
+    "unc": 44
+  },
+  "final": {
+    "err": 62,
+    "unc": 44
+  },
+  "delta_err": 0,
+  "delta_unc": 0,
+  "placed": 0,
+  "results": [
+    {
+      "ref": "C19",
+      "pad": "1",
+      "net": "+3V3A",
+      "ok": false,
+      "reason": "no_clear_spot_8mm"
+    },
+    {
+      "ref": "C20",
+      "pad": "1",
+      "net": "+3V3A",
+      "ok": false,
+      "reason": "drc_fail_only_candidate"
+    },
+    {
+      "ref": "FB1",
+      "pad": "2",
+      "net": "+3V3A",
+      "ok": false,
+      "reason": "drc_fail_only_candidate"
+    },
+    {
+      "ref": "R1",
+      "pad": "1",
+      "net": "+3V3A",
+      "ok": false,
+      "reason": "drc_fail_only_candidate"
+    },
+    {
+      "ref": "R53",
+      "pad": "1",
+      "net": "+3V3",
+      "ok": false,
+      "reason": "no_clear_spot_8mm"
+    },
+    {
+      "ref": "R54",
+      "pad": "1",
+      "net": "+3V3",
+      "ok": false,
+      "reason": "no_clear_spot_8mm"
+    },
+    {
+      "ref": "U1",
+      "pad": "100",
+      "net": "+3V3",
+      "ok": false,
+      "reason": "no_clear_spot_8mm"
+    }
+  ]
+}

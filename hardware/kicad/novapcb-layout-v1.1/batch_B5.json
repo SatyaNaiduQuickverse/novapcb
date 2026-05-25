@@ -1,0 +1,10 @@
+{
+  "_comment": "Batch B5 — South edge motors + heater + VCAP1.",
+  "nets": [
+    "MOT1",
+    "MOT2",
+    "MOT5",
+    "HEATER_PWM",
+    "VCAP1"
+  ]
+}

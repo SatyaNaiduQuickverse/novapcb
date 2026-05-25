@@ -1,0 +1,91 @@
+{
+  "baseline": {
+    "err": 62,
+    "unc": 44
+  },
+  "final": {
+    "err": 62,
+    "unc": 44
+  },
+  "delta": 0,
+  "stats": {
+    "stitch_ok": 0,
+    "stitch_stuck": 0,
+    "net_ok": 0,
+    "net_stuck": 6
+  },
+  "results": [
+    {
+      "kind": "net",
+      "net": "SPI3_SCK",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.89->U9.13",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "SPI3_MISO",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.90->U9.1",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "SPI3_MOSI",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.91->U9.14",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "IMU1_CS",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.9->U3.10",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "IMU2_GYR_CS",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.85->U8.5",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "IMU3_CS",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.1->U9.12",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    }
+  ]
+}

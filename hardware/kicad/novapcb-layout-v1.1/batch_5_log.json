@@ -1,0 +1,79 @@
+{
+  "baseline": {
+    "err": 62,
+    "unc": 44
+  },
+  "final": {
+    "err": 62,
+    "unc": 44
+  },
+  "delta": 0,
+  "stats": {
+    "stitch_ok": 0,
+    "stitch_stuck": 0,
+    "net_ok": 0,
+    "net_stuck": 5
+  },
+  "results": [
+    {
+      "kind": "net",
+      "net": "MOT1",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "J11.1->U1.34",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "MOT2",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "J12.1->U1.35",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "MOT5",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "J15.1->U1.24",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "HEATER_PWM",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "Q5.1->U1.31",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "VCAP1",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "C17.1->U1.48",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    }
+  ]
+}

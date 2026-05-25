@@ -1,0 +1,67 @@
+{
+  "baseline": {
+    "err": 62,
+    "unc": 44
+  },
+  "final": {
+    "err": 62,
+    "unc": 44
+  },
+  "delta": 0,
+  "stats": {
+    "stitch_ok": 0,
+    "stitch_stuck": 3,
+    "net_ok": 0,
+    "net_stuck": 2
+  },
+  "results": [
+    {
+      "kind": "stitch",
+      "ref": "R53",
+      "pad": "1",
+      "net": "+3V3",
+      "ok": false,
+      "strategy": "stuck-all-offsets"
+    },
+    {
+      "kind": "stitch",
+      "ref": "R54",
+      "pad": "1",
+      "net": "+3V3",
+      "ok": false,
+      "strategy": "stuck-all-offsets"
+    },
+    {
+      "kind": "stitch",
+      "ref": "U1",
+      "pad": "100",
+      "net": "+3V3",
+      "ok": false,
+      "strategy": "stuck-all-offsets"
+    },
+    {
+      "kind": "net",
+      "net": "HSE_IN",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "U1.12->Y1.1",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    },
+    {
+      "kind": "net",
+      "net": "HSE_OUT",
+      "ok": false,
+      "legs": [
+        {
+          "leg": "C25.1->U1.13",
+          "ok": false,
+          "strat": "stuck"
+        }
+      ]
+    }
+  ]
+}

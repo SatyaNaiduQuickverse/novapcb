@@ -360,21 +360,29 @@ this envelope; it's a planning input not a commitment.
 
 ## 5. Mounting holes
 
-### 5.1 Pattern
+### 5.1 Pattern — DECIDED 2026-05-23, RE-SCALED for 105×85 same day
 
-**4× M3 mounting holes at the rectangle corners**, ≥ 3 mm edge inset
-(measured from hole centre to nearest board edge).
+**4× M3 corner-inset mounting holes** on the **105 × 85 mm v1.1 final board**,
+**3.25 mm edge inset** (3.0 mm originally; bumped to 3.25 mm after discovery
+that 5.5 mm GND-pad lands would violate the 0.5 mm edge-clearance rule at
+3.0 mm inset — see `DECISIONS.md §2` for the geometry walk-through).
 
-For a 50 × 35 mm board with 3 mm inset:
-- Hole centre-to-centre (long axis): 50 − 2×3 = **44 mm**
-- Hole centre-to-centre (short axis): 35 − 2×3 = **29 mm**
+Positions (mm, pcbnew Y-down): (3.25, 3.25), (101.75, 3.25), (3.25, 81.75),
+(101.75, 81.75).
 
-For a 55 × 40 mm board with 3 mm inset:
-- Hole centre-to-centre (long axis): 55 − 2×3 = **49 mm**
-- Hole centre-to-centre (short axis): 40 − 2×3 = **34 mm**
+**Centre-to-centre:**
+- Long axis (X): 105 − 2×3.25 = **98.5 mm**
+- Short axis (Y): 85 − 2×3.25 = **78.5 mm**
 
-The exact pattern locks once the board envelope locks (Step 3 P1+ iteration).
-Sai's tray-design downstream uses the final c-to-c numbers.
+The Pixhawk-standard 30.5×30.5 M3 pattern is formally dropped for v1.1
+(see `DECISIONS.md §2`). Per Sai 2026-05-23: no airframe size constraint,
+105×85 final, new tray required (v1 is functional drop-in, not mechanical).
+
+> ⚠ The 105 × 85 outline itself is under review — the thermal LOCK that
+> sized this board was invalidated 2026-05-23. See
+> `docs/THERMAL_ARCHITECTURE_DECISION.md` for sweep + Sai-pending architecture
+> pick. The mounting pattern above is valid for the 105 × 85 case (Option A
+> stays at 115×100 — different pattern needed if Sai picks A).
 
 ### 5.2 Hole specification
 
@@ -384,12 +392,17 @@ Sai's tray-design downstream uses the final c-to-c numbers.
 - No copper exclusion zone in the inner power planes around the hole
   (the GND-pad land handles the chassis-to-GND tie)
 
-### 5.3 Contingency: 6 holes
+### 5.3 Contingency — +2 mid-long-edge holes (sim-gated; placement reserves keep-out NOW)
 
-If Phase 6 deep-pass vibration modeling (post Step-3 P1+) shows the
-44-49 mm hole spacing leaves excessive board flex amplitude at the IMU
-location, add 2 more M3 holes at the midpoints of the long edges (total
-6 holes). Decided in iteration, not pre-committed in P0.
+**Sim-gated 4-vs-6** (master 2026-05-23): if Phase 6 vibration modeling (Task #10) shows the 98.5×78.5 mm hole spacing leaves excessive board flex amplitude at the IMU location, add 2 more M3 holes at the midpoints of the long edges (total 6 holes).
+
+**Placement MUST reserve keep-out at the mid-edge positions NOW** so a sim-driven add doesn't trigger a re-place of B/A/D/H:
+
+- Mid-long-edge keep-out positions: (3.25, 42.5) west mid and (101.75, 42.5) east mid
+- Keep-out diameter: 8 mm (M3 + GND-pad land + tolerance)
+- Subsystems B, A, D, H placement scripts MUST exclude these two circular regions
+
+This makes the sim-driven 4→6 transition FREE (no re-place needed if Phase 6 says we need the extra two holes).
 
 ---
 

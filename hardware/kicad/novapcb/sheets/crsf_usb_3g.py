@@ -119,7 +119,7 @@ ESD path).
 import skidl
 from skidl import Part, Net
 
-from sheets.common import setup, n, FP_R_0402
+from sheets.common import setup, n, FP_R_0402, FP_C_0402
 from sheets.mcu_3a import mcu
 
 setup()
@@ -166,6 +166,25 @@ USART6_RX += crsf_conn[3]   # RX channel-data → FC
 GND       += crsf_conn[4]
 
 
+# ---- ESD on CRSF TX/RX (v1.1 redundancy re-spin) ----
+# Per docs/RESPIN_SCOPE.md + RESPIN_PARTS_REVIEW.md §3: bidirectional TVS
+# to GND on each external CRSF UART line. CRSF runs at 420 kbaud — well
+# within ESD7L5.0DT5G's ~0.5pF / 5V-standoff envelope.
+esd_crsf_tx = Part("Device", "D_TVS",
+                   value="ESD7L5.0DT5G",
+                   footprint="esd7l50:SOT-723_L1.2-W0.8-P0.40-LS1.2-BR")
+esd_crsf_tx.ref = "D13"
+USART6_TX += esd_crsf_tx[1]
+GND       += esd_crsf_tx[2]
+
+esd_crsf_rx = Part("Device", "D_TVS",
+                   value="ESD7L5.0DT5G",
+                   footprint="esd7l50:SOT-723_L1.2-W0.8-P0.40-LS1.2-BR")
+esd_crsf_rx.ref = "D14"
+USART6_RX += esd_crsf_rx[1]
+GND       += esd_crsf_rx[2]
+
+
 # ====================================================================
 # USB-C block — USB 2.0 receptacle + CC pulldowns + ESD protection
 # ====================================================================
@@ -194,6 +213,15 @@ for gp in ("A1", "A12", "B1", "B12", "S1"):
 for vp in ("A4", "A9", "B4", "B9"):
     P5V += usbc[vp]   # VBUS = +5V from USB host (bench bring-up only per CLAUDE.md §3.6)
 
+# USB-C VBUS decoupling — added 2026-05-24 to fix DECOUPLING gate regression
+# discovered during CAN placement. Original Phase 3g placeholder used CAN's
+# C83 as misuse — moved C83 to its declared CAN U14.VCC role + add proper
+# named U5/J1 VBUS decap here. 100nF 0402 close to U5 USB ESD chip body.
+c_usb_vbus = Part("Device", "C", value="100nF", footprint=FP_C_0402)
+c_usb_vbus.ref = "C85"
+P5V += c_usb_vbus[1]
+GND += c_usb_vbus[2]
+
 USBC_D_P_PRE += usbc["A6"]
 USBC_D_P_PRE += usbc["B6"]
 USBC_D_M_PRE += usbc["A7"]
@@ -221,12 +249,46 @@ GND += r_cc2[2]
 # ---- USBLC6-2P6 ESD protection on D+/D- ----
 # ST USBLC6-2P6 — USB common-mode TVS + 24V clamp. SOT-23-6 package.
 # Pin map (per KiCad symbol verified 2026-05-20):
-#   pin 1 = I/O1 (D+ host side, from USB-C connector)
+#   pin 1 = I/O1
 #   pin 2 = GND
-#   pin 3 = I/O2 (D- host side, from USB-C connector)
-#   pin 4 = I/O2 (D- device side, to MCU)
+#   pin 3 = I/O2
+#   pin 4 = I/O2
 #   pin 5 = VBUS (clamp reference)
-#   pin 6 = I/O1 (D+ device side, to MCU)
+#   pin 6 = I/O1
+#
+# Per ST USBLC6-2P6 datasheet (rev 5) §4 functional schematic: I/O1
+# (pins 1+6) is a SINGLE NODE internally — both pins terminate at
+# the same TVS junction. Same for I/O2 (pins 3+4). The "host side"
+# vs "device side" labeling is COSMETIC — the device is a symmetric
+# pass-through clamp. The pin pairs are electrically interchangeable.
+#
+# PIN-SWAP 2026-05-23 (master directive; electrically-equivalent
+# pin reassignment on a symmetric ESD device — NOT a design change):
+#
+#   Old assignment forced U1-side nets (USB_DM/DP) to U5's EAST pins
+#   (pin 4/6) while J1-side nets (USBC_D_*_PRE) went to WEST pins
+#   (pin 1/3). With U1 west and J1 east, BOTH pairs were forced to
+#   cross U5's body — creating routing impasses around the SOT-23-6
+#   side pins (pin 1, 3 W-side block post-ESD fan; pin 4, 6 E-side
+#   block pre-ESD fan).
+#
+#   New assignment: U1-side nets on U5 WEST pins (1, 3), J1-side
+#   nets on EAST pins (4, 6). Pair flow becomes U1(W)→U5_W direct,
+#   U5_E→J1(E) direct. No body crossing, no tunnel, no detour, no
+#   crossover, no extra vias. The pair fans around the middle pin
+#   (GND) — the routine USBLC6 fan.
+#
+# DM-to-south-pin, DP-to-north-pin preserves the arriving pair
+# Y-order (no crossover):
+#   pin 1 (NW) = USB_DP  (D+ device, north Y at U5 west)
+#   pin 3 (SW) = USB_DM  (D- device, south Y at U5 west)
+#   pin 4 (SE) = USBC_D_M_PRE (D- host, south Y at U5 east)
+#   pin 6 (NE) = USBC_D_P_PRE (D+ host, north Y at U5 east)
+#
+# FLAG FOR SUPERMASTER RATIFICATION: electrically a no-op (symmetric
+# ESD device, pin pairs internally common per datasheet), but the
+# netlist 'immutable' rule prevents quiet drift — this swap is a
+# layout-correctness fix, ratification is a formality.
 esd = Part(
     "Power_Protection", "USBLC6-2P6",
     footprint="Package_TO_SOT_SMD:SOT-23-6",
@@ -234,9 +296,9 @@ esd = Part(
 )
 esd.ref = "U5"
 
-USBC_D_P_PRE += esd[1]   # D+ from connector
+USB_DP       += esd[1]   # D+ device side (MCU) — west pin NW
 GND          += esd[2]   # GND
-USBC_D_M_PRE += esd[3]   # D- from connector
-USB_DM       += esd[4]   # D- to MCU (post-ESD)
+USB_DM       += esd[3]   # D- device side (MCU) — west pin SW
+USBC_D_M_PRE += esd[4]   # D- host side (J1 connector) — east pin SE
 P5V          += esd[5]   # VBUS clamp reference
-USB_DP       += esd[6]   # D+ to MCU (post-ESD)
+USBC_D_P_PRE += esd[6]   # D+ host side (J1 connector) — east pin NE

@@ -1,0 +1,66 @@
+Header
+  Mesh DB "." "mesh"
+End
+
+Simulation
+  Coordinate System = Cartesian 2D
+  Simulation Type = Steady State
+  Steady State Max Iterations = 1
+  Output Intervals = 1
+  Output File = "case.result"
+  Coordinate Scaling = 1.0
+End
+
+Constants
+End
+
+Body 1
+  Equation = 1
+  Material = 1
+End
+
+Material 1
+  Youngs Modulus = 210.0e9
+  Poisson Ratio = 0.30
+  Density = 7850.0
+End
+
+Equation 1
+  Active Solvers(2) = 1 2
+  Plane Stress = Logical True
+End
+
+Solver 1
+  Equation = Linear Elasticity
+  Procedure = "StressSolve" "StressSolver"
+  Variable = Displacement
+  Variable DOFs = 2
+  Linear System Solver = Direct
+  Steady State Convergence Tolerance = 1e-09
+  Calculate Stresses = Logical True
+End
+
+Solver 2
+  Exec Solver = After Simulation
+  Equation = "result output"
+  Procedure = "ResultOutputSolve" "ResultOutputSolver"
+  Output File Name = "case"
+  Output Format = "vtu"
+  Binary Output = Logical False
+  Ascii Output = Logical True
+  Single Precision = False
+End
+
+! Left edge: fully clamped
+Boundary Condition 1
+  Target Boundaries(1) = 4
+  Displacement 1 = 0.0
+  Displacement 2 = 0.0
+End
+
+! Right edge: tip shear traction (downward)
+! Total tip force P = 100 N (thickness=0.01m, height=0.05m -> tau = P/(b*h) = 200000 Pa)
+Boundary Condition 2
+  Target Boundaries(1) = 2
+  Force 2 = -200000.0
+End

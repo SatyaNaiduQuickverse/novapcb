@@ -1,0 +1,94 @@
+{
+  "scaffold_status": "Block A analytical-floor scaffold per master 2026-05-21 directive (post OpenEMS UNAVAILABLE).",
+  "post_gui_run_required": true,
+  "post_gui_steps": [
+    "1. Re-run sims/extract_trace_geometry.py against the post-GUI novapcb-layout-v2.kicad_pcb to refresh trace_geometry.json.",
+    "2. Re-run this script \u2014 verdicts will populate from TBD_POST_GUI.",
+    "3. Cross-check 6c IMU SPI overshoot \u2014 if still >200 mV, add 22\u03a9 series-term R footprint (would be a Step 6 design change).",
+    "4. Ping master with final Block A results + 6b USB verdict."
+  ],
+  "blocks": {
+    "6b": {
+      "name": "6b_usb_diff_pair",
+      "method": "Hammerstad-Jensen + IPC-2141 edge-coupled + analytical via-transition reflection model",
+      "criterion": "USB 2.0 \u00b115% window [76.5, 103.5] \u03a9 at the segment level; |S11| <= -15 dB cumulative at 480 MHz including via discontinuities",
+      "via_transition_model": "discrete impedance step. Reflection coefficient \u0393 = (Z2-Z1)/(Z2+Z1) at each F.Cu\u2194B.Cu via. Cumulative |S11| \u2248 20*log10(|\u0393| * fudge_factor) where fudge_factor accounts for back-to-back via reflections partially canceling. For JLC06161H-7628 symmetric stackup, F.Cu and B.Cu are both 94.4\u03a9 so via transitions are impedance-matched per master 2026-05-21 \u2014 \u0393=0 from impedance mismatch; only the via's own stub-and-pad capacitance contributes.",
+      "analytical_Z": {
+        "Z_se_F.Cu_ohm": 68.7,
+        "Z_se_B.Cu_ohm": 68.7,
+        "Z_diff_ohm": 95.65,
+        "eps_eff": 3.186,
+        "spec_window": [
+          76.5,
+          103.5
+        ],
+        "in_spec": "True"
+      },
+      "via_transition": {
+        "n_vias_per_line": 2,
+        "Z_se_match_F_to_B": true,
+        "impedance_mismatch_at_via": "matched (symmetric stackup)",
+        "parasitic_estimate_per_via": {
+          "C_pad_fF": "~50-100 (via pad capacitance to ref plane)",
+          "L_barrel_nH": "~0.4 (16-mil barrel)"
+        },
+        "discontinuity_freq_band": "well above USB 2.0 480 MHz (Lpar/Cpar resonance ~ GHz range for 0.4nH/100fF)"
+      },
+      "length_match": {
+        "lengths_mm": {
+          "USB_DM": 30.772,
+          "USB_DP": 31.318
+        },
+        "skew_mm": 0.546,
+        "skew_spec_USB2_FS_mm": 22,
+        "in_spec": true
+      },
+      "verdict": "PASS",
+      "bench_dependency": "Phase 9 fab impedance coupon + bench TDR is the final verdict per Phase 0.6 floor."
+    },
+    "6c": {
+      "name": "6c_imu_spi",
+      "method": "Lumped L+C model (TOF<<edge), ngspice transient",
+      "criterion": "SIMULATION_PLAN \u00a76c: rise/fall <5 ns; setup/hold margin >2 ns; ringing <200 mV",
+      "per_trace_impedance": {
+        "Z_se_ohm": 72.29,
+        "eps_eff": 3.095
+      },
+      "length_summary": {
+        "min_mm": 44.7,
+        "max_mm": 80.78,
+        "all_under_50mm": false
+      },
+      "notes": "Routed lengths around 36-45 mm. At 24 MHz SPI clock + STM32H743 GPIO ~2ns edge, the trace is lumped (TOF ~0.3 ns << edge 2 ns). Earlier Block A pre-reroute sim showed modeled overshoot 354-489 mV due to lumped LRC tank with 30\u03a9 driver. Final 6c run after GUI pass will use updated geometry; if overshoot persists, consider 22\u03a9 series term R at MCU pins (D1/\u00a72 review).",
+      "verdict": "TBD_POST_GUI"
+    },
+    "6f": {
+      "name": "6f_sdmmc",
+      "method": "Lumped L+C model; ngspice transient",
+      "criterion": "SIMULATION_PLAN \u00a76f: SDR25 12.5 MHz clean clock + setup/hold met",
+      "per_trace_impedance": {
+        "Z_se_ohm": 72.29
+      },
+      "length_summary": {
+        "min_mm": 18.15,
+        "max_mm": 64.54
+      },
+      "notes": "12.5 MHz SDR25 with ~3ns edge \u2014 lumped regime. Pre-reroute Block A: 6/6 PASS. Post-GUI re-run expected same result; trace geometry barely shifts.",
+      "verdict": "TBD_POST_GUI"
+    },
+    "6g": {
+      "name": "6g_dshot",
+      "method": "Lumped L+C model; ngspice transient",
+      "criterion": "SIMULATION_PLAN \u00a76g: DShot600 settling <0.83 us; no >300mV ringing",
+      "per_trace_impedance": {
+        "Z_se_ohm": 72.29
+      },
+      "length_summary": {
+        "min_mm": 39.74,
+        "max_mm": 78.8
+      },
+      "notes": "DShot600 (600 kHz fundamental, 1.67 us bit period) is electrically tiny at our trace lengths. Pre-reroute Block A: 8/8 PASS. Post-GUI re-run expected same.",
+      "verdict": "TBD_POST_GUI"
+    }
+  }
+}

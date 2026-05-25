@@ -1,0 +1,11 @@
+{
+  "_comment": "Batch B3 — MCU east SPI3 + IMU chip-selects (MCU east ↔ U3/U8/U9 IMU bank).",
+  "nets": [
+    "SPI3_SCK",
+    "SPI3_MISO",
+    "SPI3_MOSI",
+    "IMU1_CS",
+    "IMU2_GYR_CS",
+    "IMU3_CS"
+  ]
+}

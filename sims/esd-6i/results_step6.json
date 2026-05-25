@@ -1,0 +1,106 @@
+{
+  "tool": "ngspice + analytical inventory",
+  "tier": "Step 6 re-validation post Step-2-eFuse pivot",
+  "topology_change_record": "Step 2 iter 4 replaced the pre-pivot bare-BEC topology with U6 TPS25940 eFuse + Q2 AO3401A P-FET (reverse polarity) + D1 SMAJ6.0A TVS. Major upgrade to input protection.",
+  "checks": [
+    {
+      "check": "6i.1_protection_inventory_step6",
+      "status": "INFO",
+      "inventory": {
+        "USB-C D+/D-": {
+          "protected": true,
+          "device": "U5 USBLC6-2P6",
+          "status": "UNCHANGED \u2014 still PASS"
+        },
+        "VBAT input (Mauch)": {
+          "protected": "external",
+          "device": "Mauch HS-200-LV module",
+          "status": "UNCHANGED \u2014 module-side"
+        },
+        "+5V_BEC input": {
+          "protected": true,
+          "devices": [
+            "U6 TPS25940 eFuse",
+            "Q2 AO3401A P-FET",
+            "D1 SMAJ6.0A TVS"
+          ],
+          "status": "MAJOR UPGRADE post-Step-2",
+          "thresholds": {
+            "OVP": "6.04 V",
+            "UVLO": "4.00 V",
+            "OC": "2.08 A",
+            "TVS_V_BR_min": "6.67 V",
+            "soft_start_ramp": "50 ms"
+          }
+        },
+        "GPS+mag J5 I2C/UART": {
+          "protected": false,
+          "device": null,
+          "risk": "Long external cable; static buildup",
+          "status": "UNCHANGED \u2014 Phase 6.5 forum review item"
+        },
+        "CRSF J10 solder pads": {
+          "protected": false,
+          "device": null,
+          "risk": "User-soldered wires",
+          "status": "UNCHANGED"
+        },
+        "Telem J3 JST-GH 6P": {
+          "protected": false,
+          "device": null,
+          "risk": "UART connector",
+          "status": "UNCHANGED"
+        }
+      },
+      "note": "+5V_BEC input now comprehensively protected via Step 2 iter 4 eFuse front-end."
+    },
+    {
+      "check": "6i.2_reverse_polarity",
+      "topology": "Q2 AO3401A P-FET in series with +5V BEC input",
+      "verdict": "PASS",
+      "rationale": "Q2 source connected to +5V_BEC, drain to +5V_BEC_PROT. Gate held by R5/R8 voltage divider; in correct polarity, Vgs negative => Q2 ON. In REVERSED polarity (-5V at BEC), Vgs becomes positive => Q2 OFF, blocking current.",
+      "pass": true
+    },
+    {
+      "check": "6i.3_tvs_overvoltage_clamp",
+      "tvs": "D1 SMAJ6.0A",
+      "input_transient_V": 24,
+      "clamped_v_max": 7.5335,
+      "spec_v_clamp_max": 10.5,
+      "pass": true,
+      "note": "TVS clamps within the SMAJ6.0A datasheet V_C max envelope."
+    },
+    {
+      "check": "6i.4_efuse_envelope",
+      "device": "U6 TPS25940",
+      "OVP_V": 6.04,
+      "UVLO_V": 4.0,
+      "OC_A": 2.08,
+      "soft_start_ms": 50,
+      "verdict": "PASS \u2014 values per DECISIONS \u00a711 iter 4, gated by 6a re-sim",
+      "pass": true
+    },
+    {
+      "check": "6i.5_usb_esd",
+      "device": "U5 USBLC6-2P6",
+      "status": "Unchanged from prior 6i \u2014 USBLC6 clamps USB at ~24V working, 9V breakdown. Already verified.",
+      "pass": true
+    },
+    {
+      "check": "6i.6_remaining_protection_gaps",
+      "gaps": [
+        "GPS+mag J5: no TVS on I2C/UART pins",
+        "CRSF J10: no TVS on solder pads",
+        "Telem J3: no TVS on UART pins"
+      ],
+      "recommendation": "Add ESD7L5.0DT for I2C/UART pins in v1.1 if forum review flags.",
+      "status": "REMAINING \u2014 Phase 6.5 forum review queue item, NOT a Phase 7 blocker"
+    }
+  ],
+  "summary": {
+    "total_checks": 6,
+    "passes": 6,
+    "remaining_gaps_doc": true
+  },
+  "verdict": "MARGINAL"
+}

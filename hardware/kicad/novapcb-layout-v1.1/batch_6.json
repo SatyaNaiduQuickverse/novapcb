@@ -1,0 +1,11 @@
+{
+  "_comment": "Batch 6 — GPS/UART + USB-CC + GND stitch (5 nets, top edge + USB area). GND U1.19↔U1.74 is treated as a 2-pad signal route.",
+  "stitch_fails": [],
+  "nets": [
+    "GPS1_RX",
+    "USART6_TX",
+    "USBC_CC1",
+    "USBC_CC2",
+    "GND"
+  ]
+}

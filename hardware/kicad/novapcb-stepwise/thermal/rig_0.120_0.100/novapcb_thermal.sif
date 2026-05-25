@@ -1,0 +1,91 @@
+Header
+  Mesh DB "." "novapcb_thermal"
+End
+
+Simulation
+  Coordinate System = "Cartesian 3D"
+  Simulation Type = Steady State
+  Steady State Max Iterations = 30
+  Output File = "novapcb_thermal.result"
+  Post File = "novapcb_thermal.vtu"
+  Output Intervals = 1
+End
+
+Body 1
+  Equation = 1
+  Material = 1
+  Body Force = 1
+End
+
+Equation 1
+  Active Solvers(2) = 1 2
+End
+
+Solver 1
+  Equation = "Heat Equation"
+  Variable = "Temperature"
+  Procedure = "HeatSolve" "HeatSolver"
+  Linear System Solver = "Iterative"
+  Linear System Iterative Method = "BiCGStab"
+  Linear System Max Iterations = 500
+  Linear System Convergence Tolerance = 1.0e-9
+  Linear System Preconditioning = "ILU0"
+  Steady State Convergence Tolerance = 1.0e-7
+End
+
+Solver 2
+  Exec Solver = After Simulation
+  Equation = "result output"
+  Procedure = "ResultOutputSolve" "ResultOutputSolver"
+  Output File Name = "novapcb_thermal"
+  Output Format = "vtu"
+  Binary Output = Logical False
+  Ascii Output = Logical True
+End
+
+Material 1
+  Density = 2500
+  Heat Conductivity(3) = 33.5 33.5 0.316
+  Heat Capacity = 800
+End
+
+Body Force 1
+  Heat Source = Variable Coordinate
+    Real MATC "q=0; if (abs(tx(0)-0.02800)<0.00150 & abs(tx(1)-0.01800)<0.00200) q=q+3.750e+02; if (abs(tx(0)-0.04500)<0.00700 & abs(tx(1)-0.03500)<0.00700) q=q+1.179e+03; if (abs(tx(0)-0.06000)<0.00145 & abs(tx(1)-0.02600)<0.00080) q=q+2.694e+03; if (abs(tx(0)-0.02400)<0.00125 & abs(tx(1)-0.02500)<0.00150) q=q+2.140e+04; if (abs(tx(0)-0.02313)<0.00150 & abs(tx(1)-0.02150)<0.00075) q=q+3.611e+02; if (abs(tx(0)-0.04200)<0.00250 & abs(tx(1)-0.00800)<0.00200) q=q+6.250e+02; if (abs(tx(0)-0.07800)<0.00250 & abs(tx(1)-0.00800)<0.00200) q=q+6.250e+02; if (abs(tx(0)-0.02400)<0.00150 & abs(tx(1)-0.00500)<0.00150) q=q+1.389e+03; if (abs(tx(0)-0.09600)<0.00150 & abs(tx(1)-0.00500)<0.00150) q=q+1.389e+03; if (abs(tx(0)-0.11040)<0.00150 & abs(tx(1)-0.07800)<0.00150) q=q+2.778e+03; if (abs(tx(0)-0.06000)<0.00150 & abs(tx(1)-0.08500)<0.00075) q=q+0.000e+00; q"
+End
+
+! Edges 1-4: ADIABATIC (no h_conv)
+Boundary Condition 1
+  Name = "X- edge (adiabatic)"
+  Target Boundaries(1) = 1
+End
+
+Boundary Condition 2
+  Name = "X+ edge (adiabatic)"
+  Target Boundaries(1) = 2
+End
+
+Boundary Condition 3
+  Name = "Y- edge (adiabatic)"
+  Target Boundaries(1) = 3
+End
+
+Boundary Condition 4
+  Name = "Y+ edge (adiabatic)"
+  Target Boundaries(1) = 4
+End
+
+! Faces 5 (bottom), 6 (top): convection
+Boundary Condition 5
+  Name = "Z- bottom (convection)"
+  Target Boundaries(1) = 5
+  Heat Transfer Coefficient = 5.0
+  External Temperature = 50.0
+End
+
+Boundary Condition 6
+  Name = "Z+ top (convection)"
+  Target Boundaries(1) = 6
+  Heat Transfer Coefficient = 5.0
+  External Temperature = 50.0
+End
