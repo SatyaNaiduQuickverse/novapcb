@@ -194,11 +194,11 @@ PB9  TIM4_CH4  TIM4  PWM(8)  GPIO(57)
 # v1.1 SKiDL re-mux 2026-05-22: BUZZER moved PA15 → PD7 (PA15
 # freed by SPI1_MOSI departing; HEATER_PWM was supposed to take
 # PA15 but timer conflict — see OPEN_QUESTIONS hwdef-heater-pwm-pa15).
-# BUZZER MCU driver DEFERRED to v2 (2026-05-26, task #47): GPS N-edge
-# congestion; non-flight-critical audio. PD7 reverts to free GPIO.
-# v2: bind a free GPIO + restore HAL_BUZZER_PIN.
-# PD7 BUZZER OUTPUT GPIO(32) LOW
-# define HAL_BUZZER_PIN 32
+# BUZZER re-pinned PD7->PA3 (2026-05-26, Sai directive: route in v1, no defer).
+# PD7 (N-edge) was boxed by BATT2 sense verticals; PA3 = free W-edge GPIO
+# (MOT6 vacated, PR#83->PE14), clean SW exit to J5.
+PA3 BUZZER OUTPUT GPIO(32) LOW
+define HAL_BUZZER_PIN 32
 
 # microSD support
 PC8 SDMMC1_D0 SDMMC1
