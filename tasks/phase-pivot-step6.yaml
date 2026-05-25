@@ -1,0 +1,197 @@
+id: phase-pivot-step6
+phase: pivot
+subphase: "step-6"
+title: "Step 6 — final sim regime + DFM + fab export (gates the Phase 7a fab-ready freeze)"
+status: in_progress
+depends_on:
+  - phase-pivot-step5-routing   # merged main 0f1548f, board 0 DRC / 0 unconnected
+  - phase-pivot-step4           # thermal validation (merged via PR #61, 80×60 board)
+  - phase-pivot-step3-p1        # placement (merged PR #58)
+  - phase-pivot-step2-inrush-mitigation  # eFuse + Q2 + TVS front-end (changed schematic)
+  - phase-0.6-emi-thermal-tooling-pivot  # the V&V bar that gates every sim
+
+inputs:
+  files:
+    - hardware/kicad/novapcb-layout-v2/novapcb-layout-v2.kicad_pcb  # routed 80×60 6-layer board
+    - hardware/kicad/novapcb-layout-v2/ROUTING_REPORT.md            # Step 5 closure record
+    - hardware/kicad/novapcb-v1/                                    # current schematic (post-Step 2 eFuse rev)
+    - sims/PHASE6_PLAN.md                                           # Phase 6 P0 scaffolding (predates pivot)
+    - sims/power-6a/                                                # has Step 2 rev results
+    - sims/usb-diffpair-6b/  sims/imu-spi-6c/  sims/sdmmc-6f/  sims/dshot-6g/
+    - sims/esd-6i/  sims/thermal-6j/  sims/emc-6k/  sims/manufacturability-6m/
+    - hardware/kicad/novapcb-layout/run_gerber_export.py            # 4-layer pipeline reference (update for 6-layer)
+    - docs/CONTROLLED_IMPEDANCE.md                                  # 6-layer Z0 geometry (Step 5)
+    - docs/SIMULATION_PLAN.md                                       # canonical pass criteria per sub-phase
+    - docs/ENGINEERING_RIGOR.md §1-2 + §10                          # sims-as-plan + grep-then-state
+  refs:
+    - "Master 2026-05-21 directive (post Step 5 merge): do Step 6 RIGOROUSLY, no compromise. Phase 0.6 V&V bar applies to every sim — validated against a trusted-source benchmark, no tolerance ever loosened, failures change the design (or get a §2-justified criterion review), honest escalation, verify-before-merge."
+    - "Sai's explicit directive (recorded in DECISIONS §12): FREEZE at fab-ready (Phase 7a, git tag v1.0-fab-ready-frozen) — the validated generously-margined 80×60 baseline as the surely-works fallback. Phase 7b actual fab order is Sai's hard-stop sign-off; master/worker cannot place it. Phase 7.5 shrink-optimization begins only AFTER the freeze."
+    - "Scaffolds in sims/<sub>/ predate the pivot: schematic-level sims (6a power, 6i ESD) were authored against the pre-pivot schematic — must be re-run against the current post-Step-2-eFuse-front-end schematic. Layout-dependent sims (6b USB, 6c IMU SPI, 6f SDMMC, 6g DShot) were stubbed with TODO trace-geometry inputs; now there is real routed geometry — plug it in."
+    - "OpenEMS Z0-extraction was deferred (phase0.6-2). Master directs a bounded honest attempt to fix it (likely start FRESH from a known-good tutorial, not debug the broken script). If fixable, use for 6b. If not, the validated analytical Hammerstad-Jensen + Phase 9 bench remain the impedance floor — document honestly."
+    - "6l SITL is DONE (PR #52, ArduPilot SITL unchanged by pivot — no re-run)."
+
+prediction:
+  worker_pre_run_prediction: |
+    Structured into 4 PR blocks (one per logical chunk; falsifiable
+    pre-prediction on each; ping master at each).
+
+    --- BLOCK A — Routed-trace SI sims (6b USB, 6c IMU SPI, 6f SDMMC, 6g DShot) ---
+
+    PRED-A1 (6b USB Hammerstad-Jensen vs routed length): With the Step 5
+      6-layer USB diff-pair geometry (W=0.30, S=0.10, h=0.21mm L1↔L2,
+      εr=4.3, Z_diff=94.4Ω per docs/CONTROLLED_IMPEDANCE.md), the
+      USB 2.0 ±15% spec window [85,105]Ω holds. Routed length impacts
+      transmission delay + reflection magnitude but not Z0. Expect:
+      |Γ| < 0.1 at both ends, eye open at 480 Mbit/s. PASS.
+
+    PRED-A2 (6c IMU SPI ringing): Routed F.Cu trace ~10-15mm to U3,
+      24MHz SPI (Pixhawk-typical for ICM-42688-P), no series term
+      currently. Expect: settling within 1/2 bit (~21ns) — likely PASS.
+      Watch for overshoot >10% requiring a series resistor.
+
+    PRED-A3 (6f SDMMC SI): SDR25 = 12.5 MHz on 4-bit bus, routed
+      lengths likely <20mm. Setup/hold easily met at 12.5MHz. PASS.
+
+    PRED-A4 (6g DShot SI): DShot600 = 600kHz fundamental, slow
+      compared to USB. Ringing on MOT1-8 traces likely benign. PASS.
+
+    --- BLOCK B — OpenEMS Z0-extraction ---
+
+    PRED-B1 (OpenEMS fix outcome): bounded ~2-3 hour attempt. Start
+      fresh from upstream impedance-extraction tutorial (microstrip Z0),
+      adapt for the JLC06161H-7628 stackup. Likely outcome split:
+        50% — get matched-to-analytical Z0 (within 5%) on a microstrip,
+              then port to the diff-pair → 6b uses both methods.
+        50% — still cannot make it converge cleanly → document honestly,
+              use the Hammerstad-Jensen analytical + Phase 9 bench as
+              the impedance floor. NOT fake.
+
+    --- BLOCK C — Re-validate pivot-affected sims ---
+
+    PRED-C1 (6a power tree post-eFuse): The eFuse front-end (Step 2)
+      adds U6 (TPS25940), Q2 (P-FET), D1 (TVS). The downstream
+      AP2112K LDO + cap network is unchanged. Expect: all rail
+      voltages stable; soft-start ramp 50ms; eFuse OCP set 2.08A.
+      results_step2_rev.json already exists from Step 2 — re-run on
+      current schematic + verify it matches.
+
+    PRED-C2 (6i ESD/input-protection post-pivot): TVS D1 + eFuse U6
+      replace the prior "minimal protection gap". Re-assess: TVS
+      VBR_min 6.67V protects against transients up to V_clamp. Expect
+      now-acceptable protection vs IEC 61000-4-2 ±8kV contact discharge
+      (with appropriate trace inductance considered). 6.5 forum review
+      probably no longer needed for the input-protection row.
+
+    PRED-C3 (6k EMC post-route): Routed copper changes the radiator/
+      antenna picture. Re-run analytical Fourier + add post-route
+      check: clock-harmonic coupling into adjacent traces + plane
+      gaps. Expect: 16MHz SPI + 12.5MHz SDMMC + 480MHz USB still
+      clear of GPS L1 (1.575 GHz) and ELRS 868/915MHz. No coupling
+      hotspots if plane-served power keeps return paths short.
+
+    PRED-C4 (6j thermal post-route check): Already done at Step 4 on
+      80×60 (LDO 69.8°C, MCU 74.2°C at h=5/50°C, in margin). Convection-
+      limited regime; routed copper adds <5% k_eff variation. Expect
+      no material change — confirm + move on.
+
+    --- BLOCK D — DFM + fab export ---
+
+    PRED-D1 (DFM JLCPCB 6-layer rules): Default Step 5 net classes
+      already meet JLC06161H-7628 minimums (0.10/0.10 trace/space,
+      0.20mm min drill, 0.10mm annular). Expect: 0 DFM violations
+      against the JLCPCB rule pack.
+
+    PRED-D2 (Gerber/drill/POS/BOM export): Adapt the existing
+      hardware/kicad/novapcb-layout/run_gerber_export.py for the 6-layer
+      board (extra inner-layer plot list: In1..In4). Expect: all
+      stages export clean.
+
+    PRED-D3 (BOM ↔ netlist parity): 83 components per current BOM.
+      Schematic netlist export → diff vs BOM CSV → expect 0
+      discrepancies (BOM finalized in Phase 5).
+
+    --- ENDPOINT ---
+
+    PRED-E1 (Phase 7a freeze): If A+B+C+D all pass / dispose honestly,
+      tag the merged-main commit v1.0-fab-ready-frozen + push tag.
+      HARD STOP at Phase 7b — Sai sign-off required for actual order.
+
+acceptance:
+  block_a_routed_si:
+    - "6b USB diff-pair SI run on actual routed geometry; result PASS or design changed."
+    - "6c IMU SPI SI run; setup/hold + ringing PASS or design changed."
+    - "6f SDMMC SI run; PASS or design changed."
+    - "6g DShot SI run; PASS or design changed."
+    - "Each result committed: results.json + results.md + plots."
+  block_b_openems:
+    - "OpenEMS Z0-extraction either WORKING (matched-to-analytical on a known geometry) or honestly disposed (documented why it can't be made to work; analytical + bench as floor)."
+    - "Either way, decision recorded in sims/usb-diffpair-6b/results.md."
+  block_c_pivot_revalidation:
+    - "6a power tree re-run on current post-Step-2 schematic; results match expected (or design changed)."
+    - "6i ESD/input-protection re-assessed post-eFuse-front-end; protection level documented."
+    - "6k EMC post-route check run; coupling hotspots identified or absent."
+    - "6j thermal post-route confirmation (likely re-use Step 4 result if convection-limited regime holds)."
+  block_d_dfm_fab:
+    - "DRC against JLCPCB 6-layer rule pack → 0 violations."
+    - "run_gerber_export.py updated for 6-layer layout-v2; all stages export clean."
+    - "BOM ↔ netlist parity → 0 discrepancies (83 components)."
+  endpoint:
+    - "All A+B+C+D acceptance items either PASS or have an honest documented disposition with a §2-justified criterion review."
+    - "Phase 7a freeze: git tag v1.0-fab-ready-frozen on the merged-main fab-ready commit. Tag pushed."
+    - "HARD STOP: Phase 7b (actual fab order) not entered without Sai sign-off."
+
+deliverables:
+  - tasks/phase-pivot-step6.yaml  # this contract
+  # Block A
+  - sims/usb-diffpair-6b/results.md  (+ updated results.json, plots)
+  - sims/imu-spi-6c/results.md       (+ results.json, plots)
+  - sims/sdmmc-6f/results.md         (+ results.json, plots)
+  - sims/dshot-6g/results.md         (+ results.json, plots)
+  # Block B
+  - sims/openems-z0/                 # if it works — fresh-tutorial-adapted impedance extraction
+  - sims/usb-diffpair-6b/results.md  # records the openems outcome
+  # Block C
+  - sims/power-6a/results_step6.json (+ updated results.md if changed)
+  - sims/esd-6i/results.md           (+ results.json)
+  - sims/emc-6k/results.md           (+ results.json)
+  - sims/thermal-6j/results.md       (post-route confirmation)
+  # Block D
+  - hardware/kicad/novapcb-layout-v2/run_dfm_check.py    # JLCPCB 6-layer DRC pack
+  - hardware/kicad/novapcb-layout-v2/run_gerber_export.py # adapted from 4-layer pipeline
+  - hardware/kicad/novapcb-layout-v2/exports/             # generated fab package (gitignored)
+  - hardware/kicad/novapcb-layout-v2/exports/STEP6_FAB_PACKAGE.md  # manifest of what's in the package
+  - bom/bom_netlist_parity.md  # BOM ↔ netlist diff result
+  # Endpoint
+  - docs/PHASE7A_FREEZE.md  # what was frozen, tag SHA, validation summary
+
+gates:
+  master_review:
+    description: |
+      Per-block ping at PR open. Master reviews each PR against its
+      block-A/B/C/D acceptance items + the falsifiable PREDs in this
+      contract. Bounded master merge-authority covers Step 6 PRs
+      (doc + sim + fab-export). The Phase 7a freeze tag is master-
+      executable (it does not place an order). Phase 7b is Sai-only.
+
+retrospective:
+  hourly_cadence: |
+    Per ENGINEERING_RIGOR §9: hourly retro during Step 6 execution.
+    Capture PRED-vs-actual deltas per block + any tolerance pressure
+    or design-changes-from-failed-sim moments. Master pinged on
+    every retro if non-trivial deltas surface.
+
+notes:
+  pivot_relevance: |
+    The Phase 6 P0 scaffolding (committed pre-pivot) authored harnesses
+    against the 36×36 4-layer board + pre-eFuse schematic. Step 6 must
+    re-run those harnesses against the 80×60 6-layer board + post-eFuse
+    schematic. Scaffolds are USED, not re-authored from scratch —
+    inputs are updated, scripts re-run.
+
+  what_does_NOT_re_run:
+    - "6l SITL — firmware unchanged by pivot; PR #52 result still valid."
+    - "6h ADC noise — schematic-level result valid; Mauch HS-200-LV LPF unchanged."
+
+  out_of_scope:
+    - "Phase 7b actual fab order — Sai sign-off only."
+    - "Phase 7.5 shrink-optimization — begins only after Phase 7a freeze."

@@ -228,6 +228,49 @@ When the constraint isn't met, options (in order of preference):
 
 (Master, 2026-05-24 — pin-remap PR 3rd-iteration failure was the source.)
 
+## Rule 18 refinement — "component pads" means EVERY pad-class obstacle
+
+The CAN routing PR (2026-05-26) hit the Rule-18 gap THREE more times because
+surveys still under-enumerated. "Component pads" must be read literally as
+**all pad-class and through-class obstacles**, by FOOTPRINT REFERENCE:
+- footprint pads — including 2-pad passive filters (**ferrite beads** like FB2,
+  whose body looked like "a +3V3 via" until the survey mis-read it)
+- **vias** — signal vias AND **GND-stitch via grids** from the plane PRs
+  (a "clear lane" by track count plowed a 4-via GND grid row)
+- **PTH holes** — e.g. connector shield/mount pads (J1 USB-C shield PTH at
+  Y=34.32 blocked a routing lane on ALL layers)
+- long MCU pads — LQFP-100 pads are **1.6 mm long**; a via could not fit
+  between the pad north-edge and an adjacent track (0.86 mm < 0.9 mm)
+
+Survey method: enumerate every FOOTPRINT with a pad in the window (not by net,
+not by feature class), plus all vias, plus the GND-fill grid. Pure track
+inventory misses all of the above.
+
+(Master + worker, 2026-05-26 — CAN routing.)
+
+## Rule 20 — Move the passive before moving the trace
+
+When a routing problem is caused by a **passive-component obstruction**
+(resistor, capacitor, ferrite bead, ESD/TVS diode — non-active filter/
+protection parts), evaluate **moving the passive BEFORE** re-routing the
+trace, layer-splitting, or adding DRU exceptions. A passive's position is
+rarely load-bearing on net topology; it is mechanically movable, especially
+in non-critical RF/corner areas. Moving one 2-pad part is far lower risk than
+a re-route cascade through already-merged work.
+
+Evidence (all this project): R11/R12 I²C pulls (pin-remap prep), FB2 IMU-rail
+ferrite (CAN — keystone blocker over the peripheral-locked RX pad), R45/R46
+CAN termination (flip 180° fixed the TERM_MID tangle), U15 CAN ESD (reposition
+opened the bus daisy). Each unblocked a problem that resisted trace-level
+fixes.
+
+Order of preference when a passive blocks: (1) move/reorient the passive +
+re-route its short legs + re-verify its rail; (2) re-route the signal; (3)
+layer-split; (4) DRU exception. Always re-verify the moved passive's own net
+(e.g. FB2 move required a +3V3_IMU rail cluster-walk).
+
+(Master proposed + worker formalized, 2026-05-26 — CAN routing.)
+
 ## Symmetry refinements (pcb.ai R1/R2/R3 — adopted 2026-05-23)
 
 Reinforcement of the existing "symmetry as explicit transforms" rule

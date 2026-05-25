@@ -147,7 +147,10 @@ PE1 UART8_TX UART8 NODMA
 # CAN bus
 PD0 CAN1_RX CAN1
 PD1 CAN1_TX CAN1
-PD3 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(70)
+# CAN silent (TJA1051 S pin): hard-tied to GND = NORMAL MODE for v1 (no MCU
+# GPIO). PD3->PD15 remap then GPIO removed 2026-05-26 (task #45): PD15->U14.8
+# unroutable (MCU-east saturated both layers). Software silent deferred to v2.
+# PD15 is now a free GPIO.
 
 # Motors — novapcb-v1 locks 8 channels with 4-BIDIR DShot (Phase 2e amended, 2026-05-20)
 # Per DECISIONS.md §3 (8 channels, DShot300/600 preferred, PWM fallback). Inherits MatekH743-bdshot
