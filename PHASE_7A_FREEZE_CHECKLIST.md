@@ -28,7 +28,10 @@
 - [ ] **#54 LSM6DSV16X datasheet check** — Sai input needed (datasheet OR design-intent confirmation that bulk shared via +3V3_IMU plane is sufficient)
 - [ ] **STM32_SDC_MAX_CLOCK firmware lift** to 50MHz — small hwdef.dat addition (`define STM32_SDC_MAX_CLOCK 50000000`), Sim 3-validated. **DO NOT blind-edit** — land it WITH the next hwdef revision + ArduPilot build-verify per Rule 5/6 (firmware build must succeed before merge). Track as pending firmware optimization, not a Phase 7a hardware blocker.
 - [ ] **GUI DRC final verify on freeze head** (Sai runs on his Pi; kicad-cli under-coverage on .kicad_dru known per PR #106)
-- [ ] **BOM final verify with LCSC sourcing**
+- [ ] **BOM final verify** — deterministic refresh DONE (PR #115, 54 lines, 0 missing/dead). **9 LCSC numbers + R61 value pending Sai**:
+  - 9 LCSC TBD: AO3400A (Q5), XAL4020 2.2µH (L1), 10nF 0402 (C96), 120R 0603 (R45), 0R 0603 (R46), 562k 0402 1% (R47), 180k 0402 1% (R48), JST-GH SM04B-GHS-TB (J20), JLCPCB basic/extended classification on 18 new lines
+  - R61 placeholder value (heater resistor, 2512 footprint, TBD_SIM_OUT) — needs Sai to RESOLVE (pick a value) or mark DNP for fab populate-later
+  - 9 of 12 ICs already sourced from in-design KiCad footprint fields (legit per Rule 3): ESD7L5 C605398, AO4262E C431178, LPS22HB C94049, BMI088 C194919, LSM6DSV16X C5267406, LM74700-Q1 C2653623, LP5907 C80670, TJA1051 C124020, PESD2CAN C75176
 
 ---
 
