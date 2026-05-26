@@ -332,6 +332,42 @@ forward motion, not safety pauses). Saved to memory
 (Sai directive, 2026-05-26: "don't stop for at least 15 hours." +
 "Make it a rule. Enforce it.")
 
+## Rule 22 — Spec doc is not artifact (partial-apply trap)
+
+A locked decision in `docs/DECISIONS.md` is NOT load-bearing until the actual artifact (`.kicad_pcb`, `hwdef.dat`, BOM CSV) shows the decision applied. The presence of the decision in the spec doc is necessary but not sufficient — the gate is artifact-side. This is the Rule 9 verify-the-artifact lemma for cross-file scoping.
+
+Pattern that triggered: spec doc said "6-layer stackup In1.Cu GND" but the `.kicad_pcb` In1.Cu zone fill was a partial state (not yet applied to all areas). Master claimed the stackup decision was "done" because the spec doc said so. Worker artifact-verify caught it.
+
+**How to apply:** every "decision X is done" claim needs a one-line artifact-side verification: net count, zone area, hwdef.dat line, BOM row presence. If you can't name the artifact-side proof, the decision is not done — it's a spec.
+
+(Sai-codified 2026-05-23 from `feedback_spec_doc_vs_artifact_partial_apply` memory.)
+
+## Rule 23 — Per-net unconnected audit (freeze gate)
+
+DRC's top-level "N unconnected items" number lies when N is dominated by plane-pour ratsnest (filled-zone pads "connect via pour" — the ratsnest line is an artifact, not a defect) and intended-deferred nets. **The truth is the per-net breakdown.**
+
+For every power rail and every signal-critical net, **per-net unconnected MUST equal 0** before any claim of "routed" / "subsystem complete" / "flight-routable" / freeze trigger. Plane-pour exclusion + intended-defer whitelist are explicit + documented. Anything else is a real latent defect.
+
+**Tooling:** `scripts/audit_unconnected_per_net.py` is the gate. It:
+1. Runs `kicad-cli pcb drc` and parses unconnected items
+2. Classifies each item: PLANE-POUR NOISE (excluded), INTENDED-DEFERRED (whitelisted), REAL LATENT
+3. Tags REAL LATENT items as power/critical for hard fail
+4. Returns non-zero exit on any power/critical real latent
+
+**Wire into freeze gate:** `scripts/audit_layout_compliance.py` must invoke the per-net audit + fail freeze if any power/critical net has unconnected > 0.
+
+**The catch that codified this:** at session 2026-05-26 head 5390be4, total DRC unconnected was 213 — everyone read it as "mostly intended noise" (139 plane-pour + 10 intended-deferred + 64 latent). The 64 latent included U2_FB + U2_SW (buck can't regulate or output), 24/27 +5V distribution pads, MCU VCAP1/VCAP2/VDDA/VREF/VBAT (MCU won't clock), USBC_CC1/CC2 (USB won't enumerate), +3V3_IMU 5 gaps. **Board would not power up.** Caught by worker per-net audit BEFORE fab order. Pre-existing across multiple PRs (Option-B buck swap #95/#96 + MCU decap stub omissions); none documented as deferred.
+
+**Without Rule 23 this board ships dead-on-arrival.** That makes it the highest-leverage process rule in the project.
+
+How to apply, every gate cycle:
+- Before claiming "subsystem X routed" — run per-net audit scoped to X's nets, verify 0 latent
+- Before merging a PR — verify the PR's own touched nets are 0 latent
+- Before freeze trigger — verify ALL power/critical nets are 0 latent (the comprehensive gate)
+- When DRC total is dominated by noise — run per-net to find the buried defects
+
+(Worker-found, master-codified, Sai-saved 2026-05-26. Survey: `docs/POWER_TREE_DEFECT_SURVEY.md`. Tool: `scripts/audit_unconnected_per_net.py`.)
+
 ## Symmetry refinements (pcb.ai R1/R2/R3 — adopted 2026-05-23)
 
 Reinforcement of the existing "symmetry as explicit transforms" rule

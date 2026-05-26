@@ -3,7 +3,7 @@
 > Updated continuously by master Claude during autonomous-loop work.
 > Most recent merged PR is at the top of the log.
 
-**Current branch:** `sch/option-b-buck` &middot; **Head:** `85824ea` (PR #120 CRSF UART4 re-pin MERGED)
+**Current branch:** `sch/option-b-buck` &middot; **Head:** `6bc1915` (PR #121 power-tree defect survey + Rule 23 tool MERGED)
 **Board:** 105×85 mm, 6-layer, STM32H743VIT6, Pixhawk 6X functional drop-in
 **Live HTML view:** http://100.81.21.121:8765/static/pcb.html
 
