@@ -287,6 +287,51 @@ layer-split; (4) DRU exception. Always re-verify the moved passive's own net
 
 (Master proposed + worker formalized, 2026-05-26 — CAN routing.)
 
+## Rule 21 — Worker pause is a recommendation, not a stop
+
+A worker "session sign-off," "context heavy," or "recommend fresh context"
+message is a **recommendation**, NOT a hard stop. Master continues
+dispatching the next queue item. Worker uses **Rule 13 (stop-and-ping)**
+to actually refuse work via explicit escalation with named blocker —
+that's the contractual refusal mechanism. Without Rule-13 refusal, the
+queue keeps moving.
+
+Specifically:
+- **Big work** (multi-net coordination, dense corridor routing) — even
+  on heavy context, dispatch the up-front SURVEY (doc-only, low context
+  cost). Survey work is always safe.
+- **Medium work** (bounded craft, manual traverses on prepared surveys,
+  DRU cleanup) — execute even on heavy context. Worker can pace; master
+  doesn't gate on context.
+- **Don't schedule long heartbeats** "waiting for fresh worker" — that
+  puts the loop in Sai's blocker queue (he has to restart the tmux
+  session). Master loop = dispatch loop = keep moving.
+
+The pattern that triggered this rule: master kept respecting worker
+"sign-off" recommendations and scheduling 30-60min heartbeats, requiring
+Sai to repeatedly push "why did you stop?" Worker recommendations are
+input; Sai's standing "don't stop, keep working" directive overrides.
+Only Rule 13 explicit escalation pauses dispatch.
+
+When dispatching despite worker pause-recommendation, acknowledge their
+context concern + give them options (small/medium/big work in parallel
+options). They pick what fits; master keeps dispatching.
+
+Enforcement:
+- Heartbeats default to ≤15 minutes during active push windows
+- Never schedule >30 min heartbeat unless Sai explicitly says so
+- After every worker PR merge, immediately dispatch the next queue item
+  in the same message; don't stop to wait for the next message
+- Worker "context heavy" warning gets ACK + dispatch in same response,
+  not a pause + heartbeat
+
+Cross-ref: `feedback-merge-when-gate-clean` (same direction — Sai wants
+forward motion, not safety pauses). Saved to memory
+`feedback_dont_stop_on_worker_pause.md`.
+
+(Sai directive, 2026-05-26: "don't stop for at least 15 hours." +
+"Make it a rule. Enforce it.")
+
 ## Symmetry refinements (pcb.ai R1/R2/R3 — adopted 2026-05-23)
 
 Reinforcement of the existing "symmetry as explicit transforms" rule
