@@ -365,8 +365,12 @@ GND   += swd[3]   # GND
 SWCLK += swd[4]   # SWCLK/TCK
 GND   += swd[5]   # GND
 # pin 6 SWO/TDO — leave NC (SWD-only, no SWO route on novapcb v1)
-# pin 7 KEY — keying pin, NC
-# pin 8 NC/TDI — NC
+# pins 7 (KEY) + 8 (NC/TDI): unused — tied to GND (DRU cleanup task #30).
+# Standard practice for unused debug-header pins (no floating inputs, cleaner
+# EMC); also removes the false-positive "shorting" DRC vs the adjacent GND
+# stitching vias on B.Cu (the pads were <no net>).
+GND   += swd[7]   # KEY — tied GND
+GND   += swd[8]   # NC/TDI — tied GND
 GND   += swd[9]   # GNDDetect (tied to GND, used by debuggers to detect ground)
 NRST  += swd[10]  # ~RESET
 

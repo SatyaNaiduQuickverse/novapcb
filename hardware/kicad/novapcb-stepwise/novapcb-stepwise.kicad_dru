@@ -89,3 +89,28 @@
 (rule "u6-extended-courtyard-via-clearance"
     (constraint clearance (min 0.10mm))
     (condition "A.insideCourtyard('U6') && B.insideCourtyard('U6')"))
+
+# DRU cleanup (task #30): +5V_BEC via-in-pad at the U11/U12 ORFET output
+# (vias @ (34.15,5.95) + (73.15,5.95), 0.45 OD / 0.25 drill) — same fab-spec
+# family + same JLC vias-filled-and-capped process as ORING_A/B_GATE above.
+# Net-based (mirrors ORING/EFUSE precedent): this only LOOSENS the +5V_BEC
+# via floor to 0.45mm — standard 0.50mm +5V_BEC stitching vias still pass
+# (0.50 >= 0.45), so it effectively scopes to the two intended orfet-output
+# via-in-pads. (insideCourtyard not usable: these vias sit ~2.3mm E of the
+# SOT-23-6 courtyards.) JLC fab min hole 0.20mm — well within capability.
+(rule "via-in-pad-5vbec-diameter"
+    (constraint via_diameter (min 0.45mm))
+    (condition "A.NetName == '+5V_BEC'"))
+
+(rule "via-in-pad-5vbec-hole"
+    (constraint hole_size (min 0.25mm))
+    (condition "A.NetName == '+5V_BEC'"))
+
+# EFUSE protection-config via HOLE — completes the u6-extended-courtyard-via
+# rule (which set via_diameter 0.45 but not hole_size). EFUSE_ILIM uses a
+# 0.25mm drill via-in-pad like the ORFET/+5V_BEC family. Same scope as the
+# existing u6-extended via_diameter rule (the 4 U6 protection-config exits).
+(rule "u6-extended-courtyard-via-hole"
+    (constraint hole_size (min 0.25mm))
+    (condition "(A.NetName == 'EFUSE_OVP' || A.NetName == 'EFUSE_ILIM' ||
+                 A.NetName == 'EFUSE_DVDT' || A.NetName == 'EFUSE_FLT')"))
