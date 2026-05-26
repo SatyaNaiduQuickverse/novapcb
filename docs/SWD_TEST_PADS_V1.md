@@ -1,0 +1,83 @@
+# SWD — v1 test-pads + USB DFU bootload decision
+
+> **Status:** master draft 2026-05-26, **awaiting Sai ratification**.
+> **Trigger:** task #56 empirically proved SWDIO/SWCLK cannot escape the MCU NE-saturated zone to J9 @ X=47 in v1 without surgical multi-wall F↔B weave + nudges. Master scope-pragmatism call: replace the J9 6-pin SWD connector with bare test-pads (or remove entirely) and use USB DFU bootload for initial flash. SWD as a debug-time pogo-pin/wire-tack tool only.
+
+---
+
+## 1. What this changes
+
+| Item | v0/v1-with-J9 | v1 deferred to test-pads |
+|---|---|---|
+| J9 6-pin JST-GH SWD connector | placed on board, traces unroutable per #56 | **REMOVED** (or kept as DNP footprint) |
+| SWDIO (PA13) routing | MCU east-edge → J9 W-edge: ~6mm with multi-wall F↔B weave | MCU pad → adjacent 1.5mm exposed test-pad (~2mm direct, no traversal) |
+| SWCLK (PA14) routing | same as above | same as above |
+| NRST (J9.10) | already routed in v1 (FR completed pre-#56) | re-route to a test-pad OR keep as-is if it lands cleanly without J9 |
+| Initial firmware flash | SWD pogo or J9-cable into ST-LINK | **USB DFU mode** via BOOT0 jumper + dfu-util |
+| Field debug | J9 cable | wire-tack onto test-pads (pogo-pin jig optional) |
+
+## 2. Why this is safe — STM32H7 DFU bootloader
+
+The STM32H743 has a factory-burned ROM bootloader (System Memory) that supports USB DFU mode on the OTG_FS port (PA11/PA12, our J6 USB-C). Entry: hold BOOT0 high + power cycle. Application: `dfu-util` from the drone Pi pushes the ArduPilot bootloader once, after which all firmware updates use ArduPilot's own USB-CDC bootloader.
+
+**The one-time flash to bootstrap ArduPilot does NOT need SWD.**
+
+After initial DFU flash:
+- All ArduPilot updates: USB-CDC via Mission Planner / `--upload` waf target / `uploader.py`.
+- Param tweaks / log download: MAVLink over USB-CDC.
+- SD card log download: physical card or MAVLink FTP.
+
+SWD becomes a *debug* tool — needed only for:
+- Live single-step debugging (rare; ArduPilot is usually printf-debugged).
+- Recovery from corrupted ArduPilot bootloader (very rare; DFU recovers anyway).
+- ROM bootloader read-protection unlock (not a v1 concern).
+
+For v1 bring-up (Sai's first 5 boards), the test-pad pattern is sufficient. Pogo-pin jig or wire-tack works for the rare debug session.
+
+## 3. Concrete delta
+
+**Board (.kicad_pcb):**
+- Remove J9 footprint (6-pin JST-GH SWD connector).
+- Add BOOT0 jumper pads near the MCU (2× 1.27mm pads, normally bridged to GND, jumpered to +3V3 for DFU entry).
+- Add labeled test-pad pattern for SWD + reset signals:
+  - TP_SWDIO — exposed 1.5mm circle near PA13 pad
+  - TP_SWCLK — exposed 1.5mm circle near PA14 pad
+  - TP_NRST — exposed 1.5mm circle near U1 NRST pin
+  - TP_GND — exposed 1.5mm circle near a GND via
+  - TP_+3V3 — exposed 1.5mm circle for power probe
+- Silkscreen: label each pad clearly; this is a Sai-facing convenience.
+- BOM: remove J9 row (1× JST-GH SM06B-GHS-TB).
+
+**Schematic (SKiDL):**
+- Comment out the `J9` instantiation.
+- Add a `# v1: SWD via test-pads + USB DFU; J9 deferred to v2` marker.
+
+**Firmware (hwdef.dat):**
+- **NO CHANGE.** PA13/PA14 stay declared as SWD pins. The MCU pads simply terminate at test-pads rather than a connector.
+- ArduPilot's DFU mode is built into the chip ROM — no firmware-side enable needed.
+
+**Docs:**
+- `docs/INTERFACE_CONTRACT.md` — add a section: v1 first-flash procedure (DFU via BOOT0 + `dfu-util`).
+- `docs/PHASE7A_FREEZE_PROCEDURE.md` — update Phase 8 bring-up: replace "ArduPilot v4.6.3 flash via SWD (J9 header)" with "ArduPilot v4.6.3 flash via USB DFU".
+- New: `docs/DFU_BOOTLOAD_PROCEDURE.md` (or fold into Phase 8) — exact `dfu-util` command, ArduPilot bootloader binary path, expected output.
+
+## 4. Why this is safe to defer (not a regression)
+
+| Concern | Resolution |
+|---|---|
+| "Will Sai actually be able to flash the board?" | Yes. `dfu-util` works from any Pi/Linux host. The drone Pi already has USB-host capability. ST publishes the DFU class descriptor for H7 ROM bootloader. Procedure is documented in ST AN2606. |
+| "What if the ArduPilot bootloader gets corrupted on a bad flash?" | Re-enter DFU mode (BOOT0 high + power cycle) and re-flash. SWD is NOT needed for bootloader recovery — DFU IS the bootloader recovery path. |
+| "What if a board fails mysteriously in the field?" | Bring it back to bench, wire-tack onto TP_SWDIO/SWCLK pads with a $5 SWD-flying-lead adapter. Recovery time: ~5 min vs ~30s with a J9 cable. Acceptable for v1 (Sai's 5-board first article). |
+| "Does this affect the Pixhawk 6X functional drop-in claim?" | Marginally. 6X has J9 SWD connector. v1 ships with test-pads instead. Cosmetic / convenience difference; the *electrical* SWD interface still exists on PA13/PA14. |
+| "What about JTAG / 5-wire debug?" | Not used; ArduPilot uses 2-wire SWD universally. Not a v1 or v2 concern. |
+| "Does this delay anything?" | No — opposite. Removing J9 + adding test-pads unlocks the #56 routing blocker (SWDIO/SWCLK are the hardest 2 of the 6 escape nets). |
+
+## 5. Sai ratification
+
+Like the Telem defer, this changes the **physical board feature set** and the Phase 8 bring-up procedure. TRUE Sai-gate.
+
+**Yes path:** master dispatches worker to (a) remove J9 from `.kicad_pcb`, (b) add 5 labeled test-pads near MCU PA13/PA14/NRST/GND/+3V3, (c) add BOOT0 jumper pads, (d) comment SKiDL J9 block, (e) update BOM, (f) write `docs/DFU_BOOTLOAD_PROCEDURE.md`, (g) update `PHASE7A_FREEZE_PROCEDURE.md` Phase 8.
+
+**No path:** master keeps J9 placed + dispatches the multi-wall F↔B weave routing (hardest #56 class per `docs/CRSF_TELEM_SWD_ROUTING_ANALYSIS.md` §3). Burns ~1 PR per net (SWDIO + SWCLK = 2 PRs).
+
+**Master recommendation: defer to test-pads + DFU.** STM32H7 DFU is rock-solid and standard ArduPilot bring-up uses it for non-J9 boards anyway. The J9 was a 6X form-factor heirloom; the actual electrical SWD interface still works via test-pads. Lower fab risk (fewer connectors to misalign), lower BOM, unblocks #56.
