@@ -33,7 +33,7 @@ JAR = os.path.expanduser("~/local/freerouting/freerouting.jar")
 # task #55 — route the 2 remaining motor nets (MOT1/MOT2) to reach Sai's
 # option-D 6/8 motor count. Scoped FR: keep ONLY these in (network) so FR
 # routes just them; all other existing wires stay as fixed obstacles.
-CAN_NETS = {"USART6_TX","USART6_RX","USART1_TX","USART1_RX","SWDIO","SWCLK","NRST"}  # 4 CRSF+Telem (SWD->task#56)
+CAN_NETS = {"USART6_TX","USART6_RX"}  # CRSF re-pin to PA0/PA1 (task #56)  # 4 CRSF+Telem (SWD->task#56)
 H_NETS = CAN_NETS  # alias for code compatibility
 
 

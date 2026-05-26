@@ -18,7 +18,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PCB = os.path.join(HERE, "novapcb-stepwise.kicad_pcb")
 SES = os.path.join(HERE, "crsf_routing.ses")
 
-H_NETS = {"USART6_TX","USART6_RX","USART1_TX","USART1_RX","SWDIO","SWCLK","NRST"}
+H_NETS = {"USART6_TX","USART6_RX"}
 
 LAYER_MAP = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu}
 
