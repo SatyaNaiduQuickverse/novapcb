@@ -107,7 +107,7 @@ define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
 
 # order of UARTs (and USB)
-SERIAL_ORDER OTG1 USART1 USART2 USART3 UART8 USART6 OTG2
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART8 UART4 OTG2
 
 # USART1 (telem2)
 PA10 USART1_RX USART1
@@ -128,13 +128,19 @@ PD8 USART3_TX USART3
 # per docs/MCU_PIN_MAP_AUDIT.md. UART4 was a "spare" with no board
 # wiring (no SKiDL sheet references); safe to drop.
 
-# USART6 — bdshot-style reassignment (Phase 2e amendment 2026-05-20).
-# Base MatekH743 put PC7 on TIM3_CH2 (RC input via timer); TIM3 is now PWM 1-2's timer.
-# bdshot variant resolves by using PC7 as USART6_RX directly (cite MatekH743-bdshot hwdef.dat:19-20).
-# novapcb v1 doesn't currently route RC via USART6 (CRSF UART allocation is Phase 2f),
-# but the USART6 pins stay defined so PC6/PC7 don't dangle and so the pattern matches bdshot.
-PC7 USART6_RX USART6
-PC6 USART6_TX USART6
+# USART6 — FREE as of 2026-05-26 (CRSF moved to UART4 / PA0-PA1, see
+# docs/CRSF_REPIN_PROPOSAL.md). PC6/PC7 revert to unused GPIOs. The
+# bdshot pattern note is retained in git history for v2 reference if
+# RC ever returns to USART6.
+
+# UART4 (CRSF) — re-pinned 2026-05-26 from USART6/PC6-PC7. The east-edge
+# MCU pads were empirically unroutable to J10 (task #56: FR 0/6 x2, manual
+# 16-viol, nudge 3-viol — NE quadrant over-subscribed). PA0/PA1 are WEST-edge
+# pads with a clean escape (verified survey). AF8 maps both. CRSF is 420 kbaud
+# so the ~36mm west route is benign (electrically short, PR #117). UART4 was
+# removed 2026-05-24 (no wiring after MOT7/8 took PB8/PB9); re-introduced here.
+PA0 UART4_TX UART4
+PA1 UART4_RX UART4
 
 # UART7 — REMOVED 2026-05-24: PE9 now MOT3 (TIM1_CH1); PE7/PE8/PE10
 # free. TELEM1 is on USART1 (PA9/PA10); UART7 was unconnected on the
