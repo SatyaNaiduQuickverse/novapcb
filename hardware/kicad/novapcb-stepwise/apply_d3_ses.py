@@ -18,7 +18,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PCB = os.path.join(HERE, "novapcb-stepwise.kicad_pcb")
 SES = os.path.join(HERE, "d3_efuse.ses")
 
-D2_NETS = {"+5V_BEC_PROT","EFUSE_FLT","EFUSE_PGOOD","EFUSE_DVDT"}
+D2_NETS = {"EFUSE_FLT","EFUSE_PGOOD"}
 
 LAYER_MAP = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu}
 

@@ -31,7 +31,7 @@ LOG = os.path.join(HERE, "d3_efuse_freerouting.log")
 JAVA = os.path.expanduser("~/local/jre/jdk-25.0.3+9-jre/bin/java")
 JAR = os.path.expanduser("~/local/freerouting/freerouting.jar")
 
-TARGET_NETS = {"+5V_BEC_PROT","EFUSE_FLT","EFUSE_PGOOD","EFUSE_DVDT"}
+TARGET_NETS = {"EFUSE_FLT","EFUSE_PGOOD"}
 WIDTH_UM = 250  # 0.25mm (eFuse out is USB-bench-only; flags thin)
 
 
