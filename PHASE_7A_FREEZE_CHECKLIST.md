@@ -24,11 +24,12 @@
 - ~26 PRs landed on the sch/option-b-buck stack
 
 ### Pending (before freeze)
-- [ ] **#56 CRSF + Telem + SWD east-edge escapes (6 nets + NRST)** — full #48 scope folded in. Empirical FR test (PR #113) proved CRSF + Telem + SWD all USB-walled at MCU pads — all need fresh-context surgical multi-wall F↔B-weave + pre-authorized ≤1mm SDMMC1_CMD nudge. Analysis + FR tooling preserved in `docs/CRSF_TELEM_SWD_ROUTING_ANALYSIS.md`. Only NRST routes cleanly without weave.
-- [ ] **#54 LSM6DSV16X datasheet check** — Sai input needed (datasheet OR design-intent confirmation that bulk shared via +3V3_IMU plane is sufficient)
-- [ ] **STM32_SDC_MAX_CLOCK firmware lift** to 50MHz — small hwdef.dat addition (`define STM32_SDC_MAX_CLOCK 50000000`), Sim 3-validated. **DO NOT blind-edit** — land it WITH the next hwdef revision + ArduPilot build-verify per Rule 5/6 (firmware build must succeed before merge). Track as pending firmware optimization, not a Phase 7a hardware blocker.
-- [ ] **ArduPilot build verify** — `waf configure --board novapcb-v1 && waf copter` must succeed. Caught dead MAX7456 OSD remnants (PB12 redefine) in worker's build attempt; cleanup folded into firmware revision PR. Explicit freeze gate going forward.
-- [ ] **GUI DRC final verify on freeze head** (Sai runs on his Pi; kicad-cli under-coverage on .kicad_dru known per PR #106)
+- [x] **#56 CRSF east-edge escape — RESOLVED via PR #120 (85824ea)**. Re-pinned USART6/PC6-PC7 → UART4/PA0-PA1 west edge. All gates pass: waf copter PASS (6m10s RC=0), DRC 12 baseline, CRSF unconnected=0, USB/SPI1 untouched. Same scoped FR that returned 0/6 on east pads routed cleanly (score 843) on west pads. See `docs/PR_CRSF_UART4_REPIN.md`.
+- [ ] **#56 Telem + SWD defers — Sai ratification pending.** Per `docs/TELEM_V1_DEFER.md` + `docs/SWD_TEST_PADS_V1.md`: J3 (Telem) defer to v2 since USB-CDC is canonical MAVLink path; J9 (SWD) → 5 labeled test-pads + DFU first-flash. Master-recommended both. Worker awaits Sai go.
+- [x] **#54 LSM6DSV16X bulk-cap question — CLOSED via master web research.** ST family pattern (LSM6DSV/DSO/DSV16X): 100nF VDD + 100nF VDDIO, NO bulk. Shared +3V3_IMU rail provides upstream bulk. See `docs/LSM6DSV16X_DECAP_CLOSURE.md`. Follow-up: **C96 value 10nF→100nF for strict ST conformance** (Path A recommended; Path B keep 10nF as HF-only acceptable). Sai picks; non-blocking for fab.
+- [x] **STM32_SDC_MAX_CLOCK firmware lift to 50MHz** — landed in PR #119 (firmware build verified).
+- [x] **ArduPilot build verify** — `waf configure --board novapcb-v1 && waf copter` succeeds on current head (verified in PR #119 + PR #120). Explicit freeze gate met.
+- [ ] **GUI DRC final verify on freeze head** (Sai runs on his Pi; kicad-cli under-coverage on .kicad_dru known per PR #106). Latest head 85824ea (post-PR #120 CRSF re-pin).
 - [ ] **BOM final verify** — deterministic refresh DONE (PR #115, 54 lines, 0 missing/dead). **9 LCSC numbers + R61 value pending Sai**:
   - 9 LCSC TBD: AO3400A (Q5), XAL4020 2.2µH (L1), 10nF 0402 (C96), 120R 0603 (R45), 0R 0603 (R46), 562k 0402 1% (R47), 180k 0402 1% (R48), JST-GH SM04B-GHS-TB (J20), JLCPCB basic/extended classification on 18 new lines
   - R61 placeholder value (heater resistor, 2512 footprint, TBD_SIM_OUT) — needs Sai to RESOLVE (pick a value) or mark DNP for fab populate-later
@@ -46,16 +47,17 @@
 ### Schematic / Firmware
 - [ ] ERC clean
 - [ ] hwdef.dat matches SKiDL pin assignments (post the multiple pin remaps this session)
-- [ ] SERIAL_ORDER correct (USART6 CRSF, USART1 Telem, etc.)
-- [ ] 6/8 PWM channels routed (MOT1-6); MOT7/8 declared but unrouted in hwdef
-- [ ] CAN1 transceiver U14 SILENT tied GND = normal mode
-- [x] BUZZER on PA3 (re-pinned from PD7 — verified hwdef line 200)
-- [x] GPS1_TX on PA2 (re-pinned from PD5 — verified hwdef line 123)
-- [ ] CAN_SILENT on PD15 (re-pinned from PD3 — needs hwdef re-verify by Sai or fresh worker)
-- [ ] IMU3_INT1 on PB2 (re-pinned from PE11 — needs hwdef re-verify by Sai or fresh worker)
+- [x] SERIAL_ORDER correct: **UART4 CRSF** (post PR #120 re-pin), USART1 Telem, USART2/3 GPS1/2, UART8 spare
+- [x] 6/8 PWM channels routed (MOT1-6); MOT7/8 declared but unrouted in hwdef (Sai option D v2-defer)
+- [x] CAN1 transceiver U14 SILENT tied GND = normal mode (per PR #99)
+- [x] BUZZER on PA3 (re-pinned from PD7 — verified hwdef)
+- [x] GPS1_TX on PA2 (re-pinned from PD5 — verified hwdef)
+- [x] CRSF on UART4 PA0/PA1 (re-pinned from USART6/PC6-PC7 — PR #120; ArduPilot build-verified)
+- [x] CAN_SILENT removed from hwdef GPIO (PD15 freed; CAN tied to normal mode hardware-side)
+- [x] IMU3_INT1 on PB2 (re-pinned from PE11)
 
 ### Routing
-- [ ] All placed subsystems fully routed OR explicitly tracked unrouted: **MOT7/8 v2-deferred**; **CRSF + Telem + SWD east-edge escapes (6 nets) pending task #56** (only NRST routed pre-#56)
+- [x] All placed subsystems routed OR explicitly tracked unrouted: **CRSF routed UART4 west edge (PR #120)**; **MOT7/8 v2-deferred** (Sai option D); **Telem (J3) + SWD (J9) defer to v2 pending Sai ratification** (TELEM_V1_DEFER.md / SWD_TEST_PADS_V1.md)
 - [ ] DRC GUI run = 0 functional errors (.kicad_dru applied — kicad-cli under-coverage noted)
 - [ ] Per-net cluster walks documented for all critical nets (USB, CAN diff, SPI, SDMMC, +3V3_IMU rail)
 - [ ] No foreign switching net under HSE crystal body (ST AN2867 compliance)

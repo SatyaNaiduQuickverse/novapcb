@@ -3,23 +3,39 @@
 > Updated continuously by master Claude during autonomous-loop work.
 > Most recent merged PR is at the top of the log.
 
-**Current branch:** `sch/option-b-buck` &middot; **Head:** `7754799` (CRSF re-pin proposal locked)
+**Current branch:** `sch/option-b-buck` &middot; **Head:** `85824ea` (PR #120 CRSF UART4 re-pin MERGED)
 **Board:** 105×85 mm, 6-layer, STM32H743VIT6, Pixhawk 6X functional drop-in
 **Live HTML view:** http://100.81.21.121:8765/static/pcb.html
 
+**Functional flight-routable state reached 2026-05-26.** Firmware builds (waf copter PASS) + RC input (CRSF on UART4) + 6/8 motors + IMUs/baros/CAN/microSD/GPS/USB-C all routed.
+
 ---
 
-## 2026-05-26 session — #56 east-edge structural blocker resolution
+## 2026-05-26 — #56 east-edge structural blocker RESOLVED
 
-Task #56 (CRSF+Telem+SWD 6 east-edge MCU escapes) empirically proved unroutable across 4 distinct attempts (FR scoped, FR 4-net pared, manual, with SDMMC1_CMD nudge). Master split by flight criticality:
+Task #56 (CRSF+Telem+SWD 6 east-edge MCU escapes) empirically proved unroutable across 4 distinct attempts. Master split by flight criticality:
 
-- **CRSF (flight-critical)** → `docs/CRSF_REPIN_PROPOSAL.md` (7754799) — re-pin USART6/PC6-PC7 → **UART4/PA0-PA1 west-edge** (AF8). Worker empirical pad audit verified PA0/PA1 = cleanest escape (only NRST + SPI1 in west corridor). Same-UART pair, ~36mm route to J10 (electrically benign at 420 kbaud). Worker dispatched to read-only west-edge clearance survey + single-PR execute (SKiDL + hwdef + route + ArduPilot build verify).
-- **Telem (not flight-critical for Nova stack)** → `docs/TELEM_V1_DEFER.md` (e990b91) — defer J3 connector to v2; USART1 stays in firmware. USB-CDC is canonical MAVLink path per CLAUDE.md §2.1.
-- **SWD (DFU bootload sufficient)** → `docs/SWD_TEST_PADS_V1.md` (e990b91) — defer J9 connector; replace with 5 labeled test-pads near MCU; first flash via STM32H7 ROM DFU (`dfu-util` + BOOT0 jumper). Test-pads + wire-tack for debug.
+- **CRSF (flight-critical) → PR #120 MERGED (85824ea).** USART6/PC6-PC7 → **UART4/PA0-PA1 west-edge** (AF8). Worker empirical pad audit + read-only west-edge survey verified PA0/PA1 clean. Same scoped Freerouting that returned 0/6 on east pads routed cleanly (score 843) on west pads — empirically confirms #56 root cause = east-edge pad jam, not long-haul. All gates pass: ArduPilot waf copter PASS (6m10s RC=0), DRC 12 baseline (0 new), CRSF unconnected=0, USB diff pair (PR #75) + SPI1 untouched, unconnected −2.
+- **Telem (not flight-critical for Nova stack)** → `docs/TELEM_V1_DEFER.md` (e8b1ef7) — defer J3 connector to v2; USART1 stays in firmware. USB-CDC is canonical MAVLink path per CLAUDE.md §2.1.
+- **SWD (DFU bootload sufficient)** → `docs/SWD_TEST_PADS_V1.md` (e8b1ef7) — defer J9 connector; replace with labeled test-pads near MCU; first flash via STM32H7 ROM DFU (`dfu-util` + BOOT0 jumper).
 
-Both defers are TRUE Sai-gates (physical board feature set) — awaiting Sai ratification.
+Both defers are TRUE Sai-gates (physical board feature set) — **awaiting Sai ratification**.
 
-Master Rule-9 catch this cycle: research agent claimed PC10/PC11 free; actually SDMMC1_D2/D3 per hwdef:206-207. Worker pin-map audit (from `MCU_ST_STM32H7.kicad_sym` STM32H743VITx, anchor-cross-checked against board) corrected it.
+**#54 LSM6DSV16X decap** also closed this cycle (`docs/LSM6DSV16X_DECAP_CLOSURE.md` dfd8b3e) — master web research closes bulk-cap question (ST family pattern: 100nF VDD + 100nF VDDIO, no bulk; shared +3V3_IMU rail provides upstream bulk). Small follow-up: **C96 value 10nF→100nF for strict ST conformance** (Path A recommended, Path B keep 10nF as HF-only acceptable; Sai picks; non-blocking for fab).
+
+**Master Rule-9 catch:** research agent claimed PC10/PC11 free for CRSF re-pin; actually SDMMC1_D2/D3 per hwdef:206-207. Worker pin-map audit (from `MCU_ST_STM32H7.kicad_sym` STM32H743VITx, anchor-cross-checked against board) corrected it.
+
+---
+
+## Pending Sai ratification (clean handoff)
+
+1. **Telem (J3) defer to v2** — `docs/TELEM_V1_DEFER.md` Path Yes/No
+2. **SWD (J9) → test-pads + DFU** — `docs/SWD_TEST_PADS_V1.md` Path Yes/No
+3. **C96 value swap 10nF → 100nF** (Path A recommended) or keep at 10nF (Path B)
+4. **GUI DRC final verify on Sai's Pi** (kicad-cli under-coverage on `.kicad_dru`)
+5. **BOM LCSC sourcing** — 9 items TBD at JLC PCB Assembly portal time (Sai's 5-min task; worker correctly Rule-3-declined to invent LCSC numbers)
+6. **Phase 7a freeze trigger** (the final blessing)
+7. **Phase 7b fab order** (money + JLCPCB submission)
 
 ---
 
