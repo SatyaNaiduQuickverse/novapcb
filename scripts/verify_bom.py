@@ -92,25 +92,32 @@ def main():
     for r in in_bom_not_board:
         print(f"      {r:6} (removed from board since BOM) — {bom_ref_to_line[r]['Value']}")
 
-    # LCSC / JLCPCB-type completeness
-    no_lcsc = [r for r in rows if not r.get("LCSC_Part", "").strip()]
-    no_type = [r for r in rows if not r.get("JLCPCB_Type", "").strip()]
+    # LCSC / JLCPCB-type completeness. A blank OR a "TBD*" placeholder both count
+    # as unsourced (the latter is an explicit Sai-source flag, not a real part #).
+    def unsourced(v):
+        v = v.strip().lower()
+        return (not v) or v.startswith("tbd")
+    no_lcsc = [r for r in rows if unsourced(r.get("LCSC_Part", ""))]
+    no_type = [r for r in rows if unsourced(r.get("JLCPCB_Type", ""))]
     basic = sum(1 for r in rows if r.get("JLCPCB_Type", "").strip().lower() == "basic")
     ext = sum(1 for r in rows if r.get("JLCPCB_Type", "").strip().lower() == "extended")
     print("\n=== BOM line completeness ===")
     print(f"  line items:              {len(rows)}")
-    print(f"  missing LCSC_Part:       {len(no_lcsc)}"
-          + (f"  -> {[r['RefDes'][:20] for r in no_lcsc]}" if no_lcsc else ""))
-    print(f"  missing JLCPCB_Type:     {len(no_type)}")
+    print(f"  unsourced LCSC (blank/TBD): {len(no_lcsc)}"
+          + (f"  -> {[r['RefDes'][:14] for r in no_lcsc]}" if no_lcsc else ""))
+    print(f"  unsourced JLCPCB_Type:   {len(no_type)} (Sai confirms basic/extended at order)")
     print(f"  Basic / Extended split:  {basic} basic / {ext} extended "
           f"(extended parts add per-type assembly fee + reel setup)")
 
     print("\n=== Known staleness (must refresh before freeze) ===")
     notes = (ROOT / "bom" / "SOURCING_NOTES.md").read_text()
     stale = []
-    if "4-layer" in notes or "4-layer PCB" in notes:
+    # Stale only if the OLD value appears WITHOUT the corrected value present
+    # (a historical "was 4-layer, now 6-layer" note is fine — not stale).
+    if "4-layer" in notes and "6-layer" not in notes:
         stale.append("SOURCING_NOTES says '4-layer' — design is now 6-layer JLC06161H")
-    if "36×36" in notes or "36x36" in notes or "36 × 36" in notes:
+    if (("36×36" in notes or "36x36" in notes or "36 × 36" in notes)
+            and "105×85" not in notes and "105x85" not in notes):
         stale.append("SOURCING_NOTES says ~36×36mm — board is now 105×85mm")
     for s in stale:
         print(f"  ⚠ {s}")

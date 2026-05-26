@@ -8,15 +8,20 @@ Last revised: 2026-05-20 (Phase 5 BOM).
 
 ## 1. Fab + assembly target — JLCPCB
 
-**Choice: JLCPCB SMT assembly + 4-layer PCB.**
+**Choice: JLCPCB SMT assembly + 6-layer PCB (JLC06161H-7628).**
 
-Per Phase 5 `decision_forks_watched.fab-target`. Reasoning:
+> **v1.1 stackup pivot (2026-05):** the original Phase 5 plan was 4-layer
+> ~36×36mm. The design is now **6-layer JLC06161H-7628, 105×85mm** (per
+> `DECISIONS §8` + the thermal/board-sizing sweep). The fab-target rationale
+> below still holds (JLCPCB); the size/stackup/min-feature figures are updated.
+
+Per Phase 5 `decision_forks_watched.fab-target` (stackup updated per v1.1). Reasoning:
 
 | Criterion | JLCPCB | PCBWay | OSHPark+sep-asm |
 |---|---|---|---|
-| 4-layer free tier ≤100×100mm | ✓ (we are 36×36) | paid | paid |
-| Min drill | 0.20 mm (we use 0.25) | 0.20 mm | 0.20 mm |
-| Min track / clearance | 0.0889/0.0889 mm (we use 0.13/0.13) | 0.0889 | 0.0889 |
+| 6-layer JLC06161H (paid tier; 105×85mm) | ✓ supported | paid | paid |
+| Min drill | 0.15 mm adv (we use 0.25) | 0.20 mm | 0.20 mm |
+| Min track / clearance | 0.09/0.09 mm (we use 0.10/0.09) | 0.0889 | 0.0889 |
 | Basic-part library (lowest assembly cost) | ~3000 parts | ~700 | N/A (no asm) |
 | Two-sided SMT assembly | ✓ supported | ✓ | manual |
 | ENIG / HASL options | both | both | HASL only |
@@ -24,7 +29,17 @@ Per Phase 5 `decision_forks_watched.fab-target`. Reasoning:
 
 JLCPCB also accepts IPC-2581 + standard Gerber + KiCad CPL files — our Phase 4f `run_gerber_export.py` produces exactly that bundle.
 
-**For Sai when ordering**: the LCSC part numbers in `novapcb-bom.csv` map directly to JLCPCB's parts library. "Basic" parts have no per-design loading fee; "Extended" parts incur ~$3/part one-time loading. Of our ~25 assembled line items, **~19 are Basic** (all passives + ferrite + USBLC6 + AP2112K-3.3) and **~6 are Extended** (STM32H743VIT6, ICM-42688-P, DPS310, USB-C connector, microSD socket, 3× JST-GH connectors, SWD header, crystal). Total extended-part loading is roughly **$18–24** on first run.
+**For Sai when ordering**: the LCSC part numbers in `novapcb-bom.csv` map directly to JLCPCB's parts library. "Basic" parts have no per-design loading fee; "Extended" parts incur ~$3/part one-time loading.
+
+**BOM status (2026-05-26, post v1.1 refresh — `scripts/verify_bom.py`):** 54 line
+items, 0 board parts missing, 0 dead rows. The IC/diode parts added this session
+(ESD7L5, AO4262E, LPS22HB, BMI088, LSM6DSV16X, LM74700-Q1, LP5907, TJA1051,
+PESD2CAN) carry **LCSC part numbers pulled from the KiCad design footprints**
+(verified source). The following still need Sai sourcing (marked `TBD` +
+`SAI-SOURCE` in the CSV): **AO3400A (Q5), XAL4020 (L1), 10nF (C96), 120R/0603
+(R45), 0R/0603 (R46), 562k/180k buck-divider (R47/R48), CAN JST-GH SM04B (J20),
+and the R61 placeholder (value unresolved — resolve or mark DNP).** Their
+JLCPCB Basic/Extended classification is `TBD-confirm` at order time.
 
 ---
 
