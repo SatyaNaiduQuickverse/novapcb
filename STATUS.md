@@ -3,9 +3,25 @@
 > Updated continuously by master Claude during autonomous-loop work.
 > Most recent merged PR is at the top of the log.
 
-**Current branch:** `sch/option-b-buck` &middot; **Head:** see latest entry below
+**Current branch:** `sch/option-b-buck` &middot; **Head:** `7754799` (CRSF re-pin proposal locked)
 **Board:** 105×85 mm, 6-layer, STM32H743VIT6, Pixhawk 6X functional drop-in
 **Live HTML view:** http://100.81.21.121:8765/static/pcb.html
+
+---
+
+## 2026-05-26 session — #56 east-edge structural blocker resolution
+
+Task #56 (CRSF+Telem+SWD 6 east-edge MCU escapes) empirically proved unroutable across 4 distinct attempts (FR scoped, FR 4-net pared, manual, with SDMMC1_CMD nudge). Master split by flight criticality:
+
+- **CRSF (flight-critical)** → `docs/CRSF_REPIN_PROPOSAL.md` (7754799) — re-pin USART6/PC6-PC7 → **UART4/PA0-PA1 west-edge** (AF8). Worker empirical pad audit verified PA0/PA1 = cleanest escape (only NRST + SPI1 in west corridor). Same-UART pair, ~36mm route to J10 (electrically benign at 420 kbaud). Worker dispatched to read-only west-edge clearance survey + single-PR execute (SKiDL + hwdef + route + ArduPilot build verify).
+- **Telem (not flight-critical for Nova stack)** → `docs/TELEM_V1_DEFER.md` (e990b91) — defer J3 connector to v2; USART1 stays in firmware. USB-CDC is canonical MAVLink path per CLAUDE.md §2.1.
+- **SWD (DFU bootload sufficient)** → `docs/SWD_TEST_PADS_V1.md` (e990b91) — defer J9 connector; replace with 5 labeled test-pads near MCU; first flash via STM32H7 ROM DFU (`dfu-util` + BOOT0 jumper). Test-pads + wire-tack for debug.
+
+Both defers are TRUE Sai-gates (physical board feature set) — awaiting Sai ratification.
+
+Master Rule-9 catch this cycle: research agent claimed PC10/PC11 free; actually SDMMC1_D2/D3 per hwdef:206-207. Worker pin-map audit (from `MCU_ST_STM32H7.kicad_sym` STM32H743VITx, anchor-cross-checked against board) corrected it.
+
+---
 
 ## Quick state
 
