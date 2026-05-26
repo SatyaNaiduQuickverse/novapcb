@@ -7,7 +7,7 @@
 **Board:** 105×85 mm, 6-layer, STM32H743VIT6, Pixhawk 6X functional drop-in
 **Live HTML view:** http://100.81.21.121:8765/static/pcb.html
 
-**Functional flight-routable state reached 2026-05-26.** Firmware builds (waf copter PASS) + RC input (CRSF on UART4) + 6/8 motors + IMUs/baros/CAN/microSD/GPS/USB-C all routed.
+**⚠ FLIGHT-ROUTABLE CLAIM RETRACTED 2026-05-26** — worker Rule-9 belt-and-suspenders catch: +3V3_IMU rail has 5 unconnected pads (U9 LSM6DSV16X pad5 + pad8 = IMU3 unpowered; C91/C92/C93 = IMU2 BMI088 decaps floating). v1 arms on IMU1 alone (ICM-42688 on SPI1 powered + decoupled) but redundant IMU set is broken. Likely pre-existing from PR #105 Topology-a rail with near-miss gaps; buried under ~213 total unconnected dominated by intended-unrouted (MOT7/8 + Telem/SWD defers). **Fix dispatched** — single PR `hw/3v3-imu-rail-gap-close` will close all 5 gaps + DRC + build-verify; re-claim then.
 
 ---
 

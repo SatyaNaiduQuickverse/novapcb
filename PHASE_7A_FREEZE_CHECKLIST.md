@@ -57,7 +57,7 @@
 - [x] IMU3_INT1 on PB2 (re-pinned from PE11)
 
 ### Routing
-- [x] All placed subsystems routed OR explicitly tracked unrouted: **CRSF routed UART4 west edge (PR #120)**; **MOT7/8 v2-deferred** (Sai option D); **Telem (J3) + SWD (J9) defer to v2 pending Sai ratification** (TELEM_V1_DEFER.md / SWD_TEST_PADS_V1.md)
+- [ ] All placed subsystems routed OR explicitly tracked unrouted: **CRSF routed UART4 west edge (PR #120)**; **MOT7/8 v2-deferred** (Sai option D); **Telem (J3) + SWD (J9) defer to v2 pending Sai ratification**; **⚠ +3V3_IMU rail has 5 unconnected pads (U9 IMU3 + C91/C92/C93 IMU2 decaps) — fix PR in flight** per worker Rule-9 catch 2026-05-26
 - [ ] DRC GUI run = 0 functional errors (.kicad_dru applied — kicad-cli under-coverage noted)
 - [ ] Per-net cluster walks documented for all critical nets (USB, CAN diff, SPI, SDMMC, +3V3_IMU rail)
 - [ ] No foreign switching net under HSE crystal body (ST AN2867 compliance)
