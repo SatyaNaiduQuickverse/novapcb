@@ -57,18 +57,18 @@
 - [x] IMU3_INT1 on PB2 (re-pinned from PE11)
 
 ### Routing
-- [ ] All placed subsystems routed OR explicitly tracked unrouted: **CRSF routed UART4 west edge (PR #120)**; **MOT7/8 v2-deferred** (Sai option D); **Telem (J3) + SWD (J9) defer to v2 pending Sai ratification**; **⚠ +3V3_IMU rail has 5 unconnected pads (U9 IMU3 + C91/C92/C93 IMU2 decaps) — fix PR in flight** per worker Rule-9 catch 2026-05-26
+- [ ] ⚠⚠⚠ **POWER TREE LARGELY UNROUTED — Phase 4d-redux required.** Rule 23 per-net audit (2026-05-26) found 64 unrouted nets across the power tree: U2_FB + U2_SW (buck can't regulate or output), +5V distribution ~24 pads, MCU VCAP1/VCAP2/VDDA/VREF/VBAT (MCU won't run), +3V3_IMU 5 gaps, USBC_CC, BATT sense, I2C2 stubs. Board does NOT power up as routed. Signal routing (CRSF / CAN / microSD / GPS / MOT1-6) IS landed; power tree is NOT. Per-net defect list pending worker doc commit. Phase 7a freeze is far off.
 - [ ] DRC GUI run = 0 functional errors (.kicad_dru applied — kicad-cli under-coverage noted)
 - [ ] Per-net cluster walks documented for all critical nets (USB, CAN diff, SPI, SDMMC, +3V3_IMU rail)
 - [ ] No foreign switching net under HSE crystal body (ST AN2867 compliance)
 - [ ] GND stitching vias bridge In1+In4 GND planes (143 vias from PR #76 stackup-fix)
 
 ### Sims
-- [x] Sim 1 thermal: MCU Tj 62.4°C / +17.6°C margin (PR #94)
+- [ ] ⚠ Sim 1 thermal: MCU Tj 62.4°C / +17.6°C margin (PR #94) — **INVALIDATED by Rule 23 catch: sim assumed MCU runs at 235mW; if VCAP unrouted, MCU won't clock, thermal is meaningless. Re-run after Phase 4d-redux closes power tree.**
 - [x] Sim 2 USB Z_diff: 87.4Ω diff, K-J bracket validated (PR #95 inherits PR #75)
 - [x] Sim 3 SDMMC SI: 172ps worst skew = 97% timing margin at SDR25 50MHz (PR #111)
 - [x] Sim 4 CAN Z_diff: ~120Ω near-ideal vs CAN nominal (PR #112)
-- [ ] Sim 5 PDN: deferred per audit-DECOUPLING-as-proxy (PR #95 doc); run if Sai wants explicit verification
+- [ ] ⚠ Sim 5 PDN (PR #118) PASS 79mΩ — **INVALIDATED by Rule 23 catch: sim assumed +3V3 reaches MCU via plane; if local stubs missing (VCAP/VDDA), plane-to-pad impedance was modeled wrong. Re-run after Phase 4d-redux.**
 
 ### DFM
 - [x] JLC06161H 6-layer capability PASS (PR #109): trace 0.100≥0.09mm, via OD 0.450≥0.40mm, drill 0.250≥0.15mm, annular 0.100≥0.09mm, TH 0.600mm

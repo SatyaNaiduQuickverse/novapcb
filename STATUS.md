@@ -7,7 +7,24 @@
 **Board:** 105×85 mm, 6-layer, STM32H743VIT6, Pixhawk 6X functional drop-in
 **Live HTML view:** http://100.81.21.121:8765/static/pcb.html
 
-**⚠ FLIGHT-ROUTABLE CLAIM RETRACTED 2026-05-26** — worker Rule-9 belt-and-suspenders catch: +3V3_IMU rail has 5 unconnected pads (U9 LSM6DSV16X pad5 + pad8 = IMU3 unpowered; C91/C92/C93 = IMU2 BMI088 decaps floating). v1 arms on IMU1 alone (ICM-42688 on SPI1 powered + decoupled) but redundant IMU set is broken. Likely pre-existing from PR #105 Topology-a rail with near-miss gaps; buried under ~213 total unconnected dominated by intended-unrouted (MOT7/8 + Telem/SWD defers). **Fix dispatched** — single PR `hw/3v3-imu-rail-gap-close` will close all 5 gaps + DRC + build-verify; re-claim then.
+**⚠⚠⚠ FULL ROUTING RETRACTION 2026-05-26** — worker per-net audit (Rule 23 belt-and-suspenders) found the board POWER TREE is fundamentally UNROUTED. The board would NOT power up as routed; not flight-routable; not bring-up-able.
+
+Method: broke 213 total unconnected per-net. 139 = plane-pour noise (correctly excluded). 10 = intended-deferred (MOT7/8, Telem, SWD). **64 = real latent unconnected across ~22 nets** — and they are the POWER TREE.
+
+**Verified unrouted nets (sample):**
+- **U2_FB** (R47/R48 ↔ U2.5 buck FB pin) — buck CANNOT regulate +3V3
+- **U2_SW** (U2.9 ↔ L1 inductor) — buck has NO output path
+- **+5V input distribution** (~24/27 pads: J1 VBUS / U6 eFuse / U2 buck-in / connectors)
+- **+5V_BEC_PROT** (9) — eFuse protection path unrouted
+- **VCAP1** (U1.48 ↔ C17), **VCAP2** (U1.73 ↔ C18) — MCU internal-LDO caps unrouted → **MCU won't run**
+- **+3V3A/VDDA** (U1.21 + FB1 + C19/20), **VREF_P** (3), **VBAT** (2), **BOOT0** (1) — MCU core support unrouted
+- **+3V3_IMU** (5, known) + USBC_CC1/CC2 (2) + BATT V/I_SENS (2) + I2C2 SCL/SDA (2) + IMU3_INT1 (1)
+
+**Likely root:** Option-B buck swap (PR #95/#96 LDO→TPS62177) PLACED buck + R47/R48/L1 but never fully ROUTED buck-specific nets (FB/SW/L1/+5V-in). MCU/IMU local decoupling stubs (VCAP/VDDA/VREF/VBAT/+3V3_IMU) also never routed. ALL hidden in 213-unconnected total because nobody had run per-net split. None documented as deferred.
+
+**Phase 7a freeze is FAR OFF.** Fresh-context comprehensive power-tree routing effort needed (Phase 4d-redux). Sim 1 thermal + Sim 5 PDN PASS results INVALID until power tree closes (both assumed MCU running). Catch came BEFORE fab → Sai's $ not spent. Rule 23 (per-net unconnected audit) graduates from follow-up to freeze gate.
+
+Worker on `audit-power-rails` clean read-only branch; committing full per-net defect list as next step (the spec for Phase 4d-redux).
 
 ---
 
