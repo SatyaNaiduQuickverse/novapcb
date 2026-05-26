@@ -41,8 +41,7 @@ PA6 SPI1_MISO SPI1
 PA7 SPI1_MOSI SPI1
 PC15 IMU1_CS CS
 
-# SPI2 for MAX7456 OSD
-PB12 MAX7456_CS CS
+# SPI2 for BMI088 IMU2 (was MatekH743 MAX7456 OSD — no OSD chip on novapcb v1)
 PB13 SPI2_SCK SPI2
 PB14 SPI2_MISO SPI2
 PB15 SPI2_MOSI SPI2
@@ -53,8 +52,6 @@ PB4 SPI3_MISO SPI3
 PB5 SPI3_MOSI SPI3
 
 # external CS pins
-PD4 EXT_CS1 CS
-PE2 EXT_CS2 CS
 
 # two I2C bus
 I2C_ORDER I2C2 I2C1
@@ -208,6 +205,14 @@ PC11 SDMMC1_D3 SDMMC1
 PC12 SDMMC1_CK SDMMC1
 PD2 SDMMC1_CMD SDMMC1
 
+# SDMMC clock cap lift 12.5MHz -> 50MHz (SDR25 target). The ArduPilot H7
+# global default (stm32h7_A3_mcuconf.h) caps SDMMC at 12.5MHz; Sim 3
+# (docs/SIM_3_SDMMC_SI_RESULT.md) verified the routed SDMMC1 length skew
+# is 0.86% of the 50MHz bit period (97.8% of the SD HS setup+hold window
+# remains), so the cap is liftable to the SDR25 50MHz target from an SI
+# standpoint. Faster microSD logging throughput for ArduPilot .bin logs.
+define STM32_SDC_MAX_CLOCK 50000000
+
 # GPIOs
 PD10  PINIO1 OUTPUT GPIO(81) LOW
 PD11  PINIO2 OUTPUT GPIO(82) LOW
@@ -236,8 +241,8 @@ PB2  IMU3_INT1 INPUT GPIO(42)
 
 # BATT2 Mauch2 sense (power_sd_swd_3h.py:214-215). PC2/PC3 use the
 # STM32H7 "direct" analog pins (suffix _C in KiCad symbol).
-PC2_C BATT2_VOLTAGE_SENS ADC1 SCALE(1)
-PC3_C BATT2_CURRENT_SENS ADC1 SCALE(1)
+PC2 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
+PC3 BATT2_CURRENT_SENS ADC1 SCALE(1)
 
 DMA_PRIORITY S*
 
@@ -249,13 +254,11 @@ STORAGE_FLASH_PAGE 14
 
 # spi devices
 SPIDEV icm42688  SPI1 DEVID1 IMU1_CS      MODE3  2*MHZ 16*MHZ   # Clock is 100Mhz so highest clock <= 24Mhz is 100Mhz/8
-SPIDEV osd       SPI2 DEVID4 MAX7456_CS   MODE0 10*MHZ 10*MHZ
 
 
 DMA_NOSHARE SPI1* TIM3* TIM2* TIM5* TIM4*
 
 # SPI3 external connections
-SPIDEV pixartflow   SPI3 DEVID1  EXT_CS1  MODE3   2*MHZ  2*MHZ
 
 # External compass — novapcb-v1 supports IST8310 (primary) and RM3100 (alternative) (Phase 2c, 2026-05-20)
 # per CLAUDE.md §3.5 "IST8310 or RM3100 (external, via I²C)". Lives on the external GPS+MAG
@@ -291,9 +294,7 @@ BARO DPS310 I2C:0:0x76
 
 define HAL_OS_FATFS_IO 1
 
-# setup for OSD
-define OSD_ENABLED 1
-define HAL_OSD_TYPE_DEFAULT 1
+# (OSD removed — MatekH743 inheritance; no MAX7456 on novapcb v1)
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # build ABIN for flash-from-bootloader support:
