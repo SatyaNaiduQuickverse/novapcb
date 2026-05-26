@@ -1,0 +1,146 @@
+{
+  "tool": "kicad-cli pcb drc + analytical capability scan",
+  "fab": "JLCPCB 6-layer (JLC06161H-7628), advanced tier",
+  "checks": [
+    {
+      "check": "drc_with_dru_classification",
+      "kicad_cli_total": 12,
+      "dru_covered": 12,
+      "unexpected": 0,
+      "copper_edge_clearance": 0,
+      "gui_drc_authoritative_errors": 0,
+      "pass": true,
+      "covered_detail": [
+        [
+          "courtyards_overlap",
+          "pre-existing courtyard relaxation"
+        ],
+        [
+          "courtyards_overlap",
+          "pre-existing courtyard relaxation"
+        ],
+        [
+          "drill_out_of_range",
+          [
+            "+5V_BEC"
+          ]
+        ],
+        [
+          "drill_out_of_range",
+          [
+            "+5V_BEC"
+          ]
+        ],
+        [
+          "drill_out_of_range",
+          [
+            "EFUSE_ILIM"
+          ]
+        ],
+        [
+          "drill_out_of_range",
+          [
+            "ORING_A_GATE"
+          ]
+        ],
+        [
+          "drill_out_of_range",
+          [
+            "ORING_B_GATE"
+          ]
+        ],
+        [
+          "via_diameter",
+          [
+            "+5V_BEC"
+          ]
+        ],
+        [
+          "via_diameter",
+          [
+            "+5V_BEC"
+          ]
+        ],
+        [
+          "via_diameter",
+          [
+            "EFUSE_ILIM"
+          ]
+        ],
+        [
+          "via_diameter",
+          [
+            "ORING_A_GATE"
+          ]
+        ],
+        [
+          "via_diameter",
+          [
+            "ORING_B_GATE"
+          ]
+        ]
+      ],
+      "unexpected_detail": [],
+      "note": "kicad-cli ignores .kicad_dru; all kicad_cli errors must be DRU-covered exceptions. copper_edge_clearance MUST be 0 (no copper crossing a board cut)."
+    },
+    {
+      "check": "min_feature_vs_jlc_capability",
+      "features": {
+        "min_track_width": {
+          "actual": 0.1,
+          "jlc_floor": 0.09,
+          "ok": true
+        },
+        "min_via_diameter": {
+          "actual": 0.45,
+          "jlc_floor": 0.4,
+          "ok": true
+        },
+        "min_via_drill": {
+          "actual": 0.25,
+          "jlc_floor": 0.15,
+          "ok": true
+        },
+        "min_via_annular": {
+          "actual": 0.1,
+          "jlc_floor": 0.09,
+          "ok": true
+        },
+        "min_through_hole": {
+          "actual": 0.6,
+          "jlc_floor": 0.2,
+          "ok": true
+        }
+      },
+      "pass": true,
+      "note": "via-in-pad family (0.45 OD / 0.25 drill) within capability but requires JLC vias-filled-and-capped process \u2014 see DECISIONS \u00a713."
+    },
+    {
+      "check": "connectivity_inventory",
+      "unconnected_ratsnest": 219,
+      "mot_unrouted": [
+        "MOT1",
+        "MOT2",
+        "MOT7",
+        "MOT8"
+      ],
+      "status": "INFO",
+      "note": "MOT7/MOT8 unrouted by design (Sai option D, all 8 PWM defined). MOT1/MOT2 unrouted (T3-partial scope routed MOT3-6 only). Artifact = 4/8 MOT routed; see DFM_REPORT for the STATUS '6/8' doc-vs-artifact note."
+    },
+    {
+      "check": "board_feature_inventory",
+      "footprints": 131,
+      "pads": 573,
+      "tracks": 783,
+      "vias": 288,
+      "zones": 7,
+      "status": "INFO"
+    }
+  ],
+  "verdict": "PASS",
+  "summary": {
+    "checks": 4,
+    "pass_keyed": 2,
+    "passes": 2
+  }
+}
