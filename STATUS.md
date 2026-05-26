@@ -76,6 +76,7 @@ Each sub-step follows established pattern: up-front constraint analysis → mast
 
 | Time (UTC) | Event |
 |---|---|
+| 2026-05-26 00:50 | PR #106 DRU cleanup merged (sha 3a3b8cc) — 21→12 errors, +3 DRU rules, J9.7/8+J3.MP net-assigned to GND. Phase 7a tooling note: GUI DRC authoritative (kicad-cli under-coverage on .kicad_dru). Rule 21 codified (worker pause = recommendation, not stop). Worker self-dispatched to T3 partial up-front survey #49 (Rule 21 in action). |
 | 2026-05-26 ~late | PR #105 IMU decap review merged (sha 8f62f01) — doc-only, C42/C91 accept-as-is on shared rail, C96/LSM6DSV16X bulk OPEN as task #54 awaiting Sai datasheet. 7th + final PR of worker context session. Worker signing off cleanly. Branch tip 8f62f01. Pending fresh context for: CRSF/Telem/SWD manual traverses (#48), T3 partial (#49), IMU slot (#50), DRU/DFM/Sims/Phase 7a. |
 | 2026-05-26 ~midnight | Worker session sign-off after 6-PR burst: #99 CAN routing, #100 microSD, #101 GPS, #102 BUZZER un-defer, #103 HSE crystal opt (Y1 rotate + IMU1_CS off-crystal + W-margin re-layout), #104 IMU decap audit. Rule 3 catch: triple-IMU is heterogeneous (U3 ICM-42688-P, U8 BMI088, U9 LSM6DSV16X), not 3x ICM. Branch tip 6a3084d. Awaiting fresh-context worker for T3 partial #49 (critical path). |
 | 2026-05-24 08:25 | T3 3a iter 4 REGRESSION (49 vs iter 3 46) PAUSED per master cap. Geometric wall on PB8/PB9 0.5mm pitch + BOOT0 + mounting hole. Worker session pause approved. AWAITING SAI for T3 strategy. |
