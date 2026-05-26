@@ -11,22 +11,24 @@
 **v1 functional scope per locked DECISIONS:** STM32H743VIT6 FC, 6-layer 105×85mm, Pixhawk 6X functional drop-in, quad/hex airframe support (6/8 motors)
 
 ### What's locked
-- All 7 connector subsystems placed + routed (CAN, microSD, USB-C, GPS, CRSF, Telem, SWD-partial)
+- All 7 connector subsystems PLACED (CAN, microSD, USB-C, GPS, CRSF, Telem, SWD)
+- Subsystems FULLY routed: CAN (#99), microSD (#100), USB-C (PR #75 earlier), GPS (#101)
 - All subsystem-internal routing complete (A power, B buck, C MCU, D IMU island + +3V3_IMU rail, E baros, F USB-C)
 - 6/8 motors routed (MOT1-6 functional; MOT7/8 v2-deferred per Sai option D)
 - IMU stress-relief slot (SE-corner 25.5mm, S-edge dominant flex axis)
 - HSE crystal optimized (Y1 rotated, caps ≤1.5mm, IMU1_CS off-crystal per ST AN2867)
-- 4 sims PASS: Sim 1 thermal (+17.6°C MCU margin), Sim 2 USB Z_diff (87.4Ω), Sim 3 SDMMC SI (97% timing margin), Sim 4 CAN Z_diff (~120Ω near-ideal)
-- DFM PASS: JLC06161H 6-layer capability all clear
-- 22 master process rules + 14 audit gates + DRU cleanup landed
+- 4 sims PASS: Sim 1 thermal (+17.6°C MCU margin), Sim 2 USB Z_diff (87.4Ω), Sim 3 SDMMC SI (172ps worst skew = **97.8% margin vs SD HS setup+hold window**, equivalent to 99.1% vs 50MHz bit period), Sim 4 CAN Z_diff (~120Ω near-ideal)
+- DFM PASS: JLC06161H 6-layer capability all clear (PR #109)
+- 143 GND stitching vias from PR #76 (stackup-fix) bond In1+In4 GND planes
+- 22 master process rules + 14 audit gates + DRU cleanup landed (PR #106)
 - ~26 PRs landed on the sch/option-b-buck stack
 
 ### Pending (before freeze)
-- [ ] SWD focused routing (task #56) — small surgical PR, SDMMC1_CMD ≤1mm nudge + SWDIO/SWCLK manual
-- [ ] LSM6DSV16X datasheet check (task #54) — Sai input needed (datasheet OR design-intent confirmation)
-- [ ] STM32_SDC_MAX_CLOCK firmware lift to 50MHz (hwdef.dat optimization — track for firmware revision)
-- [ ] GUI DRC final verify on freeze head (Sai runs on his Pi; kicad-cli under-coverage on .kicad_dru)
-- [ ] BOM final verify with LCSC sourcing
+- [ ] **#56 CRSF + Telem + SWD east-edge escapes (6 nets + NRST)** — full #48 scope folded in. Empirical FR test (PR #113) proved CRSF + Telem + SWD all USB-walled at MCU pads — all need fresh-context surgical multi-wall F↔B-weave + pre-authorized ≤1mm SDMMC1_CMD nudge. Analysis + FR tooling preserved in `docs/CRSF_TELEM_SWD_ROUTING_ANALYSIS.md`. Only NRST routes cleanly without weave.
+- [ ] **#54 LSM6DSV16X datasheet check** — Sai input needed (datasheet OR design-intent confirmation that bulk shared via +3V3_IMU plane is sufficient)
+- [ ] **STM32_SDC_MAX_CLOCK firmware lift** to 50MHz — small hwdef.dat addition (`define STM32_SDC_MAX_CLOCK 50000000`), Sim 3-validated. **DO NOT blind-edit** — land it WITH the next hwdef revision + ArduPilot build-verify per Rule 5/6 (firmware build must succeed before merge). Track as pending firmware optimization, not a Phase 7a hardware blocker.
+- [ ] **GUI DRC final verify on freeze head** (Sai runs on his Pi; kicad-cli under-coverage on .kicad_dru known per PR #106)
+- [ ] **BOM final verify with LCSC sourcing**
 
 ---
 
@@ -43,13 +45,13 @@
 - [ ] SERIAL_ORDER correct (USART6 CRSF, USART1 Telem, etc.)
 - [ ] 6/8 PWM channels routed (MOT1-6); MOT7/8 declared but unrouted in hwdef
 - [ ] CAN1 transceiver U14 SILENT tied GND = normal mode
-- [ ] BUZZER on PA3 (re-pinned from PD7 to dodge GPS BATT2 wall)
-- [ ] GPS1_TX on PA2 (re-pinned from PD5 to dodge BATT2 wall)
-- [ ] CAN_SILENT on PD15 (re-pinned from PD3 to avoid MCU east saturation)
-- [ ] IMU3_INT1 on PB2 (re-pinned from PE11 to free MOT4)
+- [x] BUZZER on PA3 (re-pinned from PD7 — verified hwdef line 200)
+- [x] GPS1_TX on PA2 (re-pinned from PD5 — verified hwdef line 123)
+- [ ] CAN_SILENT on PD15 (re-pinned from PD3 — needs hwdef re-verify by Sai or fresh worker)
+- [ ] IMU3_INT1 on PB2 (re-pinned from PE11 — needs hwdef re-verify by Sai or fresh worker)
 
 ### Routing
-- [ ] All placed subsystems fully routed OR explicitly tracked unrouted (MOT7/8, possibly SWD pre-#56)
+- [ ] All placed subsystems fully routed OR explicitly tracked unrouted: **MOT7/8 v2-deferred**; **CRSF + Telem + SWD east-edge escapes (6 nets) pending task #56** (only NRST routed pre-#56)
 - [ ] DRC GUI run = 0 functional errors (.kicad_dru applied — kicad-cli under-coverage noted)
 - [ ] Per-net cluster walks documented for all critical nets (USB, CAN diff, SPI, SDMMC, +3V3_IMU rail)
 - [ ] No foreign switching net under HSE crystal body (ST AN2867 compliance)
