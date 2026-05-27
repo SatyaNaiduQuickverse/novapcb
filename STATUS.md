@@ -3,7 +3,26 @@
 > Updated continuously by master Claude during autonomous-loop work.
 > Most recent merged PR is at the top of the log.
 
-**Current branch:** `sch/option-b-buck` &middot; **Head:** `6bc1915` (PR #121 power-tree defect survey + Rule 23 tool MERGED)
+**Current branch:** `sch/option-b-buck` &middot; **Head:** `b777e66` (Rule-23 wired as freeze gate #11; Phase 4d-redux 3/6 domains merged)
+
+## Phase 4d-redux live progress (real-latent count)
+
+| Domain | PR | State | Latent |
+|---|---|---|---|
+| D1 Buck (U2_FB + U2_SW) | #122 | ✅ MERGED | 64 → 61 |
+| D2 +5V distribution (27 pads, EFUSE_OVP nudge) | #123 | ✅ MERGED | 61 → 37 |
+| D3 eFuse (R4-ILIM-lift + R7/R9 re-place; FLT/PGOOD v2-defer) | #124 | ✅ MERGED | 37 → 27 |
+| **D4 MCU core power (VCAP/VDDA/VREF/VBAT/BOOT0)** | hw/d4-mcu-core | 🟡 in flight (broadened pre-auth) | 27 → ~16 expected |
+| D6 USB-C CC + misc partials | queued | queued | ~16 → ~6 |
+| D5 +3V3_IMU dense pocket | queued | queued (last) | ~6 → 0 |
+
+**60% latent reduction in 3 merged PRs.** Each merge gates on `audit_unconnected_per_net.py` (Rule 23 tool, PR #121) + `waf copter` build verify + DRC ≤ baseline + 0 net-new.
+
+**Master pre-authorization in effect** (post C11-failure lesson): decap caps ±3mm + bias passives ±5mm + plane-stitch vias freely + single-via B.Cu drops, all WITH survey-first 2-layer rectangle check. Rule 13 escalation only for flight-critical / sensor / IC / schematic-side / >5mm moves.
+
+**Recurring root-cause finding:** power tree was routed LAST → signal nets formed walls → move-the-passive is the universal unlock. Worker formalized this as the systemic pattern; broadened pre-auth scales the response.
+
+
 **Board:** 105×85 mm, 6-layer, STM32H743VIT6, Pixhawk 6X functional drop-in
 **Live HTML view:** http://100.81.21.121:8765/static/pcb.html
 
