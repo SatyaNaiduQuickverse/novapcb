@@ -114,3 +114,38 @@
     (constraint hole_size (min 0.25mm))
     (condition "(A.NetName == 'EFUSE_OVP' || A.NetName == 'EFUSE_ILIM' ||
                  A.NetName == 'EFUSE_DVDT' || A.NetName == 'EFUSE_FLT')"))
+
+# Via-in-pad — MCU core + baro fine-pitch (D4-final close, 2026-05-28).
+# Sai approved VIP for U1.48; master extended to U4.3/U4.4 (same fab capability,
+# same DFM class, no incremental order line item).
+#   U1.48 VCAP1  — STM32H743 LQFP-100 0.5mm pitch; core-LDO pin walled on all
+#                  sides by I2C2_SDA (F) + IMU3 SPI3/IMU2 bus (B). Normal escape
+#                  via cannot fit; VIP drops straight to B.Cu E-of-SPI3 to C17.
+#   U4.3 I2C2_SDA + U4.4 I2C2_SCL — DPS310 baro HLGA-10, BOTTOM-mount, 0.65mm
+#                  pitch B.Cu pads boxed by I2C1 (B @X44.5/44.9) + C52. Two 0.5mm
+#                  vias need 0.7mm spacing — won't fit at 0.65 pitch; VIP straight
+#                  into each B.Cu pad. Via-near-pad verified infeasible (Rule-9).
+# Geometry: 0.30mm OD / 0.15mm drill / 0.075mm annular = JLC filled-via minimums.
+# Fab: IPC-4761 Type VII filled+capped — SAME order line as the ORING/+5V_BEC/
+# EFUSE via-in-pad family (no extra cost). SOURCING_NOTES §5 #8 lists all 3 pads.
+(rule "vip-mcu-baro-diameter"
+    (constraint via_diameter (min 0.30mm))
+    (condition "A.NetName == 'VCAP1' || A.NetName == 'I2C2_SDA' || A.NetName == 'I2C2_SCL'"))
+
+(rule "vip-mcu-baro-hole"
+    (constraint hole_size (min 0.15mm))
+    (condition "A.NetName == 'VCAP1' || A.NetName == 'I2C2_SDA' || A.NetName == 'I2C2_SCL'"))
+
+(rule "vip-mcu-baro-annular"
+    (constraint annular_width (min 0.075mm))
+    (condition "A.NetName == 'VCAP1' || A.NetName == 'I2C2_SDA' || A.NetName == 'I2C2_SCL'"))
+
+# C19<->C20 courtyard relax — +3V3A vertical re-spread (D4 close, 2026-05-28).
+# C19 (rotated vertical, +3V3A decap for U1.21) courtyard overlaps C20 (+3V3A bulk)
+# by 0.79mm. ACTUAL edge clearances: opp-net pads 0.36mm + 0.68mm (both >= 0.20mm
+# JLC SMT min); the only 0.0mm pair is GND<->GND (same net, harmless); bodies
+# ~0.26mm apart. Courtyard is the IPC-7351 assembly keep-out (tooling), not a fab
+# or placement violation here. Relax courtyard for this pair only. Master path (c).
+(rule "c19-c20-courtyard-relax"
+    (constraint courtyard_clearance (min 0.0mm))
+    (condition "(A.Reference == 'C19' && B.Reference == 'C20') || (A.Reference == 'C20' && B.Reference == 'C19')"))
