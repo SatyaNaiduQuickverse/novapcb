@@ -72,9 +72,25 @@ net-assign correctly groups 7/8/MP with the rest of each connector's GND.
   courtyard margins overlap, bodies/pads clear. Standard decap placement.
 - **J20 (CAN 4P) + J19** — adjacent connectors; courtyard margins overlap,
   bodies clear. Intentional tight NE-corner placement.
+- **C19 (+3V3A decap) + C20 (+3V3A bulk)** — C19 rotated vertical in the
+  +3V3A/VREF re-spread (D4 close, 2026-05-28); courtyard overlaps C20 by
+  0.79mm. ACTUAL edge clearances: opp-net pads 0.36mm + 0.68mm (both ≥0.2mm
+  JLC SMT min); only the GND↔GND pad pair touches (same net, harmless);
+  bodies ~0.26mm. Unlike U6+C9 / J20+J19, this one has a DRU rule
+  (`c19-c20-courtyard-relax`, courtyard_clearance min 0.0) so GUI DRC passes
+  WITHOUT a manual exclusion. Master path (c).
 
-Both pre-existing + benign. DRC-exclusion strings are GUI-serialized (hard to
-hand-write headless); Sai marks them excluded in the GUI at the Phase 7a freeze.
+U6+C9 and J20+J19 are pre-existing + benign. DRC-exclusion strings are
+GUI-serialized (hard to hand-write headless); Sai marks those two excluded in
+the GUI at the Phase 7a freeze (C19+C20 is rule-covered, no exclusion needed).
+
+## 4b. D4-final via-in-pad DRU additions (2026-05-28)
+
+The D4 close added 3 via-in-pad pads (U1.48 VCAP1, U4.3/U4.4 I2C2) — see
+`docs/DECISIONS.md §13.1b`. DRU rules `vip-mcu-baro-diameter/hole/annular`
+(0.30 OD / 0.15 drill / 0.075 annular, scoped to VCAP1|I2C2_SDA|I2C2_SCL).
+Same JLC filled-via process as §13.1; no new fab line item. Pre-PR sanity
+sweep confirmed the VIP set is complete at 7 pads total.
 
 ## 5. Verification
 
