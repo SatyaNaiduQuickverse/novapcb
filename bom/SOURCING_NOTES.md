@@ -122,8 +122,9 @@ Marked items that need supermaster (Sai) explicit decision before the JLCPCB ord
 | 5 | Stencil order (for hand-rework) — yes/no | no (JLCPCB asm includes stencil for in-house run) | only matters if rework expected |
 | 6 | Quantity — how many boards on first run | 5 (JLCPCB minimum) | rework spare buffer affected |
 | 7 | Lead-free / RoHS — JLCPCB default is lead-free SAC305 | lead-free | regulatory only |
+| 8 | **Via-in-pad on U1.48 (VCAP1)** — IPC-4761 Type VII filled+capped (Sai-approved 2026-05-28 per VCAP1 routing closure) | **MUST tick "Via-in-pad filled+capped" on JLCPCB SMT order form** | board doesn't power up without VCAP routing; ~$10 fab adder; precedent in PR #106 DRU exceptions |
 
-**None of items 1-7 are decided in this BOM** — they go in the fab-order request (Phase 7) when Sai is ready.
+**Items 1-8 are decided here** — Sai must enter them in the fab-order request (Phase 7) when ordering. Item 8 is the critical one: without ticking via-in-pad filled+capped on the JLCPCB SMT form, U1.48 VIP will not be properly filled and the MCU LDO decoupling fails.
 
 ---
 
