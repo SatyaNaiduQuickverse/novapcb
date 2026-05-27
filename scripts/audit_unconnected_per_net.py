@@ -27,8 +27,12 @@ ROOT = Path(__file__).resolve().parent.parent
 PCB = ROOT / "hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_pcb"
 
 # Nets explicitly unrouted by design (tracked deferrals — not defects).
+# EFUSE_FLT/PGOOD: eFuse protection is autonomous; the status flags are MCU
+# firmware-awareness only (no v1 fault-handling pipeline) — v2 defer per
+# docs/EFUSE_STATUS_V1_DEFER.md, same pattern as Telem (USART1) / SWD.
 INTENDED_DEFERRED = {"MOT7", "MOT8", "USART1_TX", "USART1_RX",
-                     "SWDIO", "SWCLK", "SWO", "NRST"}
+                     "SWDIO", "SWCLK", "SWO", "NRST",
+                     "EFUSE_FLT", "EFUSE_PGOOD"}
 # Power/critical nets — a REAL unconnected here is a hard pre-freeze blocker.
 POWER_CRITICAL_HINT = ("+5V", "+3V3", "VCAP", "VDD", "VREF", "VBAT", "U2_",
                        "EFUSE", "BOOT0", "USBC_CC", "_SENS")
