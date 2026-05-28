@@ -3,24 +3,40 @@
 > Updated continuously by master Claude during autonomous-loop work.
 > Most recent merged PR is at the top of the log.
 
-**Current branch:** `sch/option-b-buck` &middot; **Head:** `b777e66` (Rule-23 wired as freeze gate #11; Phase 4d-redux 3/6 domains merged)
+**Current branch:** `sch/option-b-buck` &middot; **Head:** `57e8c65` (PR #126 sim re-runs MERGED post Phase 4d-redux 5/6 domains)
 
-## Phase 4d-redux live progress (real-latent count)
+## Phase 4d-redux state (real-latent count: 64 → 6, 91% reduction this run)
 
 | Domain | PR | State | Latent |
 |---|---|---|---|
 | D1 Buck (U2_FB + U2_SW) | #122 | ✅ MERGED | 64 → 61 |
 | D2 +5V distribution (27 pads, EFUSE_OVP nudge) | #123 | ✅ MERGED | 61 → 37 |
 | D3 eFuse (R4-ILIM-lift + R7/R9 re-place; FLT/PGOOD v2-defer) | #124 | ✅ MERGED | 37 → 27 |
-| **D4 MCU core power (VCAP/VDDA/VREF/VBAT/BOOT0)** | hw/d4-mcu-core | 🟡 in flight (broadened pre-auth) | 27 → ~16 expected |
-| D6 USB-C CC + misc partials | queued | queued | ~16 → ~6 |
-| D5 +3V3_IMU dense pocket | queued | queued (last) | ~6 → 0 |
+| **D4 MCU core power** (VCAP1 via-in-pad U1.48 + VCAP2 + BOOT0 + VBAT + VDDA + VREF; C19-vertical + C17 rotate + C13 nudge re-spread) | #125 | ✅ MERGED | 27 → ~10 |
+| D6 USBC_CC1/2 + BATT V/I sense + HEATER_DRAIN + I2C2_SCL/SDA (via-in-pad U4.3/U4.4 baro) | #125 (bundled) | ✅ MERGED | ~10 → 6 |
+| **D6 remainder: IMU3_INT1** (35mm cross-island, FR-failed, hand-route planned) | next-session | ⏳ deferred (Rule 17) | 6 → 5 |
+| **D5 +3V3_IMU dense pocket** (5 gaps per plan doc, C93→C92→C91→U9.5→U9.8) | next-session | ⏳ queued (last) | 5 → 0 |
 
-**60% latent reduction in 3 merged PRs.** Each merge gates on `audit_unconnected_per_net.py` (Rule 23 tool, PR #121) + `waf copter` build verify + DRC ≤ baseline + 0 net-new.
+## Sim re-runs (post power-tree routing)
 
-**Master pre-authorization in effect** (post C11-failure lesson): decap caps ±3mm + bias passives ±5mm + plane-stitch vias freely + single-via B.Cu drops, all WITH survey-first 2-layer rectangle check. Rule 13 escalation only for flight-critical / sensor / IC / schematic-side / >5mm moves.
+| Sim | PR | Result | Notes |
+|---|---|---|---|
+| Sim 1 thermal (gate12 v3 Elmer FE) | #126 | ✅ PASS | MCU Tj 65.05°C, +15.0°C margin; reproducible vs PR #94 (Tj_Q2 62.40°C exact match); energy-balance err +0.31% < 1% |
+| Sim 5 PDN | #126 | ✅ PASS | Mid-band peak 79.4 mΩ ≤ 100 mΩ gate; decap inventory matches H743 ref |
 
-**Recurring root-cause finding:** power tree was routed LAST → signal nets formed walls → move-the-passive is the universal unlock. Worker formalized this as the systemic pattern; broadened pre-auth scales the response.
+Both were INVALIDATED by Rule 23 catch (assumed MCU runs); now electrically valid post Phase 4d-redux power-tree routing.
+
+## Fab spec line items (Sai at JLCPCB SMT order time)
+
+- **7 VIP pads total**: U1.48 (VCAP1), U4.3 + U4.4 (I2C2 baro), plus 4 existing ORING_GATE/+5V_BEC. Tick "Via-in-pad filled+capped" (IPC-4761 Type VII) on JLC SMT form. ~$10 adder. Documented `docs/DECISIONS.md` §13.1b + `bom/SOURCING_NOTES.md` §5 row 8.
+
+## What's left to freeze-ready
+
+**Next-session worker:**
+1. IMU3_INT1 hand-route (option a 10-15 seg weave, or b passive re-place to simplify; plan + FR harness in place)
+2. D5 +3V3_IMU 5 gaps (plan doc easiest-first)
+
+**Sai-gates:** Telem v2-defer ratify, SWD test-pads ratify, C96 10nF→100nF, GUI DRC, BOM LCSC at JLC portal, Phase 7a freeze trigger, Phase 7b fab order.
 
 
 **Board:** 105×85 mm, 6-layer, STM32H743VIT6, Pixhawk 6X functional drop-in
