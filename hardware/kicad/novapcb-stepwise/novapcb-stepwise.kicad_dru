@@ -130,15 +130,15 @@
 # EFUSE via-in-pad family (no extra cost). SOURCING_NOTES §5 #8 lists all 3 pads.
 (rule "vip-mcu-baro-diameter"
     (constraint via_diameter (min 0.30mm))
-    (condition "A.NetName == 'VCAP1' || A.NetName == 'I2C2_SDA' || A.NetName == 'I2C2_SCL'"))
+    (condition "A.NetName == 'VCAP1' || A.NetName == 'I2C2_SDA' || A.NetName == 'I2C2_SCL' || A.NetName == '+3V3_IMU'"))
 
 (rule "vip-mcu-baro-hole"
     (constraint hole_size (min 0.15mm))
-    (condition "A.NetName == 'VCAP1' || A.NetName == 'I2C2_SDA' || A.NetName == 'I2C2_SCL'"))
+    (condition "A.NetName == 'VCAP1' || A.NetName == 'I2C2_SDA' || A.NetName == 'I2C2_SCL' || A.NetName == '+3V3_IMU'"))
 
 (rule "vip-mcu-baro-annular"
     (constraint annular_width (min 0.075mm))
-    (condition "A.NetName == 'VCAP1' || A.NetName == 'I2C2_SDA' || A.NetName == 'I2C2_SCL'"))
+    (condition "A.NetName == 'VCAP1' || A.NetName == 'I2C2_SDA' || A.NetName == 'I2C2_SCL' || A.NetName == '+3V3_IMU'"))
 
 # C19<->C20 courtyard relax — +3V3A vertical re-spread (D4 close, 2026-05-28).
 # C19 (rotated vertical, +3V3A decap for U1.21) courtyard overlaps C20 (+3V3A bulk)

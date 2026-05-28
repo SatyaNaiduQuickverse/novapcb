@@ -33,6 +33,11 @@ PCB = ROOT / "hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_pcb"
 INTENDED_DEFERRED = {"MOT7", "MOT8", "USART1_TX", "USART1_RX",
                      "SWDIO", "SWCLK", "SWO", "NRST",
                      "EFUSE_FLT", "EFUSE_PGOOD"}
+# Specific PADS deferred to v2 even though the NET is otherwise working.
+# C93.1: 4th-of-5 redundant +3V3_IMU decap on U8 BMI088 (v2-defer per
+# docs/D5_3V3_IMU_DEFERRED_DECAPS.md; rail still has C91+C92+U8.11+U9.5+U9.8
+# connected; IMU3 power retained; mid-band PDN Z impact ~5-10 mΩ within gate).
+INTENDED_DEFERRED_PADS = {"C93.1"}
 # Power/critical nets — a REAL unconnected here is a hard pre-freeze blocker.
 POWER_CRITICAL_HINT = ("+5V", "+3V3", "VCAP", "VDD", "VREF", "VBAT", "U2_",
                        "EFUSE", "BOOT0", "USBC_CC", "_SENS")
@@ -65,12 +70,22 @@ def main():
     d = run_drc()
     planes, b = plane_nets()
     netcount = collections.Counter()
+    pad_deferred = 0
+    import re
     for u in d.get("unconnected_items", []):
         nets = set()
+        pads = set()
         for it in u.get("items", []):
             dd = it.get("description", "")
             if "[" in dd and "]" in dd:
                 nets.add(dd[dd.find("[") + 1:dd.find("]")])
+            m = re.match(r'Pad (\S+) \[[^]]+\] of (\S+) ', dd)
+            if m:
+                pads.add(f"{m.group(2)}.{m.group(1)}")
+        # if any endpoint involves a deferred PAD, classify as deferred (not real-latent)
+        if pads & INTENDED_DEFERRED_PADS:
+            pad_deferred += 1
+            continue
         for n in nets:
             netcount[n] += 1
 
@@ -84,7 +99,8 @@ def main():
     print(f"=== per-net unconnected audit ({PCB.name}) ===")
     print(f"total unconnected:      {total}")
     print(f"  plane-pour noise:     {noise}  (zone nets {sorted(planes)} — not defects)")
-    print(f"  intended-deferred:    {deferred}")
+    print(f"  intended-deferred:    {deferred}  (net-level: {sorted(n for n in INTENDED_DEFERRED if netcount.get(n,0)>0) or '—'})")
+    print(f"  pad-deferred:         {pad_deferred}  (pad-level: {sorted(INTENDED_DEFERRED_PADS) or '—'})")
     print(f"  REAL LATENT:          {sum(c for _, c in real)}  across {len(real)} nets\n")
     if real:
         print(f"{'NET':18}{'unconn':>7}{'trk':>5}{'via':>5}  status")

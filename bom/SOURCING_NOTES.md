@@ -122,9 +122,9 @@ Marked items that need supermaster (Sai) explicit decision before the JLCPCB ord
 | 5 | Stencil order (for hand-rework) — yes/no | no (JLCPCB asm includes stencil for in-house run) | only matters if rework expected |
 | 6 | Quantity — how many boards on first run | 5 (JLCPCB minimum) | rework spare buffer affected |
 | 7 | Lead-free / RoHS — JLCPCB default is lead-free SAC305 | lead-free | regulatory only |
-| 8 | **Via-in-pad on U1.48 (VCAP1)** — IPC-4761 Type VII filled+capped (Sai-approved 2026-05-28 per VCAP1 routing closure) | **MUST tick "Via-in-pad filled+capped" on JLCPCB SMT order form** | board doesn't power up without VCAP routing; ~$10 fab adder; precedent in PR #106 DRU exceptions |
+| 8 | **Via-in-pad — 9 pads total** — IPC-4761 Type VII filled+capped (per-ORDER capability, not per-pad — single fab line item covers all). Sai-approved 2026-05-28 (U1.48); master-extended same session to U4.3/U4.4 baro + U9.5/U9.8 IMU3 (same fine-pitch DFM class, no incremental fab cost). Set: **U1.48 VCAP1** + **U4.3 I2C2_SDA** + **U4.4 I2C2_SCL** + **U9.5 +3V3_IMU (IMU3 VDD)** + **U9.8 +3V3_IMU (IMU3 VDDIO)** + the 4 existing ORING/+5V_BEC family vias from PR #106. See `docs/DECISIONS.md §13.1b`. | **MUST tick "Via-in-pad filled+capped" on JLCPCB SMT order form** | board doesn't power up without VCAP routing + IMU3 doesn't power up without U9.5/U9.8; ~$10 fab adder; precedent in PR #106 DRU exceptions |
 
-**Items 1-8 are decided here** — Sai must enter them in the fab-order request (Phase 7) when ordering. Item 8 is the critical one: without ticking via-in-pad filled+capped on the JLCPCB SMT form, U1.48 VIP will not be properly filled and the MCU LDO decoupling fails.
+**Items 1-8 are decided here** — Sai must enter them in the fab-order request (Phase 7) when ordering. Item 8 is the critical one: without ticking via-in-pad filled+capped on the JLCPCB SMT form, the 9 fine-pitch VIP pads (MCU core VCAP + baro I2C + IMU3 power) will not be properly filled and those subsystems will be DOA.
 
 ---
 
