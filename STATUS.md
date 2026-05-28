@@ -3,7 +3,27 @@
 > Updated continuously by master Claude during autonomous-loop work.
 > Most recent merged PR is at the top of the log.
 
-**Current branch:** `sch/option-b-buck` &middot; **Head:** `57e8c65` (PR #126 sim re-runs MERGED post Phase 4d-redux 5/6 domains)
+**Current branch:** `sch/option-b-buck` &middot; **Head:** `b20e6a4` (HSE Pierce analytical landed; U9 re-place to center dispatched)
+
+## 2026-05-28 — U9 LSM6DSV16X re-place to under-MCU center (IMU-at-center quality decision)
+
+Sai directive: "quality bar high, any amount of rework is acceptable, you take the decision." Master review:
+
+**Triple-IMU CG correlation principle:** IMUs should be at FC's geometric center for accurate angular-velocity-to-translation decoupling.
+- Board center: (52.5, 42.5)
+- U3 IMU1 primary @ (46, 47): 5mm S — acceptable
+- U8 IMU2 secondary @ (67, 53): 16mm E — medium
+- **U9 IMU3 tertiary @ (78, 56): 28mm NE — worst placement**
+
+And U9 is exactly where IMU3_INT1 routing hit cumulative density walls (9 worker iterations + 2 pin re-pin attempts proved structural impossibility). Master decision: re-place U9 to under-MCU B.Cu near board center. **Solves routing + quality simultaneously.**
+
+Worker on Phase 1 placement survey (2-3 candidate XYs within 10mm of center, B.Cu obstacle map). Master picks XY from candidates directly per Sai's "don't stop when you decide" directive (no Sai round-trip). Worker executes Phase 2-4: re-place + re-route SPI3/IMU3_CS/IMU3_INT1 + extend +3V3_IMU rail + Sim 1+5 re-runs + PR.
+
+**Trade-off accepted:** U9 loses stress-relief slot vibration isolation (slot stays SE-corner protecting U3+U8). Center-of-board is mechanically MORE stable than slot-protected east. Net: U9 vibration immunity probably IMPROVES.
+
+**SPI3 (hands-off) is the targeted re-route net for this PR** — touching it is authorized as part of U9 re-place; SI preserved via cluster-walk + Sim 5 re-run.
+
+
 
 ## Phase 4d-redux state (real-latent count: 64 → 6, 91% reduction this run)
 
