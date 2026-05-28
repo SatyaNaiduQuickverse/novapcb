@@ -77,6 +77,6 @@ This is a **small Sai-gate** (BOM value change, no scope change). Two clean path
 
 Task #54 question 1 (bulk requirement) — **CLOSED, no bulk needed**. Master web research substantiates Sai's option (ii) intent.
 
-Task #54 question 2 (C96 value) — **OPEN for Sai's Path A vs B choice**. Master recommendation: Path A.
+Task #54 question 2 (C96 value) — **MASTER-DECIDED 2026-05-28 (Sai delegated: "similar" → master picks)**: **Path A — swap C96 10nF → 100nF**. Strict ST conformance for LSM6DSV16X VDDIO. Trivial BOM swap; 100nF 0402 already in BOM for other locations.
 
 The freeze checklist (`docs/PHASE_7A_FREEZE_CHECKLIST.md`) line "LSM6DSV16X decap conformance check — Sai input needed" can advance: bulk part is closed; only the C96 value tweak remains, which is non-blocking for fab (board works either way per §2).

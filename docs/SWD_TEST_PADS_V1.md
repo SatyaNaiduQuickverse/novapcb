@@ -1,6 +1,8 @@
 # SWD — v1 test-pads + USB DFU bootload decision
 
-> **Status:** master draft 2026-05-26, **awaiting Sai ratification**.
+> **Status:** **MASTER-DECIDED 2026-05-28** (Sai delegated: "its your call you know rules"). Implement: defer J9 connector, add 5 labeled test-pads + BOOT0 jumper near MCU, first flash via STM32H7 ROM DFU mode (`dfu-util`).
+
+> ~~Status: master draft 2026-05-26, awaiting Sai ratification.~~
 > **Trigger:** task #56 empirically proved SWDIO/SWCLK cannot escape the MCU NE-saturated zone to J9 @ X=47 in v1 without surgical multi-wall F↔B weave + nudges. Master scope-pragmatism call: replace the J9 6-pin SWD connector with bare test-pads (or remove entirely) and use USB DFU bootload for initial flash. SWD as a debug-time pogo-pin/wire-tack tool only.
 
 ---

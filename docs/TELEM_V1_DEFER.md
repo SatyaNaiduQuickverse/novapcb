@@ -1,6 +1,8 @@
 # Telem (USART1) — v1 defer decision
 
-> **Status:** master draft 2026-05-26, **awaiting Sai ratification**.
+> **Status:** **OVERTURNED by Sai 2026-05-28** — Sai's call: "should do j3", route the connector in v1 rather than v2-defer. This doc is preserved for history; the override decision lives in `docs/TELEM_V1_ROUTE_DECISION.md`.
+
+> ~~Status: master draft 2026-05-26, awaiting Sai ratification.~~
 > **Trigger:** task #56 empirically proved USART1_TX/RX (PA9/PA10 → J3 connector) cannot escape the MCU NE-saturated zone in v1 without re-pin or surgical multi-wall F↔B weave. Master scope-pragmatism call: defer the J3 external telem connector to v2; USART1 stays in firmware unchanged.
 
 ---
