@@ -475,9 +475,9 @@ A↔B-2 + A↔B-3 routing required two scope-bounded fab-process deviations to f
 
 **Order-time action** (Sai): when generating gerbers + uploading to JLC, select "Via in Pad" = yes. JLC will recognize the 4 sub-spec vias and apply the process board-wide where indicated. If JLC asks "any vias smaller than 0.30mm drill?" — answer YES, point at the DRU rule + 4 locations.
 
-### 13.1b MCU core + baro fine-pitch via-in-pad (Sai 2026-05-28; U4 ext master-approved)
+### 13.1b MCU core + baro + IMU3 fine-pitch via-in-pad (Sai 2026-05-28; U4 + IMU3 ext master-approved)
 
-**Scope**: U1.48 (VCAP1), U4.3 (I2C2_SDA), U4.4 (I2C2_SCL) pad-center vias. 3 vias.
+**Scope**: U1.48 (VCAP1), U4.3 (I2C2_SDA), U4.4 (I2C2_SCL), U9.5 (+3V3_IMU IMU3 VDD), U9.8 (+3V3_IMU IMU3 VDDIO) pad-center vias. **5 vias** (combined with §13.1's 4 ORING/+5V_BEC vias = **9 total VIP pads on the board**).
 
 **Why**:
 - **U1.48 VCAP1** — STM32H743 LQFP-100 0.5mm pitch. Core-LDO pin walled on all
