@@ -89,3 +89,42 @@ Worker recommends. Master agrees. Awaiting Sai's ratification (this IS a true Sa
 | Fab risk | None — back to validated state | Latent SI defects from manual-iteration cleanup |
 
 Master read: (ε)+(t) is brutally-honest no-corner-cut answer. Worker recommends. Master agrees pending Sai ratification.
+
+---
+
+## 8. Closure — (ε)+(t) EXECUTED 2026-05-29
+
+Sai (delegated to master) ratified the recommendation. Worker executed:
+
+**Phase 1 — Rollback** (`git checkout HEAD` on .pcb + .dru):
+- U9 + C94 + C95 + C96 restored to original positions (U9 @(78, 57) F.Cu)
+- SPI3_SCK / SPI3_MISO / SPI3_MOSI / IMU3_CS routing restored (52 segs + 8 vias total)
+- +3V3_IMU rail tail (the 18 items deleted for the U9 move) restored
+- DRC: 0 non-baseline violations
+- waf copter: PASS (1515288 text, 184116 free flash)
+
+**Phase 2 — IMU3_INT1 net-defer**:
+- `IMU3_INT1` added to `INTENDED_DEFERRED` net set in `scripts/audit_unconnected_per_net.py`
+- Same pattern as `MOT7`/`MOT8`/`USART1_*`/`SW*`/`EFUSE_FLT`/`EFUSE_PGOOD` (and the C93.1 pad-defer pattern in PR #127)
+- Audit verdict: PASS — 0 real latent unconnected
+
+**Phase 3 — Docs**:
+- `docs/IMU3_INT1_V2_DEFER.md` (new) — net-defer rationale + ArduPilot polled-mode firmware reference + v2 plan
+- This document — closure section added
+- `STATUS.md` — Phase 4d-redux table updated to reflect IMU3_INT1 v2-defer
+
+**Phase 4 — Verify gates all PASS**:
+- audit_unconnected_per_net.py: real-latent = 0
+- audit_layout_compliance.py: PASS
+- DRC: 0 non-baseline
+- waf copter: PASS
+- No sim re-run needed — board geometry restored to PR #127 head; Sim 1 thermal (65.05 °C, +15 °C margin) and Sim 5 PDN (82.9 mΩ, ≤ 100 mΩ gate) remain valid as-of PR #126/127.
+
+**v1 IMU summary post-closure**:
+- IMU1 (ICM-42688-P, primary, SPI1) — INT-driven, chip ODR
+- IMU2 (BMI088, secondary, SPI2) — INT-driven (ACC_INT1 + GYR_INT3), chip ODR
+- IMU3 (LSM6DSV16X, tertiary, SPI3) — **polled @ ~1 kHz** (INT1 unrouted, v2-deferred)
+
+ArduPilot drop-in compatibility preserved. Triple-IMU redundancy retained (2 INT + 1 polled).
+
+PR opened on `hw/u9-replace-rollback-imu3int1-v2defer` branch — gate-clean, awaiting master pre-merge.
