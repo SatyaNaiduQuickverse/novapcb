@@ -46,7 +46,7 @@ Item,RefDes,Qty,Value,Footprint,MPN,Manufacturer,LCSC_Part,JLCPCB_Type,Datasheet
 45,U15,1,PESD2CAN,Package_TO_SOT_SMD:SOT-23-3,PESD2CAN,Nexperia,C75176,TBD-confirm,,2026-05-26,,yes,LCSC from design footprint field (verified); CAN ESD
 46,Q5,1,AO3400A,Package_TO_SOT_SMD:SOT-23,AO3400A,Alpha & Omega,TBD,TBD-confirm,,2026-05-26,,yes,"SAI-SOURCE: common N-ch FET, no LCSC in design"
 47,L1,1,2.2uH XAL4020,Inductor_SMD:L_Coilcraft_XAL4020,2.2uH XAL4020,Coilcraft,TBD,TBD-confirm,,2026-05-26,,yes,SAI-SOURCE: buck inductor (Option B)
-48,C96,1,10nF / 0402,Capacitor_SMD:C_0402_1005Metric,10nF / 0402,,TBD,TBD-confirm,,2026-05-26,,yes,SAI-SOURCE: LSM6DSV16X decap (generic 0402)
+48,C96,1,100nF / 0402,Capacitor_SMD:C_0402_1005Metric,100nF / 0402,,TBD,TBD-confirm,,2026-05-29,,no,Swapped 10nF→100nF per LSM6DSV16X_DECAP_CLOSURE.md Path A (ST family pattern); shares 100nF 0402 LCSC with C5/C17/C51/etc.
 49,R45,1,120R / 0603,Resistor_SMD:R_0603_1608Metric,120R / 0603,,TBD,TBD-confirm,,2026-05-26,,yes,SAI-SOURCE: CAN termination (verify 1%)
 50,R46,1,0R / 0603,Resistor_SMD:R_0603_1608Metric,0R / 0603,,TBD,TBD-confirm,,2026-05-26,,yes,SAI-SOURCE: distinct from 0R-0402 line
 51,R47,1,562k / 0402,Resistor_SMD:R_0402_1005Metric,562k / 0402,,TBD,TBD-confirm,,2026-05-26,,yes,SAI-SOURCE: buck FB divider 1% (Option B)

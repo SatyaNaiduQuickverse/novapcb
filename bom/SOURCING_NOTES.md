@@ -36,10 +36,14 @@ items, 0 board parts missing, 0 dead rows. The IC/diode parts added this session
 (ESD7L5, AO4262E, LPS22HB, BMI088, LSM6DSV16X, LM74700-Q1, LP5907, TJA1051,
 PESD2CAN) carry **LCSC part numbers pulled from the KiCad design footprints**
 (verified source). The following still need Sai sourcing (marked `TBD` +
-`SAI-SOURCE` in the CSV): **AO3400A (Q5), XAL4020 (L1), 10nF (C96), 120R/0603
+`SAI-SOURCE` in the CSV): **AO3400A (Q5), XAL4020 (L1), 120R/0603
 (R45), 0R/0603 (R46), 562k/180k buck-divider (R47/R48), CAN JST-GH SM04B (J20),
 and the R61 placeholder (value unresolved — resolve or mark DNP).** Their
 JLCPCB Basic/Extended classification is `TBD-confirm` at order time.
+
+C96 was previously SAI-SOURCE (10nF) — closed 2026-05-29 by swap to 100nF (Path A
+per `docs/LSM6DSV16X_DECAP_CLOSURE.md`); 100nF 0402 already in BOM for C5/C17/
+C51/etc., zero new LCSC needed.
 
 ---
 
