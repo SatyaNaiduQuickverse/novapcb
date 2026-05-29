@@ -448,8 +448,11 @@ c_lsm_vddio.ref = "C95"
 P3V3_IMU += c_lsm_vddio[1]
 GND      += c_lsm_vddio[2]
 
-c_lsm_hf = Part("Device", "C", value="10nF", footprint=FP_C_0402)
+c_lsm_hf = Part("Device", "C", value="100nF", footprint=FP_C_0402)
 c_lsm_hf.ref = "C96"
+# Path A per docs/LSM6DSV16X_DECAP_CLOSURE.md: 100nF VDDIO HF decap (was
+# 10nF; swapped 2026-05-29 per ST family pattern compliance — same 0402
+# footprint, 100nF already in BOM for other locations, zero LCSC delta).
 P3V3_IMU += c_lsm_hf[1]
 GND      += c_lsm_hf[2]
 

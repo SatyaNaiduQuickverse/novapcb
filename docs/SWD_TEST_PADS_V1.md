@@ -83,3 +83,32 @@ Like the Telem defer, this changes the **physical board feature set** and the Ph
 **No path:** master keeps J9 placed + dispatches the multi-wall F↔B weave routing (hardest #56 class per `docs/CRSF_TELEM_SWD_ROUTING_ANALYSIS.md` §3). Burns ~1 PR per net (SWDIO + SWCLK = 2 PRs).
 
 **Master recommendation: defer to test-pads + DFU.** STM32H7 DFU is rock-solid and standard ArduPilot bring-up uses it for non-J9 boards anyway. The J9 was a 6X form-factor heirloom; the actual electrical SWD interface still works via test-pads. Lower fab risk (fewer connectors to misalign), lower BOM, unblocks #56.
+
+---
+
+## §A. Implementation note — 2026-05-29
+
+**Status:** Design intent documented; physical implementation **deferred to GUI follow-up PR**.
+
+**Why:** Worker attempted J9 → test-pads + BOOT0 jumper surgery via Python `pcbnew` script (4 iterations). Each iteration produced 50–90 DRC fouls — TPs at the original J9 area (Y≈7) collided with the +5V plane on In4.Cu; TPs near U1 collided with U1's body courtyard + adjacent F.Cu pads; long BOOT0 routes crossed existing BATT_VOLTAGE_SENS + SDMMC1_CMD nets in the N-of-MCU area.
+
+**Brutally-honest root cause:** Python `pcbnew` scripted placement of test-pad footprints + interactive routing is not the right tool for visual conflict resolution against an already-dense board. The KiCad GUI's interactive router (with shove + walk-around heuristics + visual confirmation) is the natural tool for this surgery.
+
+**Split decision (master 2026-05-29):**
+- **This PR (#129):** C96 value swap 10nF → 100nF (Path A ST conformance) + this implementation note. Board surgery NOT attempted.
+- **Follow-up PR (task #68 GUI work):** worker on novatics64 opens `novapcb-stepwise.kicad_pcb` in KiCad 9.0.2 GUI, removes J9 footprint, places 5 labeled `TestPoint_Pad_D1.5mm` footprints near U1 SW-corner pin row, places `TestPoint_2Pads_Pitch2.54mm_Drill0.8mm` for BOOT0 jumper near U1.94, uses interactive router for short B.Cu traces (TP_SWDIO→U1.72, TP_SWCLK→U1.76, TP_NRST→U1.14, BOOT0 pad 2→U1.94), plane vias for TP_3V3 / TP_GND, DRC gate-clean.
+
+**Designed placement targets (for the GUI PR):**
+
+| Test pad | Net | Target XY | U1 pin |
+|---|---|---|---|
+| TP_SWDIO | SWDIO | ~(54, 30.5) B.Cu | U1.72 @(52.67, 30.50) |
+| TP_SWCLK | SWCLK | ~(52, 26.0) B.Cu | U1.76 @(51.00, 27.32) |
+| TP_NRST | NRST | ~(36, 36.5) B.Cu | U1.14 @(37.33, 35.50) |
+| TP_3V3 | +3V3 | ~(55, 31.0) B.Cu | plane via |
+| TP_GND | GND | ~(55, 33.0) B.Cu | plane via |
+| BOOT0_DFU jumper | BOOT0 / GND | ~(41, 25.5) B.Cu | U1.94 @(42, 27.32) |
+
+The GUI implementation may shift these XYs to clear local obstacles (U4 baro at (43, 47), +3V3 vias around (50.5, 44.95), MOT2 verticals, etc.) — visual placement is empowered to find the cleanest clear corners that meet the "near U1 SW corner" intent.
+
+**v1 firmware impact:** NONE. `hwdef.dat` is unchanged. PA13/PA14 stay as SWD pins. DFU first-flash via USB-CDC + BOOT0-pull-high (via the jumper bridge or a temporary wire) — works whether or not the SWD test-pads are routed.
