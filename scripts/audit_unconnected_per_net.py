@@ -29,11 +29,19 @@ PCB = ROOT / "hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_pcb"
 # Nets explicitly unrouted by design (tracked deferrals — not defects).
 # EFUSE_FLT/PGOOD: eFuse protection is autonomous; the status flags are MCU
 # firmware-awareness only (no v1 fault-handling pipeline) — v2 defer per
-# docs/EFUSE_STATUS_V1_DEFER.md, same pattern as Telem (USART1) / SWD.
+# docs/EFUSE_STATUS_V1_DEFER.md, same pattern as SWD test-pads.
 # IMU3_INT1: structurally walled in v1 (5/5 route attempts blocked — 3 manual
 # + 2 Freerouting at C2 and C1 placements + original); v2-defer per
 # docs/IMU3_INT1_V2_DEFER.md. ArduPilot polled-mode IMU3 over SPI3 retains
 # IMU3 functionality in v1; IMU1+IMU2 INT-driven preserve high-rate sampling.
+# USART1_TX/RX: v2-defer REINSTATED 2026-05-29 — Sai's 'should do j3' override
+# was empirically rejected by 4-attempt structural audit (PA9/PA10 manual + FR;
+# PC6/PC7 manual; PE7/PE8 manual; UART7 alternate). NE corridor walled by
+# SDMMC1 + USB-C + +5V plane + GND stitching; SE corridor walled by MOT3-6 +
+# I2C2 + SPI* + BATT2. Direction-independent saturation = original v2-defer
+# decision was correct. v1: MAVLink via USB-CDC (canonical per CLAUDE.md §2.1);
+# J3 connector remains placed (BOM unchanged). See docs/TELEM_J3_STRUCTURAL_DIAGNOSIS.md
+# and docs/TELEM_V1_DEFER.md (status reinstated).
 INTENDED_DEFERRED = {"MOT7", "MOT8", "USART1_TX", "USART1_RX",
                      "SWDIO", "SWCLK", "SWO", "NRST",
                      "EFUSE_FLT", "EFUSE_PGOOD",

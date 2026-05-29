@@ -3,7 +3,24 @@
 > Updated continuously by master Claude during autonomous-loop work.
 > Most recent merged PR is at the top of the log.
 
-**Current branch:** `sch/option-b-buck` &middot; **Head:** `b20e6a4` (HSE Pierce analytical landed; U9 re-place to center dispatched)
+**Current branch:** `sch/option-b-buck` &middot; **Head:** `6fd1d13` (PR #129 C96 swap + SWD test-pads GUI follow-up; PR #128 U9 rollback + IMU3_INT1 v2-defer MERGED)
+
+## 2026-05-29 — Telem J3 v2-defer (Sai override empirically refuted)
+
+Sai 2026-05-28 issued `should do j3` directive overriding the original `docs/TELEM_V1_DEFER.md`. Master dispatched task #67; worker executed 4 attempts:
+
+- PA9/PA10 manual F.Cu Y36/37 lanes: **22 fouls** (SDMMC1+USB+GND+5V NE corridor)
+- PA9/PA10 scoped FR (2 nets): **30-min wall cap, no SES** (CPU pegged)
+- PC6/PC7 manual F.Cu Y33.5/35.5: **25 fouls** (same NE corridor)
+- PE7/PE8 manual F.Cu Y43.5/44: **42 fouls** (MOT3-6+I2C2+SPI*+BATT2 SE corridor)
+
+Direction-independent structural wall: both NE (SDMMC1 diagonals from PC8/PC9 + USB-C cluster + +5V plane) and SE (MOT3-6 fan-out + I2C2 transit + SPI bus density) saturated regardless of MCU pin choice.
+
+Master executed **(γ) revert to v2-defer** per Sai's `you take decisions` delegation:
+- `USART1_TX` + `USART1_RX` added back to `INTENDED_DEFERRED` net set
+- J3 connector footprint stays placed (BOM unchanged, mechanical unchanged)
+- v1 MAVLink via USB-CDC (canonical per CLAUDE.md §2.1)
+- See `docs/TELEM_J3_STRUCTURAL_DIAGNOSIS.md` for full audit
 
 ## 2026-05-28 — U9 LSM6DSV16X re-place to under-MCU center (IMU-at-center quality decision)
 
