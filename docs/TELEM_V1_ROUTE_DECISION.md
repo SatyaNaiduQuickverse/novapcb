@@ -70,3 +70,19 @@ Step 1 (try current pins): ~30-60 min worker survey + route attempt. If post-Pha
 Step 2 (re-pin if blocked): ~1-2 hr (master research + worker execute, same pattern as PR #120).
 
 Combined budget: ~1-3 hr to close Telem routing.
+
+---
+
+## REVERSED 2026-05-29
+
+Worker executed the route-in-v1 path per this document; **4 attempts walled by
+structural corridor density** (PA9/PA10 manual + FR, PC6/PC7 manual,
+PE7/PE8 manual). Master executed (γ) revert to v2-defer per Sai's `you take
+decisions` delegation.
+
+See `docs/TELEM_J3_STRUCTURAL_DIAGNOSIS.md` for the empirical 4-attempt audit
++ root cause + v2 prevention plan, and `docs/TELEM_V1_DEFER.md` (status
+reinstated) for the lock-in.
+
+This document is preserved as historical record of Sai's `should do j3` directive
+and the audit that rejected it.

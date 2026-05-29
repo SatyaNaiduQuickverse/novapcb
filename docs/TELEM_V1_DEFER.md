@@ -69,3 +69,24 @@ This deferral changes the **physical board feature set**, which per `feedback-ma
 **No path:** master keeps J3 placed + dispatches the multi-wall F↔B weave routing (cite `docs/CRSF_TELEM_SWD_ROUTING_ANALYSIS.md` §3 — "surgical" class). Adds 1-2 PRs to the freeze stack. Acceptable, just costlier.
 
 **Master recommendation: defer to v2.** USB-CDC is the canonical Nova-stack telem path; J3 was always a "spare" pattern inherited from the 6X form factor, not a functional requirement.
+
+---
+
+## STATUS REINSTATED 2026-05-29
+
+Sai's `should do j3` override directive (2026-05-28) was empirically rejected by
+a 4-attempt structural audit. Pin variations (PA9/PA10, PC6/PC7, PE7/PE8) +
+routing approach variations (manual F.Cu lanes Y36/37/Y33.5/35.5/Y43.5/44 +
+scoped Freerouting) all walled by direction-independent corridor density.
+
+Master executed (γ) per Sai's `you take decisions` delegation:
+- `scripts/audit_unconnected_per_net.py` `INTENDED_DEFERRED` extended to include
+  `USART1_TX` + `USART1_RX`
+- J3 connector footprint stays placed (BOM + mechanical unchanged)
+- v1 MAVLink via USB-CDC (canonical per CLAUDE.md §2.1)
+
+**See `docs/TELEM_J3_STRUCTURAL_DIAGNOSIS.md` for full 4-attempt audit + corridor
+density tables + v2 prevention plan.**
+
+This defer is now **locked**; Sai's override is empirically refuted by the
+audit, not by argument.
