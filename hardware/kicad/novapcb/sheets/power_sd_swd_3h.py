@@ -343,36 +343,39 @@ GND  += c_sd_dec[2]
 
 
 # =====================================================================
-# Block 3: SWD debug header (ARM Cortex Debug 10-pin 1.27mm)
+# Block 3: SWD debug — v1 J9 connector REMOVED; replaced by test-pads + BOOT0 jumper
 # =====================================================================
-
-# MCU side (hwdef.dat:32-33)
+#
+# v1: J9 SWD connector physically REMOVED 2026-05-29 (PR hw/swd-j9-defer-to-sai-gui
+# + Sai pre-freeze GUI follow-up). Replaced by 5 labeled exposed-copper test-pads
+# near U1 SW corner (TP_SWDIO / TP_SWCLK / TP_NRST / TP_3V3 / TP_GND) + BOOT0
+# 2-pad jumper for DFU first-flash. Rationale:
+#   - DFU first-flash uses USB-CDC + STM32 ROM bootloader (jumper BOOT0 to +3V3)
+#   - SWD debugging post-DFU uses probes on the test-pads (no connector needed)
+# See:
+#   - docs/SWD_TEST_PADS_V1.md §A (design intent + placement targets)
+#   - docs/DFU_BOOTLOAD_PROCEDURE.md (first-flash procedure)
+#
+# Physical board surgery (J9 footprint removal + test-pad placement + BOOT0
+# jumper + interactive routing) is in Sai's pre-freeze KiCad GUI session
+# alongside GUI DRC verify + freeze trigger. CLI agent (this script) cannot
+# do interactive GUI placement; PR #129 §A documented an earlier Python
+# pcbnew script approach that produced 50-90 fouls.
+#
+# MCU side still wired: SWDIO/SWCLK to PA13/PA14 via hwdef.dat (unchanged).
 SWDIO = n("SWDIO"); SWDIO += mcu["PA13"]
 SWCLK = n("SWCLK"); SWCLK += mcu["PA14"]
 
-swd = Part(
-    "Connector", "Conn_ARM_JTAG_SWD_10",
-    footprint="Connector_PinHeader_1.27mm:PinHeader_2x05_P1.27mm_Vertical_SMD",
-    value="SWD_10P",
-)
-swd.ref = "J9"   # J9 reserved per Phase 2.5 sketch (SWD)
-
-# Pin map per the ARM Cortex Debug standard (KiCad symbol pin labels
-# match the standard verbatim).
-P3V3  += swd[1]   # VTref (target supply voltage reference)
-SWDIO += swd[2]   # SWDIO/TMS
-GND   += swd[3]   # GND
-SWCLK += swd[4]   # SWCLK/TCK
-GND   += swd[5]   # GND
-# pin 6 SWO/TDO — leave NC (SWD-only, no SWO route on novapcb v1)
-# pins 7 (KEY) + 8 (NC/TDI): unused — tied to GND (DRU cleanup task #30).
-# Standard practice for unused debug-header pins (no floating inputs, cleaner
-# EMC); also removes the false-positive "shorting" DRC vs the adjacent GND
-# stitching vias on B.Cu (the pads were <no net>).
-GND   += swd[7]   # KEY — tied GND
-GND   += swd[8]   # NC/TDI — tied GND
-GND   += swd[9]   # GNDDetect (tied to GND, used by debuggers to detect ground)
-NRST  += swd[10]  # ~RESET
+# v2 reference (kept commented for future board respin if a J9 connector is desired again):
+#
+# swd = Part(
+#     "Connector", "Conn_ARM_JTAG_SWD_10",
+#     footprint="Connector_PinHeader_1.27mm:PinHeader_2x05_P1.27mm_Vertical_SMD",
+#     value="SWD_10P",
+# )
+# swd.ref = "J9"
+# P3V3  += swd[1]; SWDIO += swd[2]; GND   += swd[3]; SWCLK += swd[4]; GND   += swd[5]
+# GND   += swd[7]; GND   += swd[8]; GND   += swd[9]; NRST  += swd[10]
 
 
 # =====================================================================

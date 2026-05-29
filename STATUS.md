@@ -73,7 +73,7 @@ Both were INVALIDATED by Rule 23 catch (assumed MCU runs); now electrically vali
 1. IMU3_INT1 hand-route (option a 10-15 seg weave, or b passive re-place to simplify; plan + FR harness in place)
 2. D5 +3V3_IMU 5 gaps (plan doc easiest-first)
 
-**Sai-gates:** Telem v2-defer ratify, SWD test-pads ratify, C96 10nF→100nF, GUI DRC, BOM LCSC at JLC portal, Phase 7a freeze trigger, Phase 7b fab order.
+**Sai-gates (FINAL, LOGICAL FREEZE-READY 2026-05-29):** Telem v2-defer ratify ✓ PR #130, SWD test-pads ratify ✓ PR #132 §B, C96 10nF→100nF ✓ PR #129, IMU3_INT1 v2-defer ✓ PR #128, netlist regen + BOM final ✓ PR #131. **Remaining Sai-bits:** GUI DRC final, **SWD physical surgery (J9 footprint remove + 5 test-pads + BOOT0 jumper + interactive routing — pair with GUI DRC session per docs/SWD_TEST_PADS_V1.md §B)**, BOM LCSC sourcing (8 TBD at JLCPCB portal), **CRITICAL: tick "Via-in-pad filled+capped" for 9 VIP pads on JLCPCB SMT form**, Phase 7a freeze trigger, Phase 7b fab order.
 
 
 **Board:** 105×85 mm, 6-layer, STM32H743VIT6, Pixhawk 6X functional drop-in

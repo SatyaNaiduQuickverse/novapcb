@@ -112,3 +112,67 @@ Like the Telem defer, this changes the **physical board feature set** and the Ph
 The GUI implementation may shift these XYs to clear local obstacles (U4 baro at (43, 47), +3V3 vias around (50.5, 44.95), MOT2 verticals, etc.) — visual placement is empowered to find the cleanest clear corners that meet the "near U1 SW corner" intent.
 
 **v1 firmware impact:** NONE. `hwdef.dat` is unchanged. PA13/PA14 stay as SWD pins. DFU first-flash via USB-CDC + BOOT0-pull-high (via the jumper bridge or a temporary wire) — works whether or not the SWD test-pads are routed.
+
+---
+
+## §B. Implementation status update — 2026-05-29 (CLI-agent handoff to Sai GUI)
+
+**Status:** SKiDL + BOM + docs delivered (this PR); physical board surgery
+queued for Sai's pre-freeze KiCad GUI session.
+
+**Why the handoff:**
+
+CLI agent environment check (2026-05-29):
+- `DISPLAY: NOT SET`, `WAYLAND_DISPLAY: NOT SET` — no X11 session
+- KiCad 9.0.2 binaries installed (`/usr/bin/pcbnew`, `/usr/bin/kicad`) but
+  require display for interactive editing
+- Python `pcbnew` headless API works for bulk programmatic edits (delete-
+  by-net-filter, plane stitching) but proved at 50–90 fouls per iteration
+  for visual-placement-with-routing (see §A above)
+
+Master (B)-scope decision: split tasks by tool. CLI delivers everything
+text/logic/headless; GUI delivers visual placement + interactive routing
+in Sai's pre-freeze KiCad session (which Sai opens anyway for final DRC +
+freeze trigger).
+
+**Delivered in this PR (CLI):**
+
+- SKiDL `hardware/kicad/novapcb/sheets/power_sd_swd_3h.py`: J9 connector
+  block commented out with v2 reference preserved; SWDIO/SWCLK still wired
+  to PA13/PA14 via hwdef.dat
+- BOM `bom/novapcb-bom.csv`: J9 row removed (54 → 53 line items after the
+  PR #131 C96 closure; now 53 → 52)
+- `docs/DFU_BOOTLOAD_PROCEDURE.md` (new): exact `dfu-util` + `uploader.py`
+  + BOOT0 jumper procedure for first-flash + subsequent updates
+- This `§B` update
+
+**Pending in Sai's KiCad GUI session (board surgery):**
+
+1. **Remove J9 footprint** (Edit → Delete on J9 in pcbnew)
+2. **Place 5 labeled exposed-copper test-pads** near U1 SW corner per the
+   placement table in §A
+3. **Place BOOT0 jumper** (`TestPoint_2Pads_Pitch2.54mm_Drill0.8mm` or
+   equivalent) near U1.94
+4. **Route the test-pad nets** using interactive router (shove + walk-
+   around — exactly what GUIs are built for):
+   - TP_SWDIO → U1.72 SWDIO (~1.3 mm B.Cu)
+   - TP_SWCLK → U1.76 SWCLK (~1.6 mm B.Cu)
+   - TP_NRST → U1.14 NRST (~1.7 mm B.Cu)
+   - TP_3V3 → +3V3 plane (single via)
+   - TP_GND → GND plane (single via)
+   - BOOT0 jumper pad 2 → U1.94 BOOT0 (~2 mm B.Cu)
+5. **DRC + audit** in GUI (`Inspect → Design Rules Checker`); should pass
+   ≤ baseline + 0 new
+6. **Save + commit + push** (the `hw/swd-physical-gui-followup` or similar
+   branch); master pre-merges
+
+**Sai-bits queue (updated):**
+
+| # | Task | Tool | Notes |
+|---|---|---|---|
+| 1 | GUI DRC final verify on freeze head | Sai KiCad GUI | Independent of SWD surgery; can run first |
+| 2 | **SWD physical surgery** (this §B) | Sai KiCad GUI | Pair with #1 — same session |
+| 3 | BOM LCSC sourcing at JLCPCB portal | Sai web | 8 SAI-SOURCE TBD: AO3400A Q5, XAL4020 L1, 120R R45, 0R R46, 562k R47, 180k R48, JST-GH SM04B J20, R61 placeholder |
+| 4 | **Tick "Via-in-pad filled+capped" (IPC-4761 Type VII)** | Sai JLCPCB SMT form | 9 VIP pads — CRITICAL, board won't power without it; see `docs/DECISIONS.md §13.1b` |
+| 5 | Phase 7a freeze trigger | Sai | Tag `v1-freeze`, lock fab sources |
+| 6 | Phase 7b fab order submission | Sai | JLCPCB SMT both-sides + filled+capped vias + Extended parts confirm |
