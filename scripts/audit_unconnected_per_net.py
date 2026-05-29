@@ -30,9 +30,14 @@ PCB = ROOT / "hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_pcb"
 # EFUSE_FLT/PGOOD: eFuse protection is autonomous; the status flags are MCU
 # firmware-awareness only (no v1 fault-handling pipeline) — v2 defer per
 # docs/EFUSE_STATUS_V1_DEFER.md, same pattern as Telem (USART1) / SWD.
+# IMU3_INT1: structurally walled in v1 (5/5 route attempts blocked — 3 manual
+# + 2 Freerouting at C2 and C1 placements + original); v2-defer per
+# docs/IMU3_INT1_V2_DEFER.md. ArduPilot polled-mode IMU3 over SPI3 retains
+# IMU3 functionality in v1; IMU1+IMU2 INT-driven preserve high-rate sampling.
 INTENDED_DEFERRED = {"MOT7", "MOT8", "USART1_TX", "USART1_RX",
                      "SWDIO", "SWCLK", "SWO", "NRST",
-                     "EFUSE_FLT", "EFUSE_PGOOD"}
+                     "EFUSE_FLT", "EFUSE_PGOOD",
+                     "IMU3_INT1"}
 # Specific PADS deferred to v2 even though the NET is otherwise working.
 # C93.1: 4th-of-5 redundant +3V3_IMU decap on U8 BMI088 (v2-defer per
 # docs/D5_3V3_IMU_DEFERRED_DECAPS.md; rail still has C91+C92+U8.11+U9.5+U9.8

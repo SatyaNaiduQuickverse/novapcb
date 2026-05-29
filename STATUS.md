@@ -34,8 +34,8 @@ Worker on Phase 1 placement survey (2-3 candidate XYs within 10mm of center, B.C
 | D3 eFuse (R4-ILIM-lift + R7/R9 re-place; FLT/PGOOD v2-defer) | #124 | ✅ MERGED | 37 → 27 |
 | **D4 MCU core power** (VCAP1 via-in-pad U1.48 + VCAP2 + BOOT0 + VBAT + VDDA + VREF; C19-vertical + C17 rotate + C13 nudge re-spread) | #125 | ✅ MERGED | 27 → ~10 |
 | D6 USBC_CC1/2 + BATT V/I sense + HEATER_DRAIN + I2C2_SCL/SDA (via-in-pad U4.3/U4.4 baro) | #125 (bundled) | ✅ MERGED | ~10 → 6 |
-| **D6 remainder: IMU3_INT1** (35mm cross-island, FR-failed, hand-route planned) | next-session | ⏳ deferred (Rule 17) | 6 → 5 |
-| **D5 +3V3_IMU dense pocket** (5 gaps per plan doc, C93→C92→C91→U9.5→U9.8) | next-session | ⏳ queued (last) | 5 → 0 |
+| D5 +3V3_IMU 4/5 (C92 + U9.5 + U9.8 + C91; C93.1 pad-defer) | #127 | ✅ MERGED | 6 → 2 |
+| **D6 remainder: IMU3_INT1** | rollback PR (#128) | ✅ **v2-deferred 2026-05-29** | 2 → **0** (net-defer per docs/IMU3_INT1_V2_DEFER.md; 5/5 U9 re-place attempts walled per U9_REPLACE_STRUCTURAL_DIAGNOSIS.md §8) |
 
 ## Sim re-runs (post power-tree routing)
 
