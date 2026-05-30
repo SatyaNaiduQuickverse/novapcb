@@ -84,41 +84,85 @@ iteration corruption pattern, recorded as a known trap in this project).
 | `annular_width` | 5 | DRU-baseline (VIP fab-spec) |
 | `courtyards_overlap` | 3 | DRU-baseline (C19/C20, U11/U12, U6 documented) |
 | `silk_edge_clearance` | 2 | ACCEPTED — cosmetic |
-| `hole_to_hole` | 1 | KNOWN — `+5V_BEC_PROT` jumper-via pair @ (32.0,20.5)+(32.4,20.7) — see §6 |
+| `hole_to_hole` | 1 | APPROVED — `+5V_BEC_PROT` C8-jumper via pair (scoped DRU exception + fab note per master 2026-05-30, see §6) |
 | **TOTAL severity-all** | **190** | |
 | severity-error subset | 28 | all DRU-baseline (0 fab-critical) |
 
-## 6. Known: `+5V_BEC_PROT` hole-to-hole at eFuse pocket
+## 6. APPROVED: `+5V_BEC_PROT` C8-jumper hole-to-hole (master decision 2026-05-30)
 
 Two `+5V_BEC_PROT` vias 0.447mm center-to-center (0.147mm hole-edge-spacing,
-below JLC standard 0.4mm) form a deliberate B.Cu→F.Cu→B.Cu jumper to step
-over an obstacle on the B.Cu corridor in the U6 eFuse pocket:
+below KiCad default 0.25mm and IPC-2221 class-B 0.150mm by 3µm; JLC fab
+capability 0.10mm — 47µm margin) form an intentional B.Cu→F.Cu→B.Cu jumper
+through the C8 decoupling cap pad C8.1 (+5V_BEC_PROT at 32.27, 20.30):
 
 ```
-B.Cu in (29.9, 19.7) → via@(32.0, 20.5) → F.Cu jumper (0.27mm) →
-                       via@(32.4, 20.7) → B.Cu out (35.0, 20.7)
+B.Cu in (29.9, 19.7) → via@(32.00, 20.50) → C8.1 pad@(32.27, 20.30) →
+                       via@(32.40, 20.70) → B.Cu out (35.0, 20.7)
 ```
 
-**Why not fixed in this PR:**
-Attempted re-place of via 2 to (32.65, 20.95) (edge-spacing 0.49mm)
-introduced 14 new violations (7 clearance + 7 hole_clearance) cascading
-from the displaced track endpoints colliding with nearby U6 area routing.
-The U6 pocket is at 5 DRU-exception capacity (the audit-warning ceiling
-per master 4-rule cap) — any geometric perturbation cascades.
+**Severity classification (CLI-verified):**
+- `hole_to_hole` is set to `warning` severity in `.kicad_pro` line 77
+  (`"hole_to_hole": "warning"`).
+- The single +5V_BEC_PROT pair appears in the severity-warning subset
+  (162 total warnings: 161 silk cosmetic + this 1).
+- It is **NOT** in the severity-error subset (28 violations, all
+  DRU-baseline fab-spec exceptions) — therefore **NOT** a freeze-gate
+  blocker.
 
-**Disposition options (Sai-/master-bit):**
-1. Add a properly scoped DRU exception
-   `u6-bec-prot-via-jumper-hole-to-hole` matching just these two via
-   positions on `+5V_BEC_PROT` net (documents the eFuse-pocket bypass
-   jumper as intentional).
-2. Re-route B.Cu around the obstacle to eliminate the jumper pattern
-   (Phase 4b-level rework — risk of cascade in already-tight U6 pocket).
-3. Accept as known fab note: ask JLC to honor the 0.147mm hole-spacing
-   as engineering exception (board may go to rework or be flagged).
+**Reposition attempts (both rejected):**
+- 0.79mm shift to (32.65, 20.95): introduced 14 cascade violations
+  (7 clearance + 7 hole_clearance) in tight U6 pocket.
+- 0.30mm shift to (32.4, 21.0): introduced 7 cascade clearance
+  violations (GND zone clearance 0.5mm vs new via edge 0.20mm).
+- The U6 pocket is at 5 DRU-exception capacity — any geometric
+  perturbation cascades. Phase-4b-level routing rework rejected at
+  freeze head per master.
 
-Recommended (worker): option 1. eFuse pocket is at placement capacity
-and adding a single rule exception is cleaner than reopening routing in
-that area at freeze head.
+**Disposition (master 2026-05-30):** scoped DRU rule + fab handoff note.
+
+**DRU rule added** — `efuse-bec-prot-c8-jumper-hole-to-hole`
+(`hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_dru`):
+
+```
+(rule "efuse-bec-prot-c8-jumper-hole-to-hole"
+    (constraint hole_to_hole (min 0.10mm))
+    (severity ignore)
+    (condition "A.NetName == '+5V_BEC_PROT' && B.NetName == '+5V_BEC_PROT'"))
+```
+
+**KiCad 9.0.2 DRU suppression caveat (engineering-honest disclosure):**
+Tested 4 syntax variations on this specific constraint:
+1. `(constraint hole_to_hole (min 0.10mm))` — no suppression (board
+   floor max'd against rule).
+2. `(constraint hole_to_hole (min 0.10mm)) (severity warning)` — severity
+   override worked (violation re-classified) but warning still visible.
+3. `(constraint hole_to_hole) (severity ignore)` — parse-accepted, no
+   suppression.
+4. `(constraint hole_to_hole (min 0mm)) (severity ignore)` — parse-
+   accepted, no suppression.
+
+KiCad 9.0.2 does not appear to honor DRU overrides for the
+`hole_to_hole` constraint in any of the tested forms — the violation
+remains visible in DRC output regardless of rule. The rule is committed
+as the **engineering record of approval**: reviewers investigating the
+visible warning find the rule + this commentary documenting the
+master-approved exception.
+
+Other `+5V_BEC_PROT` via pairs all have ≥1.94mm edge spacing — this
+single C8-jumper pair is the only affected location on the board.
+
+**Fab handoff note (for HANDOFF_TO_SAI.md):**
+Communicate the 0.147mm hole-edge-spacing on `+5V_BEC_PROT` net at the
+U6 fab-process-exception area as an approved engineering exception when
+submitting to JLC. Same JLC capability tier as the existing via-in-pad
+family (no new fab process line item).
+
+**Why this approach:**
+The eFuse pocket is at placement capacity and adding a single scoped
+exception (mirroring the established U6 5-DRU-exception precedent) is
+cleaner than reopening routing in that area at freeze head. The
+documented exception + fab note is the engineering-honest answer when
+the freeze gate is already cleared (severity-error subset unchanged).
 
 ## 7. Other audit findings
 
@@ -132,7 +176,7 @@ GND-GND overlap is electrically fine; documented as accepted).
 Other layout warnings:
 - `QUADRANT-AUTO spread 22` — IMU placement asymmetry (D-island per Phase 4a)
 - `FAB-EXCEPTIONS: U6 region at 5 rules` — exceeds 4-rule cap (master review)
-- `FAB-EXCEPTIONS: other region at 6 rules` — VIP rules (mcu/baro/5V_BEC)
+- `FAB-EXCEPTIONS: other region at 7 rules` — VIP rules (mcu/baro/5V_BEC)
 - `FANOUT-CORRIDOR: 3 SPI3 pins at U1.89/90/91 blocked by R13` — known
   termination, R13 is the SPI3 series-R termination so corridor block is
   the route, not a fault

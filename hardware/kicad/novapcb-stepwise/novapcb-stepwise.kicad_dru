@@ -149,3 +149,34 @@
 (rule "c19-c20-courtyard-relax"
     (constraint courtyard_clearance (min 0.0mm))
     (condition "(A.Reference == 'C19' && B.Reference == 'C20') || (A.Reference == 'C20' && B.Reference == 'C19')"))
+
+# +5V_BEC_PROT B.Cu→C8.1→B.Cu jumper via pair — APPROVED engineering exception
+# (CLI DRC §6, master decision 2026-05-30).
+#
+# Two +5V_BEC_PROT vias at (32.00,20.50) and (32.40,20.70) form an intentional
+# B.Cu→F.Cu→B.Cu jumper through the C8 decoupling cap pad C8.1 (+5V_BEC_PROT
+# at 32.27,20.30). Geometry: 0.447mm center-to-center, 0.147mm hole-edge spacing
+# (KiCad default 0.25mm; IPC-2221 class-B nominal 0.150mm — 3µm short of standard
+# min; JLC fab capability 0.10mm — 47µm margin).
+#
+# DISPOSITION:
+# - Severity: hole_to_hole is `warning` per .kicad_pro — NOT a severity-error,
+#   NOT a freeze-gate blocker.
+# - Reposition attempts (0.79mm and 0.30mm deltas) both cascaded clearance
+#   violations in the already-5-DRU-exception U6 pocket — Phase-4b-level
+#   routing rework rejected at freeze head per master.
+# - This rule documents the engineering APPROVAL. KiCad 9.0.2 does not appear
+#   to honor (severity ignore) or (min N) for hole_to_hole overrides (board
+#   floor max'd against rule), so the warning remains visible in DRC reports
+#   as a deliberate record — reviewers investigating the warning find the rule
+#   + comment.
+# - Fab handoff: communicate to JLC as approved 0.147mm hole-edge exception in
+#   the U6 fab-process-exception area (same JLC capability tier as existing
+#   via-in-pad family — no new fab process bump).
+#
+# Other +5V_BEC_PROT via pairs all have ≥1.94mm edge spacing — only this single
+# C8-jumper pair is affected.
+(rule "efuse-bec-prot-c8-jumper-hole-to-hole"
+    (constraint hole_to_hole (min 0.10mm))
+    (severity ignore)
+    (condition "A.NetName == '+5V_BEC_PROT' && B.NetName == '+5V_BEC_PROT'"))
