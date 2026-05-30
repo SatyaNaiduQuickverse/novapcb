@@ -229,9 +229,12 @@ PD11  PINIO2 OUTPUT GPIO(82) LOW
 # here as part of the pin-remap PR to bring hwdef.dat into sync with
 # the schematic source of truth. Each entry cites the SKiDL line.
 
-# HEATER_PWM — IMU heater MOSFET gate (power_3b.py:643). PA15 = TIM2_CH1.
-# Note: TIM2 is shared with no other PWM channel post-MOT3-6 remap (was
-# blocked when MOT3=PA0 used TIM2_CH1; now free).
+# HEATER_PWM — IMU heater MOSFET gate (power_3b.py:643). Plain GPIO output;
+# heater is mW-scale + slow-thermostatic, software-toggle from a timer ISR is
+# ample. Hardware-PWM via TIM2_CH1 would also work post CRSF re-pin (PA0
+# moved to UART4_TX in PR #120, freeing TIM2_CH1) but software-PWM is the
+# simpler engineering call. See OPEN_QUESTIONS.md hwdef-heater-pwm-pa15
+# (RESOLVED 2026-05-30 Option A).
 PA15 HEATER_PWM OUTPUT GPIO(33) LOW
 
 # IMU2 BMI088 (imu_3c.py:274-275, 286-287). Accel + Gyro share SPI2 with
@@ -300,8 +303,10 @@ BARO DPS310 I2C:0:0x76
 
 define HAL_OS_FATFS_IO 1
 
-# (OSD removed — MatekH743 inheritance; no MAX7456 on novapcb v1)
-ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+# OSD removed — MatekH743 inheritance; no MAX7456 on novapcb v1 (Nova drone
+# video is fully digital via Pi-Camera + Hailo per CLAUDE.md §2.1).
+# ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin stripped 2026-05-30
+# (saves ~10-30 KB flash). See OPEN_QUESTIONS.md phase2exit-1 RESOLVED v2-defer.
 
 # build ABIN for flash-from-bootloader support:
 env BUILD_ABIN True
