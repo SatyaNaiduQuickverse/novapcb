@@ -696,11 +696,22 @@ def check_fanout_exit_corridor(items):
             warns.append(f"  {ic}.{pin} ({net}) blocked by {blker}.{blker_pin}")
 
 
-# ----- check 9.5: fab-exception count (master 2026-05-23 hard bar) -----
-# Reads novapcb-stepwise.kicad_dru and counts non-standard rules
-# (clearance relax, via-in-pad, 4mil, extended-courtyard). >4 in any
-# single region (U6, U11/U12, etc.) triggers WARN — implicit
-# accretion cap.
+# ----- check 9.5: fab-exception count + classification (T9 refinement 2026-05-30) -----
+# Original master 2026-05-23 rule: >4 rules in any region → WARN as scope-creep.
+# T9 (2026-05-30) discovered the cap mis-fires on FAB-TIER rules — exceptions
+# that reflect a JLC fab-service-tier choice (IPC-4761 Type VII filled+capped
+# VIP, 4mil trace process, 0.25mm drill / 0.45mm OD vias). These are inherent
+# to the chosen IC packages (WQFN-24 0.5mm pitch eFuse, SOT-23-6 ORFETs,
+# LQFP-100 + LGA fine-pitch sensors); no amount of re-placement reduces them.
+# Re-place attempts on U6 (T9 step 2 + 3) cascaded clearance + shorting
+# violations — see docs/U6_DRU_EXCEPTION_RATIONALE.md.
+#
+# Refined classification:
+#  - FAB-TIER:    DRU rule reflects a fab-capability tier choice (VIP filled+
+#                 capped, 4mil trace, sub-0.50mm via). Cap does NOT apply —
+#                 the fab process tier is fixed at order time.
+#  - SCOPE-CREEP: DRU rule relaxes spec for a specific routing-density issue.
+#                 Cap APPLIES — accumulating these = re-place required.
 def check_fab_exceptions():
     dru_path = sys.argv[1].replace(".kicad_pcb", ".kicad_dru")
     try:
@@ -710,27 +721,39 @@ def check_fab_exceptions():
         return
     import re
     rule_names = re.findall(r'\(rule\s+"([^"]+)"', txt)
-    # Categorize: standard (USB diff-pair) vs fab-exception
     standard_keywords = ("usb-diff-pair", "usbc-pre-esd", "usbc-bridge")
     exceptions = [n for n in rule_names
                   if not any(s in n for s in standard_keywords)]
+    # FAB-TIER classification: a rule belongs to a fab-capability tier if its
+    # name matches one of these patterns (codified in U6_DRU_EXCEPTION_RATIONALE.md).
+    fab_tier_keywords = (
+        "via-in-pad-orfet",          # IPC-4761 Type VII VIP (ORFET output)
+        "via-in-pad-5vbec",          # IPC-4761 Type VII VIP (ORFET output)
+        "vip-mcu-baro",              # IPC-4761 Type VII VIP (MCU VCAP, baro)
+        "u6-courtyard-4mil",         # 4mil track + clearance (WQFN-24 0.5mm-pitch escape)
+        "u6-extended-courtyard-via", # 0.45mm OD / 0.25mm drill (U6 exit via fab tier)
+    )
     info.append(f"FAB-EXCEPTIONS: {len(rule_names)} total DRU rules; "
                 f"{len(exceptions)} fab-spec exceptions; "
                 f"{len(rule_names)-len(exceptions)} standard")
-    # Per-region count: bucket by name prefix
+
+    # Per-region count + per-region scope-creep filter
     by_region = {}
     for name in exceptions:
-        # Region = first hyphenated token chunk before -fanout/-courtyard/-orfet etc
         if name.startswith("u11-u12"): region = "U11/U12"
         elif name.startswith("u6-"): region = "U6"
-        elif "orfet" in name: region = "U11/U12"  # orfet maps to U11/U12
+        elif "orfet" in name: region = "U11/U12"
         else: region = "other"
-        by_region.setdefault(region, []).append(name)
+        is_fab_tier = any(k in name for k in fab_tier_keywords)
+        by_region.setdefault(region, []).append((name, is_fab_tier))
     for region, rules in sorted(by_region.items()):
-        if len(rules) > 4:
-            warns.append(f"FAB-EXCEPTIONS: {region} region at {len(rules)} rules — "
-                         f"exceeds master 4-rule cap. Consider placement-rework.")
-        info.append(f"  {region}: {len(rules)} ({', '.join(rules)})")
+        n_fab = sum(1 for _, t in rules if t)
+        n_scope = sum(1 for _, t in rules if not t)
+        if n_scope > 4:
+            warns.append(f"FAB-EXCEPTIONS: {region} region at {n_scope} SCOPE-CREEP rules "
+                         f"— exceeds master 4-rule cap. Re-place required.")
+        info.append(f"  {region}: {len(rules)} ({n_fab} fab-tier + {n_scope} scope-creep): "
+                    f"{', '.join(n for n,_ in rules)}")
 
 
 # ----- check 9: zone-fill audit (master 2026-05-23 Rule 9) -----
