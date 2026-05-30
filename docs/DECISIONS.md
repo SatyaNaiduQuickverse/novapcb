@@ -475,6 +475,35 @@ A↔B-2 + A↔B-3 routing required two scope-bounded fab-process deviations to f
 
 **Order-time action** (Sai): when generating gerbers + uploading to JLC, select "Via in Pad" = yes. JLC will recognize the 4 sub-spec vias and apply the process board-wide where indicated. If JLC asks "any vias smaller than 0.30mm drill?" — answer YES, point at the DRU rule + 4 locations.
 
+### 13.1b MCU core + baro + IMU3 fine-pitch via-in-pad (Sai 2026-05-28; U4 + IMU3 ext master-approved)
+
+**Scope**: U1.48 (VCAP1), U4.3 (I2C2_SDA), U4.4 (I2C2_SCL), U9.5 (+3V3_IMU IMU3 VDD), U9.8 (+3V3_IMU IMU3 VDDIO) pad-center vias. **5 vias** (combined with §13.1's 4 ORING/+5V_BEC vias = **9 total VIP pads on the board**).
+
+**Why**:
+- **U1.48 VCAP1** — STM32H743 LQFP-100 0.5mm pitch. Core-LDO pin walled on all
+  sides: I2C2_SDA (F.Cu @Y44.0) 0.4mm S of the pad row + the IMU3 SPI3/IMU2 bus
+  (B.Cu @X48.49/48.89) to the W. No normal escape via fits. VIP drops straight to
+  B.Cu, routed E-of-SPI3 to C17 (rotated 180°) — no IMU3-bus crossing.
+- **U4.3 / U4.4 I2C2** — DPS310 baro HLGA-10, BOTTOM-mounted, 0.65mm-pitch B.Cu
+  pads boxed by I2C1 (B.Cu @X44.5/44.9) + C52. Two 0.5mm vias need 0.7mm spacing
+  — won't fit at 0.65 pitch; I2C1 walls the E. VIP straight into each B.Cu pad.
+
+Via-near-pad verified infeasible for all 3 (Rule-9 artifact check). Geometry:
+0.30mm OD / 0.15mm drill / 0.075mm annular = JLC filled-via minimums.
+
+**DRU rules**: `vip-mcu-baro-diameter` (min OD 0.30), `vip-mcu-baro-hole`
+(min hole 0.15), `vip-mcu-baro-annular` (min annular 0.075) — condition
+`NetName == VCAP1 | I2C2_SDA | I2C2_SCL`.
+
+**Fab requirement**: same JLC "Via Filled & Capped (Type 7 IPC-4761)" process as
+§13.1 — **no incremental cost** (it is a per-ORDER capability, not per-pad).
+Total via-in-pad pads on the board: 4 (ORING/+5V_BEC family, §13.1) + 3 (MCU/baro)
+= 7. A pre-PR sanity sweep (all fine-pitch ICs U1/U3/U7/U8/U9 + baro) confirmed
+this is the COMPLETE VIP set — no other pad needs it.
+
+**Order-time action** (Sai): same as §13.1 — select "Via in Pad" = yes; answer
+YES to "vias <0.30mm drill" and point at the DRU rules.
+
 ### 13.2 SOT-23-6 fanout clearance relax — U11/U12 courtyard
 
 **Scope**: U11/U12 courtyard only. ALL pad/track/via clearance inside U11 or U12 courtyard is 0.15mm instead of 0.20mm netclass-Default.

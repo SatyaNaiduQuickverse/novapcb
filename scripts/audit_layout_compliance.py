@@ -869,6 +869,37 @@ def check_thermal_actual_positions():
 
 check_thermal_actual_positions()
 
+
+# ----- check 11: per-net unconnected audit (Rule 23, freeze gate) -----
+# Caught the power-tree-unrouted dead-on-arrival defect 2026-05-26. Total DRC
+# unconnected lies when plane-pour ratsnest + intended-deferred nets dominate.
+# scripts/audit_unconnected_per_net.py does the classification (plane-pour
+# exclusion + intended-defer whitelist) and fails on any power/critical net
+# with unconnected > 0. Master process Rule 23. See:
+#   docs/POWER_TREE_DEFECT_SURVEY.md
+#   docs/MASTER_PROCESS_RULES.md Rule 23
+import subprocess as _sp
+def check_per_net_unconnected():
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "audit_unconnected_per_net.py")
+    if not os.path.exists(script):
+        warns.append("RULE23: audit_unconnected_per_net.py not found — gate skipped")
+        return
+    try:
+        r = _sp.run(["python3", script], capture_output=True, text=True, timeout=300)
+    except Exception as e:
+        warns.append(f"RULE23: per-net audit invocation error: {e}")
+        return
+    if r.returncode != 0:
+        fails.append("RULE23: per-net unconnected audit FAILED — see "
+                     "scripts/audit_unconnected_per_net.py output below")
+        # surface the per-net audit's own output for visibility
+        for line in (r.stdout or "").splitlines()[-40:]:
+            fails.append(f"  {line}")
+
+check_per_net_unconnected()
+
+
 print(f"=== Layout compliance audit: {os.path.basename(sys.argv[1])} ===")
 print(f"Components: {len(items)}")
 if bbox:

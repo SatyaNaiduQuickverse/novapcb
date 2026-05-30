@@ -89,3 +89,94 @@
 (rule "u6-extended-courtyard-via-clearance"
     (constraint clearance (min 0.10mm))
     (condition "A.insideCourtyard('U6') && B.insideCourtyard('U6')"))
+
+# DRU cleanup (task #30): +5V_BEC via-in-pad at the U11/U12 ORFET output
+# (vias @ (34.15,5.95) + (73.15,5.95), 0.45 OD / 0.25 drill) — same fab-spec
+# family + same JLC vias-filled-and-capped process as ORING_A/B_GATE above.
+# Net-based (mirrors ORING/EFUSE precedent): this only LOOSENS the +5V_BEC
+# via floor to 0.45mm — standard 0.50mm +5V_BEC stitching vias still pass
+# (0.50 >= 0.45), so it effectively scopes to the two intended orfet-output
+# via-in-pads. (insideCourtyard not usable: these vias sit ~2.3mm E of the
+# SOT-23-6 courtyards.) JLC fab min hole 0.20mm — well within capability.
+(rule "via-in-pad-5vbec-diameter"
+    (constraint via_diameter (min 0.45mm))
+    (condition "A.NetName == '+5V_BEC'"))
+
+(rule "via-in-pad-5vbec-hole"
+    (constraint hole_size (min 0.25mm))
+    (condition "A.NetName == '+5V_BEC'"))
+
+# EFUSE protection-config via HOLE — completes the u6-extended-courtyard-via
+# rule (which set via_diameter 0.45 but not hole_size). EFUSE_ILIM uses a
+# 0.25mm drill via-in-pad like the ORFET/+5V_BEC family. Same scope as the
+# existing u6-extended via_diameter rule (the 4 U6 protection-config exits).
+(rule "u6-extended-courtyard-via-hole"
+    (constraint hole_size (min 0.25mm))
+    (condition "(A.NetName == 'EFUSE_OVP' || A.NetName == 'EFUSE_ILIM' ||
+                 A.NetName == 'EFUSE_DVDT' || A.NetName == 'EFUSE_FLT')"))
+
+# Via-in-pad — MCU core + baro fine-pitch (D4-final close, 2026-05-28).
+# Sai approved VIP for U1.48; master extended to U4.3/U4.4 (same fab capability,
+# same DFM class, no incremental order line item).
+#   U1.48 VCAP1  — STM32H743 LQFP-100 0.5mm pitch; core-LDO pin walled on all
+#                  sides by I2C2_SDA (F) + IMU3 SPI3/IMU2 bus (B). Normal escape
+#                  via cannot fit; VIP drops straight to B.Cu E-of-SPI3 to C17.
+#   U4.3 I2C2_SDA + U4.4 I2C2_SCL — DPS310 baro HLGA-10, BOTTOM-mount, 0.65mm
+#                  pitch B.Cu pads boxed by I2C1 (B @X44.5/44.9) + C52. Two 0.5mm
+#                  vias need 0.7mm spacing — won't fit at 0.65 pitch; VIP straight
+#                  into each B.Cu pad. Via-near-pad verified infeasible (Rule-9).
+# Geometry: 0.30mm OD / 0.15mm drill / 0.075mm annular = JLC filled-via minimums.
+# Fab: IPC-4761 Type VII filled+capped — SAME order line as the ORING/+5V_BEC/
+# EFUSE via-in-pad family (no extra cost). SOURCING_NOTES §5 #8 lists all 3 pads.
+(rule "vip-mcu-baro-diameter"
+    (constraint via_diameter (min 0.30mm))
+    (condition "A.NetName == 'VCAP1' || A.NetName == 'I2C2_SDA' || A.NetName == 'I2C2_SCL' || A.NetName == '+3V3_IMU'"))
+
+(rule "vip-mcu-baro-hole"
+    (constraint hole_size (min 0.15mm))
+    (condition "A.NetName == 'VCAP1' || A.NetName == 'I2C2_SDA' || A.NetName == 'I2C2_SCL' || A.NetName == '+3V3_IMU'"))
+
+(rule "vip-mcu-baro-annular"
+    (constraint annular_width (min 0.075mm))
+    (condition "A.NetName == 'VCAP1' || A.NetName == 'I2C2_SDA' || A.NetName == 'I2C2_SCL' || A.NetName == '+3V3_IMU'"))
+
+# C19<->C20 courtyard relax — +3V3A vertical re-spread (D4 close, 2026-05-28).
+# C19 (rotated vertical, +3V3A decap for U1.21) courtyard overlaps C20 (+3V3A bulk)
+# by 0.79mm. ACTUAL edge clearances: opp-net pads 0.36mm + 0.68mm (both >= 0.20mm
+# JLC SMT min); the only 0.0mm pair is GND<->GND (same net, harmless); bodies
+# ~0.26mm apart. Courtyard is the IPC-7351 assembly keep-out (tooling), not a fab
+# or placement violation here. Relax courtyard for this pair only. Master path (c).
+(rule "c19-c20-courtyard-relax"
+    (constraint courtyard_clearance (min 0.0mm))
+    (condition "(A.Reference == 'C19' && B.Reference == 'C20') || (A.Reference == 'C20' && B.Reference == 'C19')"))
+
+# +5V_BEC_PROT B.Cu→C8.1→B.Cu jumper via pair — APPROVED engineering exception
+# (CLI DRC §6, master decision 2026-05-30).
+#
+# Two +5V_BEC_PROT vias at (32.00,20.50) and (32.40,20.70) form an intentional
+# B.Cu→F.Cu→B.Cu jumper through the C8 decoupling cap pad C8.1 (+5V_BEC_PROT
+# at 32.27,20.30). Geometry: 0.447mm center-to-center, 0.147mm hole-edge spacing
+# (KiCad default 0.25mm; IPC-2221 class-B nominal 0.150mm — 3µm short of standard
+# min; JLC fab capability 0.10mm — 47µm margin).
+#
+# DISPOSITION:
+# - Severity: hole_to_hole is `warning` per .kicad_pro — NOT a severity-error,
+#   NOT a freeze-gate blocker.
+# - Reposition attempts (0.79mm and 0.30mm deltas) both cascaded clearance
+#   violations in the already-5-DRU-exception U6 pocket — Phase-4b-level
+#   routing rework rejected at freeze head per master.
+# - This rule documents the engineering APPROVAL. KiCad 9.0.2 does not appear
+#   to honor (severity ignore) or (min N) for hole_to_hole overrides (board
+#   floor max'd against rule), so the warning remains visible in DRC reports
+#   as a deliberate record — reviewers investigating the warning find the rule
+#   + comment.
+# - Fab handoff: communicate to JLC as approved 0.147mm hole-edge exception in
+#   the U6 fab-process-exception area (same JLC capability tier as existing
+#   via-in-pad family — no new fab process bump).
+#
+# Other +5V_BEC_PROT via pairs all have ≥1.94mm edge spacing — only this single
+# C8-jumper pair is affected.
+(rule "efuse-bec-prot-c8-jumper-hole-to-hole"
+    (constraint hole_to_hole (min 0.10mm))
+    (severity ignore)
+    (condition "A.NetName == '+5V_BEC_PROT' && B.NetName == '+5V_BEC_PROT'"))

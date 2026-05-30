@@ -120,6 +120,22 @@ Specific patterns master has caught (2026-05-23):
 Per Rule 9: artifact-level verification is mandatory for any claim that
 gates downstream work.
 
+**Rule 9 corollary — gate on the ELECTRICAL margin, not the paper-spec tightness.**
+A match/skew/clearance gate inherited as a fixed number may be far tighter than
+the physics requires. When a converged result "fails" such a gate, compute the
+actual margin from first principles before re-working:
+- microSD SDMMC1 @ 48 MHz (CAN/microSD routing, 2026-05-26): the inherited
+  ±0.5mm (then ±5/±10mm) length-match gate vs reality — 25.9mm skew = 180 ps =
+  9% of the ~2000 ps setup/hold window → **91% timing margin remaining**. The
+  paper-spec "FAIL" was not an electrical fail; the Freerouting result was
+  accepted rather than re-routing 3 nets through a dense corridor for a
+  marginal, already-ample improvement.
+Set match/skew gates from clock + setup/hold math; accept an auto-route within
+the electrical margin even if it exceeds the spec-doc number. Re-derive per
+interface — a higher-speed v2 bus needs its own (tighter) budget.
+
+(Master + worker, 2026-05-26 — microSD routing.)
+
 ## Rule 10 — Comments are for non-obvious WHY, not WHAT
 
 Don't comment `// read CRSF channel` above `read_crsf_channel()`. Do comment
@@ -270,6 +286,87 @@ layer-split; (4) DRU exception. Always re-verify the moved passive's own net
 (e.g. FB2 move required a +3V3_IMU rail cluster-walk).
 
 (Master proposed + worker formalized, 2026-05-26 — CAN routing.)
+
+## Rule 21 — Worker pause is a recommendation, not a stop
+
+A worker "session sign-off," "context heavy," or "recommend fresh context"
+message is a **recommendation**, NOT a hard stop. Master continues
+dispatching the next queue item. Worker uses **Rule 13 (stop-and-ping)**
+to actually refuse work via explicit escalation with named blocker —
+that's the contractual refusal mechanism. Without Rule-13 refusal, the
+queue keeps moving.
+
+Specifically:
+- **Big work** (multi-net coordination, dense corridor routing) — even
+  on heavy context, dispatch the up-front SURVEY (doc-only, low context
+  cost). Survey work is always safe.
+- **Medium work** (bounded craft, manual traverses on prepared surveys,
+  DRU cleanup) — execute even on heavy context. Worker can pace; master
+  doesn't gate on context.
+- **Don't schedule long heartbeats** "waiting for fresh worker" — that
+  puts the loop in Sai's blocker queue (he has to restart the tmux
+  session). Master loop = dispatch loop = keep moving.
+
+The pattern that triggered this rule: master kept respecting worker
+"sign-off" recommendations and scheduling 30-60min heartbeats, requiring
+Sai to repeatedly push "why did you stop?" Worker recommendations are
+input; Sai's standing "don't stop, keep working" directive overrides.
+Only Rule 13 explicit escalation pauses dispatch.
+
+When dispatching despite worker pause-recommendation, acknowledge their
+context concern + give them options (small/medium/big work in parallel
+options). They pick what fits; master keeps dispatching.
+
+Enforcement:
+- Heartbeats default to ≤15 minutes during active push windows
+- Never schedule >30 min heartbeat unless Sai explicitly says so
+- After every worker PR merge, immediately dispatch the next queue item
+  in the same message; don't stop to wait for the next message
+- Worker "context heavy" warning gets ACK + dispatch in same response,
+  not a pause + heartbeat
+
+Cross-ref: `feedback-merge-when-gate-clean` (same direction — Sai wants
+forward motion, not safety pauses). Saved to memory
+`feedback_dont_stop_on_worker_pause.md`.
+
+(Sai directive, 2026-05-26: "don't stop for at least 15 hours." +
+"Make it a rule. Enforce it.")
+
+## Rule 22 — Spec doc is not artifact (partial-apply trap)
+
+A locked decision in `docs/DECISIONS.md` is NOT load-bearing until the actual artifact (`.kicad_pcb`, `hwdef.dat`, BOM CSV) shows the decision applied. The presence of the decision in the spec doc is necessary but not sufficient — the gate is artifact-side. This is the Rule 9 verify-the-artifact lemma for cross-file scoping.
+
+Pattern that triggered: spec doc said "6-layer stackup In1.Cu GND" but the `.kicad_pcb` In1.Cu zone fill was a partial state (not yet applied to all areas). Master claimed the stackup decision was "done" because the spec doc said so. Worker artifact-verify caught it.
+
+**How to apply:** every "decision X is done" claim needs a one-line artifact-side verification: net count, zone area, hwdef.dat line, BOM row presence. If you can't name the artifact-side proof, the decision is not done — it's a spec.
+
+(Sai-codified 2026-05-23 from `feedback_spec_doc_vs_artifact_partial_apply` memory.)
+
+## Rule 23 — Per-net unconnected audit (freeze gate)
+
+DRC's top-level "N unconnected items" number lies when N is dominated by plane-pour ratsnest (filled-zone pads "connect via pour" — the ratsnest line is an artifact, not a defect) and intended-deferred nets. **The truth is the per-net breakdown.**
+
+For every power rail and every signal-critical net, **per-net unconnected MUST equal 0** before any claim of "routed" / "subsystem complete" / "flight-routable" / freeze trigger. Plane-pour exclusion + intended-defer whitelist are explicit + documented. Anything else is a real latent defect.
+
+**Tooling:** `scripts/audit_unconnected_per_net.py` is the gate. It:
+1. Runs `kicad-cli pcb drc` and parses unconnected items
+2. Classifies each item: PLANE-POUR NOISE (excluded), INTENDED-DEFERRED (whitelisted), REAL LATENT
+3. Tags REAL LATENT items as power/critical for hard fail
+4. Returns non-zero exit on any power/critical real latent
+
+**Wire into freeze gate:** `scripts/audit_layout_compliance.py` must invoke the per-net audit + fail freeze if any power/critical net has unconnected > 0.
+
+**The catch that codified this:** at session 2026-05-26 head 5390be4, total DRC unconnected was 213 — everyone read it as "mostly intended noise" (139 plane-pour + 10 intended-deferred + 64 latent). The 64 latent included U2_FB + U2_SW (buck can't regulate or output), 24/27 +5V distribution pads, MCU VCAP1/VCAP2/VDDA/VREF/VBAT (MCU won't clock), USBC_CC1/CC2 (USB won't enumerate), +3V3_IMU 5 gaps. **Board would not power up.** Caught by worker per-net audit BEFORE fab order. Pre-existing across multiple PRs (Option-B buck swap #95/#96 + MCU decap stub omissions); none documented as deferred.
+
+**Without Rule 23 this board ships dead-on-arrival.** That makes it the highest-leverage process rule in the project.
+
+How to apply, every gate cycle:
+- Before claiming "subsystem X routed" — run per-net audit scoped to X's nets, verify 0 latent
+- Before merging a PR — verify the PR's own touched nets are 0 latent
+- Before freeze trigger — verify ALL power/critical nets are 0 latent (the comprehensive gate)
+- When DRC total is dominated by noise — run per-net to find the buried defects
+
+(Worker-found, master-codified, Sai-saved 2026-05-26. Survey: `docs/POWER_TREE_DEFECT_SURVEY.md`. Tool: `scripts/audit_unconnected_per_net.py`.)
 
 ## Symmetry refinements (pcb.ai R1/R2/R3 — adopted 2026-05-23)
 

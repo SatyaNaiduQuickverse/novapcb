@@ -129,16 +129,18 @@ setup()
 GND       = n("GND")
 P3V3      = n("+3V3")
 P5V       = n("+5V")
-USART6_TX = n("USART6_TX")  # MCU PC6 → CRSF connector
-USART6_RX = n("USART6_RX")  # CRSF connector → MCU PC7
+USART6_TX = n("USART6_TX")  # MCU PA0 (UART4_TX) → CRSF connector — re-pinned task #56
+USART6_RX = n("USART6_RX")  # CRSF connector → MCU PA1 (UART4_RX) — re-pinned task #56
 USB_DM    = n("USB_DM")     # MCU PA11 → USB-C D- (post-ESD)
 USB_DP    = n("USB_DP")     # MCU PA12 → USB-C D+ (post-ESD)
 
 
-# ---- MCU side: USART6 + OTG_FS pins ----
-# hwdef.dat:133-134 — USART6 RX/TX
-USART6_RX += mcu["PC7"]
-USART6_TX += mcu["PC6"]
+# ---- MCU side: UART4 (CRSF) + OTG_FS pins ----
+# CRSF re-pinned USART6/PC6-PC7 → UART4/PA0-PA1 (task #56: PC6/PC7 east-edge
+# pads empirically unroutable to J10; PA0/PA1 west-edge escape clean). Net
+# labels kept as USART6_TX/RX (cosmetic legacy); physical pins are PA0/PA1.
+USART6_RX += mcu["PA1"]   # UART4_RX (was PC7/USART6_RX)
+USART6_TX += mcu["PA0"]   # UART4_TX (was PC6/USART6_TX)
 # hwdef.dat:29-30 — OTG_FS D-/D+
 USB_DM    += mcu["PA11"]
 USB_DP    += mcu["PA12"]

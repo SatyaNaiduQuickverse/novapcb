@@ -47,7 +47,23 @@
 - Target: drop-in replacement for the off-the-shelf autopilot (currently a Holybro Pixhawk 6X) used in the Nova drone.
 - Software contract: must speak ArduPilot MAVLink v2 over USB-CDC at 115200 baud and enumerate as `usb-ArduPilot_*` for udev pinning.
 - Tooling intent: code-driven PCB workflow — KiCad sources in git, exports automated, BOM diffable in PRs.
-- Form factor target (v1): Pixhawk-standard mini-FC pattern — **board outline ~36 × 36 mm**, **mounting holes 30.5 × 30.5 mm center-to-center, M3** (4 holes, the "30.5×30.5 M3" Pixhawk-standard pattern; matches MatekH743 and other mini-FC reference boards). **Functional** drop-in (electrical + software identical to the 6X), single-PCB, requires a new mounting tray on the airframe. **FMUv6X mechanical drop-in is v2** (separate FMU + isolated-IMU boards, exact 6X mechanical match); deferred until v1 flies.
+- Form factor (v1 ACTUAL): **board outline 105 × 85 mm rectangular**, **mounting holes H1–H4 at 98.5 × 78.5 mm center-to-center, M3** (4 corner holes). NOT the Pixhawk-standard 30.5 × 30.5 mm pattern. The original 36×36 / 30.5×30.5 mini-FC ambition was set aside 2026-05-20 (Sai pivot, mid-Phase-4) after thermal sweeps showed the small envelope couldn't fit the H743 + 3 IMUs + sensors + Mauch ADC + power tree within the 80 °C Tj ceiling — board grew through 80×60 → 90×70 → 105×85 mm before locking 2026-05-23 with the TPS62177 buck architecture. The 105×85 board **requires a new airframe tray**; the 6X mounting pattern is gone in v1. **Functional** drop-in (electrical + software near-identical to the 6X, with the explicit cuts tabulated in §1.1 below). **FMUv6X mechanical drop-in is v2** (separate FMU + isolated-IMU boards, exact 6X mechanical match); deferred until v1 flies.
+
+### 1.1 What v1 does NOT deliver vs the 6X (honest scope)
+
+Calling these "v2-deferred" obscures that several of them are routing reach-failures, not deliberate scope choices. Naming them straight:
+
+| Feature | 6X has | v1 ships | Reason | Mitigation |
+|---|---|---|---|---|
+| 8 motor outputs | yes | 6/8 routed (MOT1–6); MOT7/8 unrouted | **Scope decision** — Sai option D (quad/hex covers Nova v1) | none required |
+| Telem UART (J3 USART1) | yes | connector placed; routes deferred | **Reach failure** — 4-attempt structural wall: PA9/PA10 + PC6/PC7 + PE7/PE8 + scoped Freerouting all walled by NE corridor (SDMMC1+USB+GND+5V) or SE corridor (MOT3-6+I²C2+SPI*+BATT2) | USB-CDC is canonical MAVLink path per §2.1 |
+| SWD debug routes (SWDIO/SWCLK/NRST) | yes | J9 connector placed at (15,35) B.Cu; routes deferred | **Reach failure** — 9-wall journey: test-pads + J9-direct + slow-net reroute + layer flip + J2 placement — all walled | DFU first-flash via USB-CDC bootloader; wire-tack possible for occasional SWD |
+| IMU3 interrupt-driven (LSM6DSV16X INT1) | yes (all IMUs INT) | polled-mode only | **Reach failure** — 5/5 walls (3 manual + 2 Freerouting at C2/C1 placements + original) | ArduPilot polled SPI3 driver — lower rate than INT, still functional; IMU1+IMU2 retain INT |
+| Stress-relief slot (full island isolation) | partial (mechanical 2-board) | 1.2×24.5 mm SE-corner slit only | **Reach failure** — 2 attempts walled (Y=33 35 violations, Y=45 27 violations) | ArduPilot harmonic notch — enabled in `defaults.parm` (the promised software backstop) |
+| Pixhawk 30.5 × 30.5 mm mounting | yes | 98.5 × 78.5 mm corner mounting | **Thermal-driven board growth** — see §1 form factor | New airframe tray required |
+| 5 BMI088 decaps (Bosch datasheet spec) | yes | 4 decaps (C93.1 v2-deferred) | **Reach failure** — 3/3 placement walls | Sim 5 PDN PASS 79.4 mΩ confirms adequate mid-band |
+
+What v1 GAINS over the 6X: 3 IMUs (vs 2), second baro (LPS22HB + DPS310), Mauch direct-analog telemetry, dual-Mauch hot-swap via U11/U12 LM74700-Q1 ORFETs, TPS25942 eFuse +5V_BEC protection (OVP+ILIM+DVDT configured), 6-layer JLC06161H stackup with isolated +5V_BEC + +3V3 planes.
 
 ### What this repo IS NOT
 
@@ -61,7 +77,7 @@
 
 - Last commit (as of 2026-05-18): `711c4d4` — added this CLAUDE.md on top of bootstrap `2bcdadc`.
 - No schematics, no PCB layout, no firmware.
-- All 9 v1 scoping decisions locked on 2026-05-18 — see `docs/DECISIONS.md`. MCU = STM32H743VIT6; form factor = Pixhawk-standard 30.5 × 30.5 mm M3.
+- All 9 v1 scoping decisions locked on 2026-05-18 — see `docs/DECISIONS.md`. MCU = STM32H743VIT6; form factor = **105 × 85 mm rectangular, 98.5 × 78.5 mm corner mounting M3** (the original 30.5 × 30.5 mm Pixhawk-standard pattern was set aside 2026-05-20 — see §1).
 
 ---
 
@@ -598,7 +614,7 @@ These are *not* part of this repo but are referenced by docs. If you're on a dif
 Authoritative copy is `docs/DECISIONS.md`. Summarized here so a cold Claude doesn't have to context-switch. All 9 v1 scoping decisions signed off 2026-05-18.
 
 1. **MCU** — STM32H743VIT6.
-2. **Form factor** — v1: Pixhawk-standard 30.5 × 30.5 mm M3 single-PCB (functional drop-in; airframe gets a new tray). v2: FMUv6X mechanical drop-in (deferred — see `docs/OPEN_QUESTIONS.md`).
+2. **Form factor** — v1 ACTUAL: **105 × 85 mm rectangular**, 4-corner M3 mounting at **98.5 × 78.5 mm c-to-c**, single-PCB. Functional drop-in (electrical/software near-6X-parity per §1.1; not mechanical). New airframe tray required. The original 36 × 36 / 30.5 × 30.5 mm Pixhawk-standard ambition was set aside 2026-05-20 after thermal sweeps demanded more area (`docs/DECISIONS.md §2`). v2: FMUv6X mechanical drop-in (deferred — see `docs/OPEN_QUESTIONS.md`).
 3. **ESC channels** — 8 (DShot300/600 preferred, PWM fallback).
 4. **ELRS RX integration** — external RX module + on-board CRSF UART; no on-board RF in v1.
 5. **Voltage / current monitoring** — external Mauch power module via FC ADC input.

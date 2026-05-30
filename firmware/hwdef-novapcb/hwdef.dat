@@ -41,8 +41,7 @@ PA6 SPI1_MISO SPI1
 PA7 SPI1_MOSI SPI1
 PC15 IMU1_CS CS
 
-# SPI2 for MAX7456 OSD
-PB12 MAX7456_CS CS
+# SPI2 for BMI088 IMU2 (was MatekH743 MAX7456 OSD — no OSD chip on novapcb v1)
 PB13 SPI2_SCK SPI2
 PB14 SPI2_MISO SPI2
 PB15 SPI2_MOSI SPI2
@@ -53,8 +52,6 @@ PB4 SPI3_MISO SPI3
 PB5 SPI3_MOSI SPI3
 
 # external CS pins
-PD4 EXT_CS1 CS
-PE2 EXT_CS2 CS
 
 # two I2C bus
 I2C_ORDER I2C2 I2C1
@@ -110,14 +107,17 @@ define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
 
 # order of UARTs (and USB)
-SERIAL_ORDER OTG1 USART1 USART2 USART3 UART8 USART6 OTG2
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART8 UART4 OTG2
 
 # USART1 (telem2)
 PA10 USART1_RX USART1
 PA9  USART1_TX USART1
 
 # USART2 (GPS1)
-PD5 USART2_TX USART2
+# GPS1_TX repinned PD5->PA2 (2026-05-26, task #47): PD5 N-edge pad boxed by
+# BATT2 sense verticals, unroutable to J5. PA2 = other USART2_TX (AF7), free
+# (MOT5 vacated, PR#83->PE13), W-edge clean exit. PD5 reverts to free GPIO.
+PA2 USART2_TX USART2
 PD6 USART2_RX USART2
 
 # USART3 (GPS2)
@@ -128,13 +128,19 @@ PD8 USART3_TX USART3
 # per docs/MCU_PIN_MAP_AUDIT.md. UART4 was a "spare" with no board
 # wiring (no SKiDL sheet references); safe to drop.
 
-# USART6 — bdshot-style reassignment (Phase 2e amendment 2026-05-20).
-# Base MatekH743 put PC7 on TIM3_CH2 (RC input via timer); TIM3 is now PWM 1-2's timer.
-# bdshot variant resolves by using PC7 as USART6_RX directly (cite MatekH743-bdshot hwdef.dat:19-20).
-# novapcb v1 doesn't currently route RC via USART6 (CRSF UART allocation is Phase 2f),
-# but the USART6 pins stay defined so PC6/PC7 don't dangle and so the pattern matches bdshot.
-PC7 USART6_RX USART6
-PC6 USART6_TX USART6
+# USART6 — FREE as of 2026-05-26 (CRSF moved to UART4 / PA0-PA1, see
+# docs/CRSF_REPIN_PROPOSAL.md). PC6/PC7 revert to unused GPIOs. The
+# bdshot pattern note is retained in git history for v2 reference if
+# RC ever returns to USART6.
+
+# UART4 (CRSF) — re-pinned 2026-05-26 from USART6/PC6-PC7. The east-edge
+# MCU pads were empirically unroutable to J10 (task #56: FR 0/6 x2, manual
+# 16-viol, nudge 3-viol — NE quadrant over-subscribed). PA0/PA1 are WEST-edge
+# pads with a clean escape (verified survey). AF8 maps both. CRSF is 420 kbaud
+# so the ~36mm west route is benign (electrically short, PR #117). UART4 was
+# removed 2026-05-24 (no wiring after MOT7/8 took PB8/PB9); re-introduced here.
+PA0 UART4_TX UART4
+PA1 UART4_RX UART4
 
 # UART7 — REMOVED 2026-05-24: PE9 now MOT3 (TIM1_CH1); PE7/PE8/PE10
 # free. TELEM1 is on USART1 (PA9/PA10); UART7 was unconnected on the
@@ -191,7 +197,10 @@ PB9  TIM4_CH4  TIM4  PWM(8)  GPIO(57)
 # v1.1 SKiDL re-mux 2026-05-22: BUZZER moved PA15 → PD7 (PA15
 # freed by SPI1_MOSI departing; HEATER_PWM was supposed to take
 # PA15 but timer conflict — see OPEN_QUESTIONS hwdef-heater-pwm-pa15).
-PD7 BUZZER OUTPUT GPIO(32) LOW
+# BUZZER re-pinned PD7->PA3 (2026-05-26, Sai directive: route in v1, no defer).
+# PD7 (N-edge) was boxed by BATT2 sense verticals; PA3 = free W-edge GPIO
+# (MOT6 vacated, PR#83->PE14), clean SW exit to J5.
+PA3 BUZZER OUTPUT GPIO(32) LOW
 define HAL_BUZZER_PIN 32
 
 # microSD support
@@ -201,6 +210,14 @@ PC10 SDMMC1_D2 SDMMC1
 PC11 SDMMC1_D3 SDMMC1
 PC12 SDMMC1_CK SDMMC1
 PD2 SDMMC1_CMD SDMMC1
+
+# SDMMC clock cap lift 12.5MHz -> 50MHz (SDR25 target). The ArduPilot H7
+# global default (stm32h7_A3_mcuconf.h) caps SDMMC at 12.5MHz; Sim 3
+# (docs/SIM_3_SDMMC_SI_RESULT.md) verified the routed SDMMC1 length skew
+# is 0.86% of the 50MHz bit period (97.8% of the SD HS setup+hold window
+# remains), so the cap is liftable to the SDR25 50MHz target from an SI
+# standpoint. Faster microSD logging throughput for ArduPilot .bin logs.
+define STM32_SDC_MAX_CLOCK 50000000
 
 # GPIOs
 PD10  PINIO1 OUTPUT GPIO(81) LOW
@@ -212,9 +229,12 @@ PD11  PINIO2 OUTPUT GPIO(82) LOW
 # here as part of the pin-remap PR to bring hwdef.dat into sync with
 # the schematic source of truth. Each entry cites the SKiDL line.
 
-# HEATER_PWM — IMU heater MOSFET gate (power_3b.py:643). PA15 = TIM2_CH1.
-# Note: TIM2 is shared with no other PWM channel post-MOT3-6 remap (was
-# blocked when MOT3=PA0 used TIM2_CH1; now free).
+# HEATER_PWM — IMU heater MOSFET gate (power_3b.py:643). Plain GPIO output;
+# heater is mW-scale + slow-thermostatic, software-toggle from a timer ISR is
+# ample. Hardware-PWM via TIM2_CH1 would also work post CRSF re-pin (PA0
+# moved to UART4_TX in PR #120, freeing TIM2_CH1) but software-PWM is the
+# simpler engineering call. See OPEN_QUESTIONS.md hwdef-heater-pwm-pa15
+# (RESOLVED 2026-05-30 Option A).
 PA15 HEATER_PWM OUTPUT GPIO(33) LOW
 
 # IMU2 BMI088 (imu_3c.py:274-275, 286-287). Accel + Gyro share SPI2 with
@@ -230,8 +250,8 @@ PB2  IMU3_INT1 INPUT GPIO(42)
 
 # BATT2 Mauch2 sense (power_sd_swd_3h.py:214-215). PC2/PC3 use the
 # STM32H7 "direct" analog pins (suffix _C in KiCad symbol).
-PC2_C BATT2_VOLTAGE_SENS ADC1 SCALE(1)
-PC3_C BATT2_CURRENT_SENS ADC1 SCALE(1)
+PC2 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
+PC3 BATT2_CURRENT_SENS ADC1 SCALE(1)
 
 DMA_PRIORITY S*
 
@@ -243,13 +263,11 @@ STORAGE_FLASH_PAGE 14
 
 # spi devices
 SPIDEV icm42688  SPI1 DEVID1 IMU1_CS      MODE3  2*MHZ 16*MHZ   # Clock is 100Mhz so highest clock <= 24Mhz is 100Mhz/8
-SPIDEV osd       SPI2 DEVID4 MAX7456_CS   MODE0 10*MHZ 10*MHZ
 
 
 DMA_NOSHARE SPI1* TIM3* TIM2* TIM5* TIM4*
 
 # SPI3 external connections
-SPIDEV pixartflow   SPI3 DEVID1  EXT_CS1  MODE3   2*MHZ  2*MHZ
 
 # External compass — novapcb-v1 supports IST8310 (primary) and RM3100 (alternative) (Phase 2c, 2026-05-20)
 # per CLAUDE.md §3.5 "IST8310 or RM3100 (external, via I²C)". Lives on the external GPS+MAG
@@ -285,10 +303,10 @@ BARO DPS310 I2C:0:0x76
 
 define HAL_OS_FATFS_IO 1
 
-# setup for OSD
-define OSD_ENABLED 1
-define HAL_OSD_TYPE_DEFAULT 1
-ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+# OSD removed — MatekH743 inheritance; no MAX7456 on novapcb v1 (Nova drone
+# video is fully digital via Pi-Camera + Hailo per CLAUDE.md §2.1).
+# ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin stripped 2026-05-30
+# (saves ~10-30 KB flash). See OPEN_QUESTIONS.md phase2exit-1 RESOLVED v2-defer.
 
 # build ABIN for flash-from-bootloader support:
 env BUILD_ABIN True

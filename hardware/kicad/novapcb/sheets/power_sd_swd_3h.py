@@ -343,8 +343,20 @@ GND  += c_sd_dec[2]
 
 
 # =====================================================================
-# Block 3: SWD debug header (ARM Cortex Debug 10-pin 1.27mm)
+# Block 3: SWD debug header (ARM Cortex Debug 10-pin 1.27mm) — J9 RESTORED 2026-05-30
 # =====================================================================
+#
+# v1: J9 SWD connector RESTORED per docs/SWD_PHYSICAL_DELIVERABLE.md after
+# 7-structural-wall empirical finding (test-pads at 5 XYs walled, J9-direct
+# routing walled, slow-net re-route walled, layer-flip survey walled).
+# Empirical truth: hands-off CAN1 + SDMMC1 + SPI3 buses occupy the J9 corridor
+# regardless of layer or route geometry. SWD nets (SWDIO/SWCLK/NRST) added to
+# INTENDED_DEFERRED in scripts/audit_unconnected_per_net.py — same pattern as
+# IMU3_INT1 (PR #128), USART1_TX/RX Telem (PR #130), MOT7/8, EFUSE_FLT/PGOOD.
+#
+# v1 first-flash path UNCHANGED: USB-CDC + BOOT0 jumper + STM32 ROM bootloader
+# fully functional. SWD probe-only access via wire-tack J9 pads → U1 pins for
+# occasional debug post-DFU.
 
 # MCU side (hwdef.dat:32-33)
 SWDIO = n("SWDIO"); SWDIO += mcu["PA13"]
@@ -355,7 +367,7 @@ swd = Part(
     footprint="Connector_PinHeader_1.27mm:PinHeader_2x05_P1.27mm_Vertical_SMD",
     value="SWD_10P",
 )
-swd.ref = "J9"   # J9 reserved per Phase 2.5 sketch (SWD)
+swd.ref = "J9"   # J9 reserved per Phase 2.5 sketch (SWD); restored 2026-05-30
 
 # Pin map per the ARM Cortex Debug standard (KiCad symbol pin labels
 # match the standard verbatim).
@@ -365,8 +377,12 @@ GND   += swd[3]   # GND
 SWCLK += swd[4]   # SWCLK/TCK
 GND   += swd[5]   # GND
 # pin 6 SWO/TDO — leave NC (SWD-only, no SWO route on novapcb v1)
-# pin 7 KEY — keying pin, NC
-# pin 8 NC/TDI — NC
+# pins 7 (KEY) + 8 (NC/TDI): unused — tied to GND (DRU cleanup task #30).
+# Standard practice for unused debug-header pins (no floating inputs, cleaner
+# EMC); also removes the false-positive "shorting" DRC vs the adjacent GND
+# stitching vias on B.Cu (the pads were <no net>).
+GND   += swd[7]   # KEY — tied GND
+GND   += swd[8]   # NC/TDI — tied GND
 GND   += swd[9]   # GNDDetect (tied to GND, used by debuggers to detect ground)
 NRST  += swd[10]  # ~RESET
 
