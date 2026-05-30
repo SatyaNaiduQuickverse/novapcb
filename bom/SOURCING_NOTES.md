@@ -57,7 +57,7 @@ This is a two-sided board. **Both F.Cu (top) and B.Cu (bottom) carry SMD parts.*
 - **U4** — DPS310 barometer (LGA-8)
 - **R51, R52, R53, R54, R55** — SDMMC1 pullups (47kΩ 0402)
 
-Everything else (U1 MCU, U2 LDO, U3 IMU, U5 USB ESD, Y1 crystal, J1 USB-C, J3-J5 JST-GH, all decoupling + bulk caps + remaining resistors + FB1 ferrite) is on **F.Cu (top)**. Solder pads (J10, J11-J18) are PCB-only — no parts to assemble.
+Everything else (U1 MCU, U2 LDO, U3 IMU, U5 USB ESD, Y1 crystal, J1 USB-C, J3-J5 + J11 JST-GH, all decoupling + bulk caps + remaining resistors + FB1 ferrite) is on **F.Cu (top)**. Solder pad J10 (CRSF wire pads) is the only PCB-only feature — no part to assemble.
 
 If you skip "both sides" in the JLCPCB quote, **the bottom-side components will not be populated** and the board cannot be flashed (no SWD), cannot record logs (no microSD), and will mis-baro (no DPS310).
 
@@ -107,7 +107,7 @@ These are listed for the integrator (Sai) but are **not** part of the novapcb fa
 
 ### 4.4 ESC pigtails
 
-- 8× ESC outputs on **J11-J18 solder pads** (option-θ — wire pads, not connectors).
+- 8× ESC outputs on **J11 JST-GH 10-pin (SM10B-GHS-TB)** — Pixhawk 6X FMU PWM OUT standard pinout (per PR #80/#81, sheets/esc_3f.py): pin 1-8 MOT1-MOT8, pin 9 VDD_SERVO (NC pending Sai NC-vs-tie-to-GND), pin 10 GND. Use a JST-GH 10P→8×ESC-pigtail harness, or solder ESC leads to the appropriate pin position on a JST-GH 10P plug.
 - DECISIONS §3 — DShot300/600 preferred, PWM fallback. 3.3V logic (most modern ESCs accept).
 - **Sai decision**: ESC choice + which 4 of 8 channels are used (the airframe is a quad → 4 channels active, 4 reserved for hex/octo upgrade). Not blocking for fab.
 
@@ -158,8 +158,12 @@ These BOM rows have `Assembled=no` and exist on the board as copper-only PCB fea
 | RefDes | PCB feature |
 |---|---|
 | J10 | CRSF 4-pad solder field (option-θ — PR #44; replaced JST-GH 4P after J3 placement conflict) |
-| J11-J18 | 8× ESC 2-pad solder fields (DShot/PWM + GND wire termination) |
 | H1-H4 | 4× M3 plated mounting holes, GND-pad ring (Pixhawk 30.5×30.5 mm pattern) |
+
+(J11 was previously listed here as 8× solder pads — replaced by a single
+JST-GH 10P SM10B-GHS-TB per PR #80/#81; J11 is now an assembled connector
+and appears in the main BOM, not §7. J12-J18 refs were freed by the same
+collapse and remain unused.)
 
 ---
 
