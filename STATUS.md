@@ -3,7 +3,9 @@
 > Updated continuously by master Claude during autonomous-loop work.
 > Most recent merged PR is at the top of the log.
 
-**Current branch:** `sch/option-b-buck` &middot; **Head:** `65419e3` (PR #136 J11 BOM correction; HANDOFF dc1f1a6; CLI DRC equivalence #134; DRU exception #135)
+**Current branch:** `sch/option-b-buck` &middot; **Head:** `a0ee44a` (PR #145 HANDOFF refresh; PR #144 silk script; PR #142 T11 REACH FAILURE clean revert; PR #143 J3/J9 Option B DRAFT pending Sai decision)
+
+> Raise-the-bar sweep progress: 13 of 18 (honest: 9 doc/fw wins + 2 reverts + 1 partial + 1 prep). T12 in flight under no-half-state standard. T8 sim runs + 5 hardware-add tasks queued. J3/J9 decision (draft PR #143) pending Sai.
 
 ## 2026-05-30 — Raise-the-bar sweep IN PROGRESS (Sai directive: "we finish v1 with full perfection, sota and sureshot")
 
