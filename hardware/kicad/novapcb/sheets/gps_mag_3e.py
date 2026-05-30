@@ -224,16 +224,21 @@ for ref, net_obj in (("D5", GPS1_TX),
 
 
 # ---- Test pads (master 2026-05-24 sign-off: 5× Φ1.5mm) ----
-# Standard Pixhawk practice — exposed test pads near J5 for Phase 9
-# bench bring-up + factory test access. SAFETY_SW/LED have no MCU pin
-# (hwdef-unassigned) so test pads are the ONLY way to verify those
-# signals; remaining 3 are quick-probe access to common debug signals.
+# T13 raise-the-bar 2026-05-30: assignment REVISED from previous GPS/SAFETY
+# helpers to POWER RAIL probes. Constraint: TP1-5 placed at (10-22, 62) — far
+# from VBAT/+5V/+3V3_IMU rails (12-40mm). Routing long F.Cu stubs cascades
+# tracks_crossing (+22 DRC violations on first attempt). Adopting PLANE-NET-
+# ONLY strategy: each TP gets a single through-hole via that picks up the
+# plane net via the inner-layer copper. 3 plane nets available (GND, +3V3,
+# +5V_BEC) cover the 3 highest-debug-value rails; VBAT/+5V/+3V3_IMU probe
+# access remains at sensor IC pins (V+ probe at U2.OUT, U13.OUT, J4.3 etc.)
+# v2 path: re-place TPs near each rail at Phase 4a for full 5-rail coverage.
 for ref, net_obj, label in (
-    ("TP1", SAFETY_SW_TP,  "SAFETY_SW"),
-    ("TP2", SAFETY_LED_TP, "SAFETY_LED"),
-    ("TP3", GPS1_TX,       "GPS_TX"),
-    ("TP4", I2C1_SCL,      "I2C1_SCL"),
-    ("TP5", BUZZER,        "BUZZER"),
+    ("TP1", n("+5V_BEC"), "+5V_BEC"),  # post-eFuse rail (In2.Cu plane)
+    ("TP2", P3V3,         "+3V3"),     # MCU rail (In3.Cu plane)
+    ("TP3", GND,          "GND_REF"),  # Kelvin GND (In1+In4.Cu planes)
+    ("TP4", P3V3,         "+3V3-2"),   # second +3V3 probe (alt location)
+    ("TP5", GND,          "GND_REF-2"),# second GND probe (alt location)
 ):
     tp = Part(
         "Connector", "TestPoint",
