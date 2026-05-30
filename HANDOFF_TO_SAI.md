@@ -1,4 +1,4 @@
-# Handoff to Sai — 2026-05-30 (board freeze-ready, awaiting fab order)
+# Handoff to Sai — 2026-05-30 (post-raise-the-bar sweep, freeze-ready)
 
 > Master Claude's brief.
 > One file, one read, full picture. Read this first.
@@ -7,148 +7,123 @@
 
 ## TL;DR
 
-**Board is LOGICAL FREEZE-READY.** Real-latent = 0. All CLI-deliverable work complete (PRs #122–#135). Remaining: your hands at JLCPCB portal + freeze trigger + fab order $.
+**Board is LOGICAL FREEZE-READY** with bar-restoration in flight. Real-latent = 0. Power tree complete + sims valid + firmware builds clean. **Raise-the-bar sweep underway** — see §"Raise-the-bar status" below.
 
-Head: `cd7c050` on `sch/option-b-buck`.
+Head: `5f40d35` on `sch/option-b-buck` (PR #144 silk script).
+Live HTML view: http://100.81.21.121:8765/static/pcb.html
 
 ---
 
-## What ships in v1
+## Raise-the-bar status (Sai SOTA + sureshot directive)
+
+13 of 18 tasks done — but **honest count is more like 9 doc/firmware clean wins + 2 honest reverts/reframes + 1 partial + 1 prep doc**. Hardware ADDS pending.
+
+### Done (clean wins)
+- **T1** Y1 HSE crystal → ABM8G (5.15× AN2867 margin, was 4.55× sub-spec) ✓
+- **T2** SOTA `defaults.parm` — harmonic notch live, 3 IMUs enabled, EKF3, file logging, DShot300 ✓
+- **T4** CLAUDE.md honest update — §1 form factor truth + §1.1 lost-vs-6X table ✓
+- **T5** STATUS refresh ✓
+- **T6** OPEN_QUESTIONS 4 stale-opens adjudicated (HEATER PA15 Option A, LDO-vs-buck → buck RESOLVED, USB fan DFM PASS, MAX7456 v2-defer) ✓
+- **T7** CONFIDENCE_MAP rows 11/12 refreshed (artifact-verified, raised LOW → MEDIUM) ✓
+- **T10** DFM_REPORT MOT1/2 refresh ✓
+- **T15** Conformal-coat fab option in order guide ✓
+- **T18** Stitching task closed (was stale-pending) ✓
+
+### Done (honest reverts / reframes — bar held, not raised)
+- **T9** U6 DRU cluster — re-place attempts cascaded → audit script refined to classify FAB-TIER (inherent IC package) vs SCOPE-CREEP (placement-density relax). Board pristine. **Reframe, not improvement.** PR #137.
+- **T11** ESC TVS on J11 — placed → 3 stub attempts cascaded → master corrected "no half-state" mid-PR → **full revert**. v1 ships without ESC ESD. PR #142 + `docs/T11_REACH_FAILURE.md`.
+
+### Partial
+- **T8** Phase 6i transient OV + Phase 6k EMC sims + Phase 6.5 forum review — master prepped specs + forum draft; **worker sim runs pending** (PRs #140 + #141).
+
+### Pending (worker in flight + queue)
+- **T12** microSD ESD on J2 — worker in flight under no-half-state standard
+- **T3** PGOOD power-rail LEDs (Option A — add 5 LEDs, reuse R41-R44)
+- **T13** TP1-5 net assignment + silk labels
+- **T14** Piezo buzzer
+- **T16** microSD card-detect signal wired
+- **T17** Silkscreen cleanup — script committed PR #144; worker executes
+- **T8 finale** Sim 6i + 6k worker execution
+
+### Awaiting Sai decision (draft PR #143 ready)
+**J3 Telem + J9 SWD connectors** — same half-state pattern as T11. Currently placed + assembled, but routes v2-deferred. Three options:
+- A keep status quo (you approved earlier with structural evidence)
+- B **mark DNP** — footprints stay, parts don't ship — **draft PR #143 ready to merge**
+- C full revert — footprints removed
+
+---
+
+## What ships in v1 (current state)
 
 ### Routing
-- ✅ Full power tree: D1 buck + D2 +5V dist + D3 eFuse + D4 MCU core + D5 +3V3_IMU + D6 USB-C CC/BATT/HEATER + I2C2 baro
-- ✅ All signal nets: CAN, microSD SDMMC1, GPS UART, CRSF UART4 PA0/PA1 (re-pinned PR #120), 6/8 motors (MOT7/8 v2-deferred per your option D), USB-C diff pair, IMU SPI1/2/3
-- ✅ Triple-IMU: U3 ICM-42688 INT-driven, U8 BMI088 INT-driven, U9 LSM6DSV16X polled-mode
+- ✅ Full power tree: D1 buck + D2 +5V dist + D3 eFuse + D4 MCU core + D5 +3V3_IMU + D6 USB-C CC/BATT/HEATER + I²C2 baro
+- ✅ All signal nets: CAN, microSD SDMMC1, GPS UART, CRSF UART4 PA0/PA1, 6/8 motors, USB-C diff pair, IMU SPI1/2/3
+- ✅ Triple-IMU: U3 ICM-42688 + U8 BMI088 INT-driven; U9 LSM6DSV16X polled
+- 0 real-latent unconnected per Rule-23 audit
 
-### Connectors physically present
-- J1 USB-C, J2 microSD, J3 Telem (placed; routes v2-deferred), J4 power input (Mauch), J5 GPS+mag, J9 SWD (placed at (15,35) B.Cu; routes v2-deferred), J10 CRSF, J11 ESC outputs, J19 BATT2, J20 CAN
+### Protection (artifact-verified)
+- USB ESD: USBLC6-2P6 ✓
+- CAN ESD: PESD2CAN ✓
+- GPS+mag / I²C1 / BUZZER / USART1 Telem / USART6 CRSF: 9× ESD7L5.0DT5G (D5-D14) ✓
+- +5V_BEC TVS: SMAJ6.0A (D1) ✓
+- VBAT reverse-input: U11/U12 LM74700-Q1 ORFETs ✓
+- eFuse U6 TPS25942 (OVP+ILIM+DVDT) ✓
+- Mauch ADC anti-alias: 1k+100nF, 1.59 kHz cutoff ✓
+- **GAP**: J11 ESC outputs no TVS (T11 REACH FAILURE)
+- **PENDING**: J2 microSD ESD (T12 in flight)
 
-### Sims (all valid post final routing)
-- Sim 1 thermal: MCU Tj 65.05°C, +15°C margin
-- Sim 2 USB Z_diff: 87.4Ω (PR #75 inherits validated)
-- Sim 3 SDMMC SI: 172ps skew = 97.8% timing margin @ SDR25 50MHz
-- Sim 4 CAN Z_diff: ~120Ω near-ideal
-- Sim 5 PDN: 82.9 mΩ peak ≤ 100 mΩ gate
-- HSE Pierce analytical: 6-10× negative-resistance margin (AN2867 requires 5×)
+### Sims (valid at HEAD)
+- Sim 1 thermal: MCU Tj 65.05°C, +15°C margin ✓
+- Sim 2 USB Z_diff: 87.4Ω ✓
+- Sim 3 SDMMC SI: 97.8% timing margin @ SDR25 50MHz ✓
+- Sim 4 CAN Z_diff: ~120Ω ✓
+- Sim 5 PDN: 79.4 mΩ ≤ 100 mΩ gate ✓
+- HSE Pierce analytical: 5.15× AN2867 worst-case (post-T1 ABM8G swap) ✓
+- **PENDING**: Sim 6i transient OV + Sim 6k EMC (T8 worker execution)
 
 ### Firmware
-- ArduPilot waf copter builds clean — 1.52 MB used / 184 KB free of H743 2 MB flash
-- hwdef.dat sync'd to schematic post all re-pins (CRSF→UART4, GPS1_TX→PA2, BUZZER→PA3, MCU pin map complete)
+- ArduPilot waf copter builds clean — 1.52 MB / 184 KB free (~12% margin)
+- hwdef.dat sync'd to schematic; HEATER PA15 software-PWM via GPIO(33); OSD ROMFS stripped
+- defaults.parm SOTA Pixhawk-class — harmonic notch live as the slot-mitigation backstop
 
-### Process discipline
-- 23 master process rules codified (Rule 17 no-loose-threads, Rule 21 Sai-overrides-worker-pause, Rule 22 spec-doc-≠-artifact, Rule 23 per-net unconnected audit — the rule that caught the dead-on-arrival fab pre-order)
-- Audit gates: `scripts/audit_unconnected_per_net.py` + `scripts/audit_layout_compliance.py` — both PASS at freeze head
-- CLI DRC verification = GUI DRC equivalence documented (`docs/CLI_DRC_VERIFICATION.md`)
-
----
-
-## Empirically v2-deferred (no flight regression)
-
-Same pattern, same justification, all accepted as structural empirical reality:
-
-| Item | Walls before defer | v1 functional impact |
-|---|---|---|
-| MOT7/MOT8 (octocopter) | (Sai option D) | quad/hex flight retained |
-| FLT/PGOOD (eFuse status) | structural east-edge corridor | eFuse autonomously protects |
-| Telem J3 (USART1) | 4/4 walls (NE + SE corridors) | USB-CDC is canonical MAVLink path |
-| SWD routes (SWDIO/SWCLK/NRST) | **9/9 walls** (test-pads + J9 direct + slow-net reroute + layer flip + J2 placement) | DFU first-flash + USB-CDC fully functional; J9 connector physically present; wire-tack possible for occasional SWD debug |
-| IMU3_INT1 (LSM6DSV16X INT) | 5/5 walls | polled-mode IMU3 still works on SPI3; ArduPilot flies on IMU1+IMU2 INT |
-| C93.1 (BMI088 redundant decap) | 3/3 walls | Bosch spec met with C91+C92; Sim 5 PDN PASS confirmed |
-| (Other) J9 SWD routes | 9th structural wall | wire-tack for SWD debug; DFU is the standard first-flash anyway |
+### Process
+- 23 master process rules codified
+- Rule 17 no-loose-threads + Rule 23 per-net unconnected — both live audit gates
+- **NEW STANDARD**: hardware adds must be full-route or full-revert, never half-state (codified from T11 live-fire test)
 
 ---
 
-## What's left for YOU (Sai's bits)
+## Sai-side work remaining
 
-### 1. JLCPCB portal — BOM sourcing (~20-30 min)
+### Decisions (your call)
+1. **J3 + J9 connectors** — A/B/C per draft PR #143
+2. **Phase 6.5 forum post** — review + edit `docs/PHASE_6.5_FORUM_DRAFT.md`, pick category, post under your identity
 
-`docs/BOM_LCSC_SOURCING.md` has all 8 TBD components researched + LCSC numbers ready. Paste them per the "BOM CSV row changes" section in that file. Quick summary:
+### At JLCPCB portal (~20-30 min)
+- BOM sourcing per `docs/BOM_LCSC_SOURCING.md` (8 TBD items researched)
+- Form options per `docs/JLCPCB_ORDER_GUIDE.md` (now includes conformal-coat option from T15)
+- **CRITICAL**: tick "POFV / Via-in-Pad filled+capped" for 9 VIP pads (FREE on 6L)
 
-| Item | LCSC | Tier | Note |
-|---|---|---|---|
-| Q5 AO3400A | C20917 | Basic | clean pick |
-| L1 XAL4020-222MEC | C3151182 | Extended | Coilcraft, ~9mW DCR loss acceptable |
-| R45 120Ω 0603 | C22787 | Basic | |
-| R46 0Ω 0603 | C21189 | Basic | |
-| J20 JST-GH SM04B | C189895 | Extended | stacks on existing JST-GH bucket (no incremental $) |
-| R47 562K 0402 | C4294005 | Extended | OUT OF STOCK; fallback 560K acceptable |
-| R48 180K 0402 | verify-at-order | Extended | standard E96 value |
-| R61 heater 2512 | DNP | — | first article populate later if heater wanted |
-
-**Total: 3 Basic / 4 Extended / 1 DNP. ~$12 Extended setup fees (~$9 incremental).**
-
-### 2. JLCPCB order form — fab spec options (~10 min)
-
-Follow `docs/JLCPCB_ORDER_GUIDE.md`. Key clicks:
-
-| Field | Selection | Note |
-|---|---|---|
-| Stackup | 6-layer JLC06161H-3313 | matches our `CONTROLLED_IMPEDANCE.md` sims |
-| Surface finish | ENIG 1U" | currently free promo on 6L; required anyway for fine-pitch LGA |
-| Via covering | **"POFV" (Plated Over Filled Via)** | **CRITICAL — covers our 9 VIP pads; FREE on 6-20L boards as of 2025; board won't power without it** |
-| SMT assembly | Both sides | board has B.Cu components (J2, J9, U4, R51-R55) |
-| Quantity | 5 (minimum first article) | |
-| Lead-free | Yes (default) | |
-
-### 3. GUI bits on your KiCad Pi (~30-45 min)
-
-`docs/SWD_PHYSICAL_DELIVERABLE.md` + `docs/SWD_TEST_PADS_V1.md` document the SWD physical state.
-- BOOT0 jumper: Python `FootprintLoad` segfaulted during automated placement. Optional manual GUI placement OR wire-tack a jumper across BOOT0+3V3 for first-flash (5-min task).
-- Final visual DRC scan: open pcbnew GUI on your Pi, run DRC, eyeball for any cosmetic issues the CLI can't catch (silkscreen rendering, courtyard color overlap — non-fab-critical but worth a glance).
-
-### 4. Phase 7a freeze trigger (your blessing)
-
-Tag the freeze commit. Master suggested format: `git tag -a v1.0-fab -m "v1.0 fab-ready freeze"`. Bump in DECISIONS.md if you like.
-
-### 5. Phase 7b fab order submission
-
-Upload Gerbers + drill + CPL + BOM CSV to JLCPCB. ~$80-170 USD per `JLCPCB_ORDER_GUIDE.md` cost estimate (door-to-door with DHL on 5-board first article).
-
-**24h after payment:** JLC sends a parts-placement confirmation email. Reply same-day or fab stalls. Master will page you when it lands.
-
----
-
-## What master + worker delivered this session
-
-**Sessions ~2026-05-26 → 2026-05-30:**
-
-- **30+ PRs landed** (#122 D1 → #135 DRU exception)
-- **Real-latent 64 → 0** (Phase 4d-redux full power tree + sims revalidated)
-- **2 project-saving Rule-9 catches** that prevented dead-on-arrival fab orders (+3V3_IMU rail + power-tree-unrouted via Rule 23)
-- **23 master process rules codified** (Rule 17/21/22/23 + 9 earlier-session rules + pcb.ai adoption)
-- **2 audit gates** scripting (`audit_unconnected_per_net.py`, `audit_layout_compliance.py`)
-- **9-wall empirical SWD physical journey** documented (test-pads + J9 + slow-net reroute + layer flip + J2 move — all walled = structural truth)
-- **VIP fab spec** identified + documented (POFV/IPC-4761 Type VII, 9 pads, FREE on JLC 6L)
-- **HSE Pierce analytical** margin computed (~7×, exceeds AN2867 5× requirement)
-- **BOM finalized + LCSC researched** (53 lines + 8 SAI-SOURCE items resolved)
-- **CLI DRC equivalence** documented (kicad-cli + manual scripts = GUI DRC for fab-critical concerns)
-
----
-
-## Process learnings (memory committed)
-
-- Don't trust stale hwdef recall — verify peripheral assignments from current artifact before authorizing touches (Rule-9 lemma)
-- Per-net unconnected audit is the freeze gate — total-count is misleading when plane-pour pads dominate
-- Worker pause is recommendation not stop — Sai's standing "don't stop" directive overrides
-- Master takes decisions — only true Sai-gates are freeze trigger / fab $ / hardware / scope changes
-- Spec doc ≠ artifact — every "decision X done" claim needs artifact-side proof
-- Loose threads — every defer empirically justified across multiple wall iterations; no schedule shortcuts
+### Phase 7a freeze trigger + Phase 7b fab order $
+After worker queue lands + you approve final state.
 
 ---
 
 ## Quick reference docs
 
-- `docs/JLCPCB_ORDER_GUIDE.md` — click-by-click fab order workflow
+- `docs/JLCPCB_ORDER_GUIDE.md` — click-by-click order workflow (with conformal-coat option per T15)
 - `docs/BOM_LCSC_SOURCING.md` — 8 TBD components researched
+- `docs/T11_REACH_FAILURE.md` — ESC TVS structural diagnosis (why v1 ships without)
+- `docs/PHASE_6.5_FORUM_DRAFT.md` — your forum post draft (Sai-gate to post)
+- `docs/SIM_6I_TRANSIENT_OV_SPEC.md` + `docs/SIM_6K_EMC_SPEC.md` — worker sim specs
 - `docs/SWD_PHYSICAL_DELIVERABLE.md` — 9-wall journey + first-flash procedure
 - `docs/DFU_BOOTLOAD_PROCEDURE.md` — exact `dfu-util` command for first flash
-- `docs/CLI_DRC_VERIFICATION.md` — CLI=GUI DRC equivalence proof
-- `docs/PHASE_7A_FREEZE_CHECKLIST.md` — your freeze gate checklist
 - `docs/DECISIONS.md` — all locked v1 decisions
 - `STATUS.md` — live status (master keeps current)
+- `CLAUDE.md` — canonical project context + §1.1 lost-vs-6X table (refreshed 2026-05-30)
 
 ---
 
-**Ready when you are.** Master + worker standing by.
+**Master + worker continuing the queue.** Standing by.
 
-— master, 2026-05-30 session-end.
+— master, 2026-05-30 raise-the-bar session.
