@@ -86,8 +86,12 @@ The PR #103 HSE layout opt (Y1 rotation + caps ≤1.5 mm to Y1 pads) MINIMIZED s
 
 ## 6. Loose threads (must close before fab — Sai directive: no corners cut)
 
-1. **⚠ Confirm Yangxing X322508MOB4SI ESR + C0 from authoritative datasheet.** LCSC datasheet PDF failed to load via WebFetch. Sai should download from JLC product page at order time + verify ESR ≤ 100 Ω. If ESR > 100 Ω, swap to confirmed-low-ESR alternate (ABM8G is BOM line 7 alt; or pick ECS-80-CDX-1290 family, ESR ≤ 50 Ω confirmed).
-2. **⚠ Confirm crystal's specified CL (datasheet) matches our loading.** BOM comment says "datasheet CL = 8 pF" but Yangxing has variants at CL = 8 pF / 12 pF / 18 pF. Our 18 pF external caps result in CL_eff ≈ 10.5-11.5 pF. If crystal CL spec = 8 pF: we OVERLOAD slightly (~+50 ppm slow drift). If crystal CL = 12 pF: we UNDERLOAD slightly (~-30 ppm fast drift). Either is acceptable for ArduPilot use (PPS sync via GPS handles long-term drift). If crystal CL = 18 pF: we underload significantly and need to swap to bigger caps (≈22-27 pF) to match. **Must confirm pre-fab.**
+**RESOLVED 2026-05-30 (T1 raise-the-bar) — Y1 default swapped to ABM8G in BOM line 7.** Loose threads #1+#2 closed at the source:
+
+- **Threads #1+#2 closure**: BOM line 7 now defaults to **Abracon ABM8G-8.000MHZ-4Y-T3** (LCSC C20625, datasheet at abracon.com/Resonators/ABM8G.pdf — *not* load-failed). Confirmed specs: **ESR ≤ 120 Ω max**, **C0 ≤ 5 pF**, **CL = 8 pF**. This locks Scenario B (margin 5.15× — JUST PASS the AN2867 5× threshold) as the worst-case bound, replacing Scenario A's unverified 4.55× sub-spec margin. Yangxing X322508MOB4SI retained as alt-part (typical ESR likely lower; cost-equal alt if ABM8G stock-out).
+- **CL spec match**: ABM8G CL = 8 pF (vs our 18 pF external caps → CL_eff ≈ 10.5-11.5 pF with stray) gives mild overload of ~+50 ppm slow drift. Acceptable per §6 thread #2 analysis — GPS PPS sync compensates long-term. **No cap change required.** If first-article frequency-counter shows >100 ppm drift, swap C24/C25 18 pF → 12 pF (BOM update only, no board change).
+- Threads #3+#4 below remain as bench-side validation items on first article (no design action).
+
 3. **Margin sensitivity to PCB stray (Cs).** PR #103 minimized stray with caps ≤1.5 mm to Y1. Empirical stray < 3 pF is plausible; <5 pF is conservative assumption used in Scenario A. Cs is hard to measure pre-fab but post-fab can be confirmed with a TCXO frequency-counter check on the first article.
 4. **Drive level check.** STM32H743 HSE drives ~0.4 mA × 3.3V = 1.32 mW at 8 MHz CL=10pF (Table 43). Crystal max drive 100 µW = 0.1 mW. **⚠ Drive level WILDLY exceeds crystal max (13×)** — but this is the CURRENT consumption, not the actual power dissipated in the crystal. Actual drive-into-crystal = I²×ESR/2 ≈ (0.4mA)²×120Ω/2 = 9.6 µW. Within spec. (The 0.4 mA in Table 43 is total HSE block current including amplifier + bias, not crystal drive.)
 
@@ -100,9 +104,7 @@ If Sai's datasheet check at order time finds ESR > 100 Ω (Yangxing actually at 
 
 ## 8. Status
 
-**PASS in 3/4 scenarios; marginal in worst-case Scenario A.** Master strong recommendation: confirm Yangxing datasheet pre-fab (Loose Thread #1). If ESR ≤ 100 Ω confirmed: ship as-is. If ESR > 100 Ω: swap C24/C25 to 12 pF (Option 1) or Y1 to ABM8G (Option 2).
-
-This closes the HSE Pierce analytical gap for freeze-readiness. Not a hard freeze blocker — the layout (PR #103) is solid + margin computation shows expected pass across realistic scenarios — but the Loose Thread #1 datasheet verification is a Sai-side action before placing the fab order.
+**RESOLVED 2026-05-30 — T1 Y1 default swap to ABM8G (Sai raise-the-bar / no-rule-shift directive).** ABM8G's datasheet-confirmed specs lock the worst-case scenario at Scenario B = **5.15× margin** (just at AN2867 5× threshold) instead of the unverified-Yangxing 4.55× sub-spec scenario. **No design change** (BOM line 7 default swap only; Yangxing retained as alt-part). PR #103 layout (caps ≤ 1.5 mm to Y1) remains the production state. Phase 9 bench validates with TCXO frequency-counter on first article — if measured drift > +100 ppm, swap C24/C25 to 12 pF (single BOM update). HSE Pierce gap fully closed for freeze-readiness; no Sai-side action remains.
 
 ## Sources
 

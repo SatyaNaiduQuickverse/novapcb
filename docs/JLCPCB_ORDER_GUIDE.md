@@ -30,7 +30,7 @@ BOM/CPL prep rules (JLCPCB): consistent units (mm), use `T`/`B` for layer, refde
 |---|---|---|
 | Base Material | **FR-4** | default |
 | Layers | **6** | DECISIONS.md #8 |
-| Dimensions | auto-detected (~36 × 36 mm) | confirm matches `kicad-cli` board outline |
+| Dimensions | auto-detected (105 × 85 mm) | confirm matches `kicad-cli` board outline; CLAUDE.md §1 |
 | PCB Qty | **5** | first article |
 | Product Type | **Industrial/Consumer electronics** | default |
 | Different Design | 1 | one design in panel |
@@ -55,6 +55,7 @@ BOM/CPL prep rules (JLCPCB): consistent units (mm), use `T`/`B` for layer, refde
 | Edge Plating | No | |
 | Impedance Control | **No** for first article (matches stackup default); revisit v1.1 if USB Z drift shows | CONTROLLED_IMPEDANCE.md uses JLC's free standard 6-layer stackup |
 | Stackup | **JLC06161H-3313** (default for 6L 1.6mm) | what the impedance sims target |
+| **Conformal Coating** | **Yes — Acrylic** (recommended for outdoor MTBF) | T15 raise-the-bar add 2026-05-30. Drones fly in rain/dust; acrylic conformal coat extends MTBF on the exposed-board surface (silicone alternative is more flexible but more expensive). ENIG surface finish is already coating-friendly. Add note in order remarks: "Apply conformal coating to top + bottom sides; mask connectors J1-J5/J9-J11/J19-J20 + LEDs (if present per T3) + buzzer (if per T14) before coating." Cost: ~$5-15/board depending on coverage. v1 nice-to-have; defer if budget pressure. |
 
 ---
 
@@ -118,11 +119,12 @@ Final page shows the line-item quote. **Verify in this order:**
 
 | Line | Cost (USD) |
 |---|---|
-| 6-layer PCB, 36×36 mm, 5 pcs, ENIG, POFV | ~$10–25 (ENIG promo + free POFV) |
-| SMT assembly, both sides, ~80 placements × 5 | ~$30–60 (setup) + ~$15–40 (parts, mostly Basic) |
+| 6-layer PCB, 105×85 mm, 5 pcs, ENIG, POFV | ~$25–50 (larger board than original mini-FC; ENIG promo + free POFV) |
+| SMT assembly, both sides, ~120 placements × 5 | ~$40–80 (setup) + ~$20–50 (parts, mostly Basic) |
 | Extended parts setup fee | $3 × N extended parts (aim for 0–3) |
+| **Conformal coating (recommended for outdoor/rain MTBF)** | **~$5–15 per board** |
 | DHL Express shipping to user region | ~$25–40 |
-| **Total** | **~$80–170** |
+| **Total** | **~$120–250** (with coating; ~$100–230 without) |
 
 Wide range because Extended part count and shipping dominate. If quote comes in >$200, recheck: (a) any Extended parts that have a Basic equivalent, (b) shipping tier.
 
