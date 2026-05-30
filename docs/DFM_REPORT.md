@@ -87,29 +87,27 @@ tradeoff > revert a Sai-locked directive.
 
 ## 4. Connectivity inventory (informational)
 
-DRC ratsnest: MOT1, MOT2, MOT7, MOT8 unrouted (0 tracks each, verified in both
-current head and the pre-fix backup — **not** caused by the slot).
+**2026-05-30 refresh (Rule-9 verify-the-artifact):** the original §4 (MOT1/2 unrouted, 4/8 motors) was correct at this PR's commit but stale by HEAD 65419e3. Current artifact state:
 
-- **MOT7 / MOT8** — unrouted *by design* (Sai option D: all 8 PWM defined in
-  hwdef, MOT7/8 left for v2; 6/8 channels was the v1 target).
-- **MOT1 / MOT2** — unrouted; T3-partial (PR #107) routed **MOT3-6 only**.
+- **MOT1 / MOT2** — **ROUTED** in PR #117 (task #55, south-edge PB0/PB1 TIM3 → J11.1/J11.2). 6/8 motors functional in v1 as documented in STATUS / HANDOFF / CLAUDE.md §1.1.
+- **MOT7 / MOT8** — unrouted *by design* (Sai option D in DECISIONS §3: hwdef declares all 8 PWM channels; v1 ships 6/8 functional; MOT7/8 retained at hwdef level for v2 / future octocopter retrofit).
 
-**Doc-vs-artifact discrepancy flagged:** commit e51456f / STATUS.md claims
-"6/8 motors functional", but the artifact shows **4/8 MOT routed** (MOT3-6).
-MOT1/MOT2 have zero tracks. This is a pre-existing reporting gap, out of this
-PR's scope to fix — surfaced for master/Sai (route MOT1/2 to reach the stated
-6/8, or correct STATUS to 4/8). Tracked, not silently accepted (Rule 17).
+**Doc-artifact alignment restored.** No reporting gap remains.
+
+— original §4 text preserved below for traceability —
+
+DRC ratsnest: MOT1, MOT2, MOT7, MOT8 unrouted (0 tracks each, verified in both current head and the pre-fix backup — **not** caused by the slot). MOT7/MOT8 unrouted by design (Sai option D). MOT1/MOT2 unrouted; T3-partial (PR #107) routed MOT3-6 only. Doc-vs-artifact discrepancy flagged for master/Sai. (RESOLVED 2026-05-30: PR #117 routed MOT1/2 — see refresh block above.)
 
 ## 5. Board feature inventory
 
-| | |
-|---|---|
-| Footprints | 131 |
-| Pads | 573 |
-| Tracks | 783 |
-| Vias | 288 |
-| Zones | 7 |
-| Stackup | 6-layer (F / In1 GND / In2 +5V_BEC / In3 +3V3 / In4 GND / B) |
+| | as of DFM report | as of HEAD 65419e3 |
+|---|---|---|
+| Footprints | 131 | 131 |
+| Pads | 573 | 573 |
+| Tracks | 783 | 1023 (post-MOT1/2 route + Phase 4d-redux power tree) |
+| Vias | 288 | 333 (post-stitching maturation) |
+| Zones | 7 | 7 |
+| Stackup | 6-layer (F / In1 GND / In2 +5V_BEC / In3 +3V3 / In4 GND / B) | unchanged |
 
 ## 6. Verdict
 

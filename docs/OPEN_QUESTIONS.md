@@ -2,7 +2,26 @@
 
 All v1 scoping decisions are in `DECISIONS.md`. Add new open questions here as they arise.
 
-## hwdef-heater-pwm-pa15. HEATER_PWM pin/timer conflict (raised 2026-05-23, task #66)
+---
+
+## 2026-05-30 batch adjudication (Rule 17 loose-thread sweep, master sign-off)
+
+Sai directive ("we finish v1 with full perfection, sota and sureshot") triggered a Rule-17 sweep. Four entries below were stale-open without resolution; resolved here per Sai-delegated master authority:
+
+- **`hwdef-heater-pwm-pa15`**: **RESOLVED — Option A.** PA15 declared GPIO output in `hwdef.dat`; heater driven via software PWM (mW-scale + slow, software-toggle adequate). No SKiDL/schematic change. Rationale: (B) requires SKiDL netlist break + board re-route; (C) demotes ESC PWM map (more load-bearing). Net-stays-at-PA15 is engineering-safe.
+- **`phase5-thermal-ldo-vs-buck`**: **RESOLVED — Option B (buck).** Implemented PR #95/#96 (U2 AP2112K-3.3 → TPS62177DQC). Sim 1 thermal re-validation PR #126: MCU Tj 65.05 °C, margin +15.0 °C to 80 °C ceiling. Buck-noise IMU coupling validated via THERMAL_ARCHITECTURE_DECISION.md (24 ppm of IMU noise floor — engineering safe). Stale "RE-OPENED" flag now closed.
+- **`phase4-dfm-usb-fan`**: **RESOLVED — passes.** PR #134 CLI-DRC = GUI-DRC equivalence proof + DFM_REPORT GUI-authoritative 0 errors. The 0.106 mm fan-region gap is within JLC published 6L 1oz capability (0.10 mm tier). DRU rule `usb-diff-pair-in-pair` documented; no order-time gate flag.
+- **`phase2exit-1` MAX7456 OSD**: **RESOLVED — v2-defer (likely-never).** Nova drone video is fully digital (Pi-Camera + Hailo per CLAUDE.md §2.1); no analog video path exists. Phase 3 schematic shipped without MAX7456. The 5 stale hwdef lines (PB12 CS / SPIDEV osd / OSD_ENABLED / HAL_OSD_TYPE_DEFAULT / ROMFS fonts) are stripped from `hwdef.dat` as part of the same firmware sweep (frees ~10-30 KB flash). If ever needed for analog FPV, re-add in v2.
+
+Two entries remain genuinely open (correctly so):
+- **`phase2a-1` IMU DRDY** — recommendation (a) polled for v1 stands; revisit only if Phase 9 bench shows IMU-thread jitter.
+- **`phase3-render-1`** — Phase 6.5 forum-review-quality schematic rendering. Now in scope as T8 Phase 6.5 forum draft preparation.
+
+The original loose-thread entries are preserved below for traceability.
+
+---
+
+## hwdef-heater-pwm-pa15. HEATER_PWM pin/timer conflict (raised 2026-05-23, task #66) — RESOLVED 2026-05-30 Option A
 
 **Raised** during task #66 (revise `firmware/hwdef-novapcb/hwdef.dat` to match
 v1.1 SKiDL netlist).
@@ -62,7 +81,7 @@ BUZZER: PA15→PD7) but stopped on HEATER_PWM pending sign-off.
 
 
 
-## phase5-thermal-ldo-vs-buck. +3V3 LDO vs buck-switcher escalation — **RE-OPENED 2026-05-23 (Sai-decision pending)**
+## phase5-thermal-ldo-vs-buck. +3V3 LDO vs buck-switcher escalation — RESOLVED 2026-05-30 Option B (buck; impl PR #95/#96)
 
 **Status: RE-OPENED 2026-05-23.** Originally CLOSED 2026-05-23 morning
 ("LDO retained, thermal margin met at 105×85"). The closure was based on
@@ -105,7 +124,7 @@ preserved below for traceability but no longer current.
 
 **Reference:** `docs/MCU_POWER_BUDGET.md`, `docs/THERMAL_3V3_BUDGET.md`, `sims/thermal-step4/runs/v11_sweep_2026-05-23.log`, PR #71 commit log.
 
-## phase4-dfm-usb-fan. JLCPCB DFM gate (#11) — USB pair fan-region thin clearance
+## phase4-dfm-usb-fan. JLCPCB DFM gate (#11) — USB pair fan-region thin clearance — RESOLVED 2026-05-30 (passes per PR #134 CLI=GUI DRC + DFM_REPORT)
 
 **Raised 2026-05-23** (master flag at C↔F lock review).
 
@@ -163,7 +182,7 @@ Phase 2a locked the primary IMU as ICM-42688-P on SPI1 (CS = `IMU1_CS` / PC15) i
 
 **Recommendation:** (a) polled for v1; revisit only if we see IMU-thread jitter in bring-up (Phase 9).
 
-## phase2exit-1. MAX7456 analog OSD chip — populate on novapcb v1 schematic?
+## phase2exit-1. MAX7456 analog OSD chip — RESOLVED 2026-05-30 v2-defer (likely-never; digital video stack)
 
 Raised 2026-05-20 (Phase 2-exit cruft inventory). Inherited from MatekH743 reference.
 

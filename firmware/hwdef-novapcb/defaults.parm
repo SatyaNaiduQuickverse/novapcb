@@ -1,12 +1,88 @@
 # novapcb-v1 parameter defaults — applied on first boot before user params.
-# Structure inherited from MatekH743-bdshot/defaults.parm.
+# Mission: SOTA Pixhawk-class out-of-box configuration matching the 6X functional contract
+# (CLAUDE.md §3.1 — "same parameter set ... so MAVROS doesn't choke").
 
-# SERIAL7 (= USART6 per SERIAL_ORDER index 7) is RCIN by default.
-# Inherited from MatekH743-bdshot/defaults.parm (PROTOCOL line + structure).
+# Critical relationships this file enforces:
+#  - Stress-relief slot is partial only on v1 (DECISIONS §2.1) → harmonic notch is the
+#    PROMISED SOFTWARE BACKSTOP. Enabled here with sane initial values; tune post-flight.
+#  - 3 IMUs present (ICM-42688-P + BMI088 + LSM6DSV16X) → all enabled for EKF voting.
+#  - No safety switch on v1 → default-armed-safe-state.
+#  - External GPS+mag via J5 → COMPASS_EXTERNAL.
+#  - microSD logging on board → file backend.
+#  - 6/8 motors via DShot300 (DECISIONS §3).
+#  - Mauch power module via ADC (DECISIONS §5).
+
+# ---- Serial ports ----
+# SERIAL7 = UART4 (post-CRSF re-pin PR #120, hwdef.dat) = RCIN for CRSF/ELRS
+# Inherited semantics from MatekH743-bdshot/defaults.parm; baud diverged for CRSF.
 SERIAL7_PROTOCOL 23
-
-# CRSF requires 420000 baud. novapcb-specific 1-number deviation from bdshot's
-# default of 115 (= 115200 for SBUS/DSM/PPM). Reason: DECISIONS.md §4 locks
-# novapcb v1 to ExpressLRS RX over CRSF UART; 420 kbaud is the CRSF/ELRS spec.
-# RP4TD ships at 420k.
 SERIAL7_BAUD 420
+
+# ---- IMU configuration ----
+# Enable all 3 IMUs. EKF3 votes across them; degraded operation continues on any 2/3.
+INS_USE 1
+INS_USE2 1
+INS_USE3 1
+
+# Anti-alias filter cutoffs — Pixhawk-class typical for a 5-7" quad
+INS_GYRO_FILTER 40
+INS_ACCEL_FILTER 20
+
+# Harmonic notch — the software backstop for the partial v1 stress-relief slot.
+# DECISIONS §2.1 commits ArduPilot harmonic-notch as the v1 vibration-mitigation strategy.
+# Initial throttle-based reference (no BLHeli ESC RPM telem on stock v1 firmware).
+# User retunes INS_HNTCH_FREQ + REF after first hover (look at FFT log).
+INS_HNTCH_ENABLE 1
+INS_HNTCH_MODE 1
+INS_HNTCH_REF 0.35
+INS_HNTCH_FREQ 80
+INS_HNTCH_BW 40
+INS_HNTCH_HMNCS 7
+INS_HNTCH_OPTS 6
+INS_HNTCH_FM_RAT 1.0
+
+# Second notch (dynamic ESC tracking) — off until user configures BLHeli passthrough
+INS_HNTC2_ENABLE 0
+
+# ---- Compass ----
+# External mag on J5 GPS+mag combo (DECISIONS §6). No on-board mag.
+COMPASS_EXTERNAL 1
+COMPASS_USE 1
+COMPASS_USE2 0
+COMPASS_USE3 0
+COMPASS_AUTODEC 1
+
+# ---- Logging ----
+# microSD file backend (DECISIONS §6). Only log when armed to preserve card.
+LOG_BACKEND_TYPE 1
+LOG_DISARMED 0
+LOG_BITMASK 176126
+
+# ---- Motors / ESC ----
+# DShot300 default per DECISIONS §3 (DShot600 = MOT_PWM_TYPE 5 if user prefers).
+MOT_PWM_TYPE 4
+MOT_SAFE_DISARM 1
+SERVO_BLH_AUTO 1
+
+# ---- Board / safety ----
+# No safety switch on novapcb v1 — default to armed-safe (user uses CH5/CH6 arm logic).
+BRD_SAFETY_DEFLT 0
+BRD_BOOT_DELAY 200
+
+# ---- AHRS / EKF ----
+# EKF3 is SOTA; EKF2 disabled to save CPU/RAM.
+AHRS_EKF_TYPE 3
+EK3_ENABLE 1
+EK2_ENABLE 0
+
+# ---- Battery monitor ----
+# Mauch analog V+I (DECISIONS §5). Scale values come from hwdef.dat HAL_BATT_*_SCALE.
+BATT_MONITOR 4
+
+# ---- GPS ----
+GPS_TYPE 1
+GPS_NAVFILTER 8
+
+# ---- Arming ----
+# Full pre-arm checks; user relaxes for bench bring-up via ARMING_CHECK bitmask.
+ARMING_CHECK 1
