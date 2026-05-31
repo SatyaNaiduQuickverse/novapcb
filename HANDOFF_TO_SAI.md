@@ -9,7 +9,9 @@
 
 **Board is LOGICAL FREEZE-READY** with bar-restoration in flight. Real-latent = 0. Power tree complete + sims valid + firmware builds clean. **Raise-the-bar sweep underway** — see §"Raise-the-bar status" below.
 
-Head: `5f40d35` on `sch/option-b-buck` (PR #144 silk script).
+Head: `93a000f` on `sch/option-b-buck` (PR #155 T19-retry 5/5 rails; PR #153 BOM critical-fix saved a dead-on-arrival fab order).
+
+**Sai escalation 2026-05-31** ("no corners cut, do whatever you want to redo") triggered strategic campaign T19-T22 + T8 sim execution. T19 closed cleanly (was partial, now 5/5). T20/T21/T22 in flight. T8 sims partial PASS analytically.
 Live HTML view: http://100.81.21.121:8765/static/pcb.html
 
 ---
