@@ -1,0 +1,29 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: 
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+surge_in                                     0
+node_in                            1.34488e-34
+node_5vbec                         1.34488e-34
+gnd_t                             -1.34488e-37
+lparasitic#branch                 -2.68975e-36
+vsurge#branch                      2.68975e-36
+
+
+No. of Data Rows : 2024
+ngspice-44.2 done
+
+=== STDERR ===
+Warning from checkvalid: vector at is not available or has zero length.
+Warning from checkvalid: vector max is not available or has zero length.
