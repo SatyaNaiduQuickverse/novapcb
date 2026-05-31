@@ -1,0 +1,21 @@
+
+* Sim 6i Scenario A — Lightning surge on +5V_BEC line (IEC 61000-4-5 simplified)
+Vsurge surge_in 0 PWL(0 0 1.2u 30 50u 15 100u 0)
+Rsrc surge_in node_in 50
+Lparasitic node_in node_5vbec 22u
+Cbus node_5vbec 0 100u
+* SMAJ6.0A TVS as 6.8V Zener + ESR
+* Real: V_BR=6.67min, V_C=10.3 @ I=100A
+* Simplified: Vz=6.8V + 0.05ohm series + 3nF junction cap
+Dtvs node_5vbec gnd_t DZENER
+Rtvs gnd_t 0 0.05
+Ctvs node_5vbec 0 3n
+.MODEL DZENER D(BV=6.8 IS=1e-12 RS=0.01 CJO=3p)
+.TRAN 0.1u 200u
+.CONTROL
+run
+print v(node_5vbec) at=20u v(node_5vbec) at=50u v(node_5vbec) at=100u
+print max v(node_5vbec)
+quit
+.ENDC
+.END
