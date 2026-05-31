@@ -1,0 +1,44 @@
+* Sim 6i Scenario B — Mauch BEC fails to 8V steady-state stuck-on
+* Validates TPS25940A OVP latch behavior: trip ≤50µs (per TI SLVSC73)
+* Per docs/SIM_6I_TRANSIENT_OV_SPEC.md §1 scenario B
+
+.lib "sim/spice-models/tps25940/SLVMAB0B/TPS25940A_TRANS.LIB"
+
+* 8V stuck-on input source
+Vin V_in 0 PWL(0 5 100u 5 110u 8 5m 8)
+* Source impedance (Mauch ~50mΩ)
+Rsrc V_in V_inA 0.05
+
+* TPS25940A as eFuse, OVP set per board to ~6.04V (R9 51k / R10 10k divider)
+* Model usage per TI app note: VIN=2-9, OUT=14-17, OVP=15 (set via R div), 
+* ILIM=12 (R4 42.2k), EN=14 (UVLO div), GND=21
+Xeufse V_inA V_out V_inA V_inA OVP_NODE ILIM_NODE EN_NODE V_inA GATE_NODE V_inA V_inA V_inA V_inA 0 TPS25940A_TRANS
+
+* OVP divider: R9=51k / R10=10k → trip at V_inA * 10k/(51k+10k) = 0.164 * V_inA
+* TPS25940A OVP_REF = 1.36V (per datasheet) → trip when V_inA·0.164 > 1.36 → V_inA > 6.04V (BOARD spec)
+ROVP1 V_inA OVP_NODE 51k
+ROVP2 OVP_NODE 0 10k
+
+* ILIM: R4 = 42.2k → I_LIM ≈ 2.08A
+RILIM ILIM_NODE 0 42.2k
+
+* EN/UVLO divider: trip at 4.0V V_inA
+REN1 V_inA EN_NODE 30.1k
+REN2 EN_NODE 0 10k
+
+* Load: 100µF bus + 500mA representative load
+Cbus V_out 0 100u
+Rload V_out 0 6.6
+
+* TVS clamp (SMAJ6.0A simplified)
+Dtvs V_out 0 DZENER
+.MODEL DZENER D(BV=6.8 IS=1e-12 RS=0.05 CJO=3p)
+
+.TRAN 1u 5m
+.CONTROL
+run
+print v(V_out) at=1m v(V_out) at=2m v(V_out) at=4m
+print max v(V_out) min v(V_out)
+quit
+.ENDC
+.END

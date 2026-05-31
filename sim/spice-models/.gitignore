@@ -1,0 +1,3 @@
+# Exclude TI ZIPs (licensed binaries); keep extracted .lib/.LIB text only
+*.zip
+*.ZIP
