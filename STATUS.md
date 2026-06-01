@@ -98,5 +98,5 @@ JLCPCB portal BOM sourcing (8 TBD items researched in `docs/BOM_LCSC_SOURCING.md
 
 Master + worker continue raise-the-bar sweep until all Tier 1-5 tasks landed.
 
-**Board:** 105×85 mm, 6-layer JLC06161H, STM32H743VIT6, Pixhawk 6X functional drop-in (electrical/software near-parity per CLAUDE.md §1.1).
+**Board:** 105×100 mm (grown 2026-06-02 from 85mm for T20/T21/T22 structural relief), 6-layer JLC06161H, STM32H743VIT6, Pixhawk 6X functional drop-in (electrical/software near-parity per CLAUDE.md §1.1).
 **Live HTML view:** http://100.81.21.121:8765/static/pcb.html

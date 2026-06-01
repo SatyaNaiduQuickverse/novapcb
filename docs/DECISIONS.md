@@ -17,6 +17,8 @@ All 9 scoping decisions for the v1 FC, signed off 2026-05-18. Each section shows
 
 ## 2. Form factor
 
+**SUPERSEDED 2026-06-02 (Sai pick c after T20 combined-attack FAIL)**: the 105 × 85 mm dimension is GROWN to **105 × 100 mm**. Trigger: 7 independent empirical paths (T20 6f/6e/6c + T21 6a-v1/6a-v2/6c + T20 combined-attack 5-step + USART1 partial-gap) all confirmed the 85mm height structurally cannot accommodate USART1 Telem retrofit + T21 SWD + T22 hardware adds at current placement. Sai picked architectural relief (option c) over board-rework (option d) + over v2-defer (option e/f). Mounting holes H1-H4 now at 98.5 × 93.5 mm c-to-c (Y mounting holes shift +15mm to preserve corner-inset pattern). New airframe tray required. Sim 1 thermal + Sim 5 PDN re-run mandatory at new board outline. The 105 × 85 LOCK history is preserved below for traceability.
+
 **SUPERSEDED 2026-05-20 (Sai pivot, mid-Phase-4)**: the 36×36 / 30.5×30.5 M3 v1 spec is set aside. New direction:
 
 > **⚠ LOCK INVALIDATED 2026-05-23 (later)** — the "MCU=73.98°C / +6.02°C
