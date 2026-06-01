@@ -45,10 +45,25 @@ novaedge1 isn't directly blocking — but if Sai wants ngspice runs locally
 
 ## Action
 
-This is a **Sai-decision** (deleting user tools needs explicit OK). Master
-flagging the gap; not executing without authorization.
+**SAI DECISION 2026-06-02: NO CLEANUP. STRICTLY.**
 
-If Sai authorizes: `rm -rf ~/.arduino15` (6.9 GB) + `pip cache purge`.
+Disk stays at 94% used / 1.9 GB free. `.arduino15` and all other user
+files retained as-is.
+
+**No future-Claude should propose `rm -rf ~/.arduino15`, `pip cache purge`,
+or any other space-reclaim action without Sai explicitly reversing this
+NO.** Constraint is explicit and persistent.
+
+Master flagged the audit; Sai chose to keep the state. Done.
+
+## Implication for ongoing work
+
+- ngspice / openEMS heavy local installs on novaedge1 are OFF the table
+  (no room). All sim execution stays on worker Pi (novatics64).
+- Master continues with no-install constraint (analytical Python +
+  WebFetch + git + doc work only).
+- Worker has its own disk + sim tooling; this constraint doesn't
+  affect worker.
 
 ## Why not master-process learnings doc instead
 
