@@ -42,7 +42,14 @@ PCB = ROOT / "hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_pcb"
 # decision was correct. v1: MAVLink via USB-CDC (canonical per CLAUDE.md §2.1);
 # J3 connector remains placed (BOM unchanged). See docs/TELEM_J3_STRUCTURAL_DIAGNOSIS.md
 # and docs/TELEM_V1_DEFER.md (status reinstated).
-INTENDED_DEFERRED = {"MOT7", "MOT8",  # USART1_TX/RX REMOVED 2026-06-02: re-pinned to UART7 PE7/PE8 (south-side LQFP-100 escape per board-grow benefit)
+INTENDED_DEFERRED = {"MOT7", "MOT8",
+                     # UART7_TX/RX: Sai (α) v2-defer 2026-06-02. UART7 PE7/PE8 re-pin
+                     # didn't unblock route — MCU SOUTH-bridge zone Y=37-42 X=37-46
+                     # is structurally saturated across F.Cu AND B.Cu (18+ Y-bands
+                     # + B.Cu UART4 vertical at X=45.91 covering PE7/PE8 escape
+                     # column). hwdef + SKiDL + PCB pad assigns preserved as v2
+                     # starting point. See docs/TELEM_FINAL_V2_DEFER.md.
+                     "UART7_TX", "UART7_RX",
                      "SWDIO", "SWCLK", "SWO", "NRST",
                      "EFUSE_FLT", "EFUSE_PGOOD",
                      "IMU3_INT1"}
