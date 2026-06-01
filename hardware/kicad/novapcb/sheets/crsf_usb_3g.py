@@ -127,20 +127,21 @@ setup()
 
 # ---- shared nets ----
 GND       = n("GND")
-P3V3      = n("+3V3")
-P5V       = n("+5V")
-USART6_TX = n("USART6_TX")  # MCU PA0 (UART4_TX) → CRSF connector — re-pinned task #56
-USART6_RX = n("USART6_RX")  # CRSF connector → MCU PA1 (UART4_RX) — re-pinned task #56
-USB_DM    = n("USB_DM")     # MCU PA11 → USB-C D- (post-ESD)
-USB_DP    = n("USB_DP")     # MCU PA12 → USB-C D+ (post-ESD)
+P3V3     = n("+3V3")
+P5V      = n("+5V")
+UART4_TX = n("UART4_TX")  # MCU PA0 → CRSF connector (cosmetic rename 2026-06-02 from stale USART6_TX label)
+UART4_RX = n("UART4_RX")  # CRSF connector → MCU PA1 (cosmetic rename 2026-06-02 from stale USART6_RX label)
+USB_DM   = n("USB_DM")    # MCU PA11 → USB-C D- (post-ESD)
+USB_DP   = n("USB_DP")    # MCU PA12 → USB-C D+ (post-ESD)
 
 
 # ---- MCU side: UART4 (CRSF) + OTG_FS pins ----
 # CRSF re-pinned USART6/PC6-PC7 → UART4/PA0-PA1 (task #56: PC6/PC7 east-edge
 # pads empirically unroutable to J10; PA0/PA1 west-edge escape clean). Net
-# labels kept as USART6_TX/RX (cosmetic legacy); physical pins are PA0/PA1.
-USART6_RX += mcu["PA1"]   # UART4_RX (was PC7/USART6_RX)
-USART6_TX += mcu["PA0"]   # UART4_TX (was PC6/USART6_TX)
+# labels FINALLY renamed 2026-06-02 (USART6_* → UART4_*) — copper unchanged,
+# Rule-9 hygiene cleanup matching the hwdef state since task #56.
+UART4_RX += mcu["PA1"]   # PA1 = UART4_RX per hwdef
+UART4_TX += mcu["PA0"]   # PA0 = UART4_TX per hwdef
 # hwdef.dat:29-30 — OTG_FS D-/D+
 USB_DM    += mcu["PA11"]
 USB_DP    += mcu["PA12"]
@@ -163,8 +164,8 @@ crsf_conn.ref = "J10"   # J10 (new). J1-J9 reserved per Phase 2.5 sketch + Phase
 
 # Pin map (ELRS-standard wiring):
 P5V       += crsf_conn[1]   # +5V supply to RX
-USART6_TX += crsf_conn[2]   # FC TX → RX telemetry channel
-USART6_RX += crsf_conn[3]   # RX channel-data → FC
+UART4_TX += crsf_conn[2]   # FC TX → RX telemetry channel
+UART4_RX += crsf_conn[3]   # RX channel-data → FC
 GND       += crsf_conn[4]
 
 
@@ -176,14 +177,14 @@ esd_crsf_tx = Part("Device", "D_TVS",
                    value="ESD7L5.0DT5G",
                    footprint="esd7l50:SOT-723_L1.2-W0.8-P0.40-LS1.2-BR")
 esd_crsf_tx.ref = "D13"
-USART6_TX += esd_crsf_tx[1]
+UART4_TX += esd_crsf_tx[1]
 GND       += esd_crsf_tx[2]
 
 esd_crsf_rx = Part("Device", "D_TVS",
                    value="ESD7L5.0DT5G",
                    footprint="esd7l50:SOT-723_L1.2-W0.8-P0.40-LS1.2-BR")
 esd_crsf_rx.ref = "D14"
-USART6_RX += esd_crsf_rx[1]
+UART4_RX += esd_crsf_rx[1]
 GND       += esd_crsf_rx[2]
 
 

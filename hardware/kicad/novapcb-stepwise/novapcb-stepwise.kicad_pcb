@@ -169,8 +169,8 @@
 	(net 85 "SWDIO")
 	(net 86 "UART7_RX")
 	(net 87 "UART7_TX")
-	(net 88 "USART6_RX")
-	(net 89 "USART6_TX")
+	(net 88 "UART4_RX")
+	(net 89 "UART4_TX")
 	(net 90 "USBC_CC1")
 	(net 91 "USBC_CC2")
 	(net 92 "USBC_D_M_PRE")
@@ -9902,7 +9902,7 @@
 			(size 0.6 1.7)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 89 "USART6_TX")
+			(net 89 "UART4_TX")
 			(uuid "f7a46bcb-a99d-4891-b267-73e2ee186764")
 		)
 		(pad "3" smd roundrect
@@ -9910,7 +9910,7 @@
 			(size 0.6 1.7)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 88 "USART6_RX")
+			(net 88 "UART4_RX")
 			(uuid "8ae87421-767a-44ae-a054-965bd7d5e596")
 		)
 		(pad "4" smd roundrect
@@ -11193,7 +11193,7 @@
 			(at 0.53 0.4)
 			(size 0.489 0.294)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 89 "USART6_TX")
+			(net 89 "UART4_TX")
 			(uuid "88b1f8ba-f84e-4a0a-8a3a-a0debc6a37ca")
 		)
 		(pad "2" smd rect
@@ -18662,7 +18662,7 @@
 			(at 0.53 0.4)
 			(size 0.489 0.294)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 88 "USART6_RX")
+			(net 88 "UART4_RX")
 			(uuid "705de41e-f5f6-4279-a828-2c38c7a24195")
 		)
 		(pad "2" smd rect
@@ -20455,7 +20455,7 @@
 			(size 1.6 0.3)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 89 "USART6_TX")
+			(net 89 "UART4_TX")
 			(uuid "2af381a8-0181-47e6-a794-7f222dba4ae6")
 		)
 		(pad "23" smd roundrect
@@ -20463,7 +20463,7 @@
 			(size 1.6 0.3)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 88 "USART6_RX")
+			(net 88 "UART4_RX")
 			(uuid "cf4a6de9-454f-4080-af3b-571782a44b35")
 		)
 		(pad "24" smd roundrect
