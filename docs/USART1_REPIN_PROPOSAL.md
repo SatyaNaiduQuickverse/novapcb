@@ -1,4 +1,49 @@
-# USART1 re-pin PA9/PA10 → PB14/PB15 (Telem J3 unblock)
+# USART1 / UART7 re-pin proposal — CORRECTED 2026-06-02
+
+> **MASTER ERROR CORRECTION (Rule 13 catch by worker):** my original
+> recommendation of PB14/PB15 was WRONG — those pins are held by SPI2
+> (IMU2 BMI088, hands-off bus). I cited my own MCU free-pin survey
+> incorrectly. Worker caught the error before executing.
+>
+> **Correct path: USART1 → UART7 on PE7/PE8** (south-east MCU pins,
+> CONFIRMED free per the survey).
+>
+> Original USART1 PB14/PB15 proposal preserved below for traceability;
+> the actual implementation uses UART7 PE7/PE8.
+
+## Corrected pin remap
+
+| Net | Before | After (CORRECTED) |
+|---|---|---|
+| Telem TX | PA9 USART1_TX | **PE8 UART7_TX** |
+| Telem RX | PA10 USART1_RX | **PE7 UART7_RX** |
+
+ArduPilot SERIAL_ORDER updated so SERIAL1 still resolves to J3 Telem
+(firmware-facing semantic preserved).
+
+## Why UART7 not USART1
+
+All USART1 alternate-function pins on H743 are taken:
+- PA9/PA10 (AF7): current, pad-level wall (0.5mm Y-window between SDMMC1_CLK and pin 67)
+- PB6/PB7 (AF7): TAKEN by I²C1 (sensor bus)
+- PB14/PB15 (AF4): TAKEN by SPI2 (IMU2 BMI088, hands-off)
+
+UART7 PE7/PE8 on south-east MCU corner = clean B.Cu south escape into
+the freed Y=85-100 area from the 2026-06-02 board grow.
+
+## Master error log (Rule 17 honest trail)
+
+- 2026-06-02 dispatch: cited PB14/PB15 as "currently free per docs/attempt6/T20_MCU_FREE_PINS.md"
+- Reality: docs/attempt6/T20_MCU_FREE_PINS.md PR #170 explicitly listed PB14/PB15 in USED (PB section "0 free")
+- Master Rule-3 violation: didn't verify cited source carefully
+- Worker Rule-13 catch: stopped before executing wrong pins
+- Master error acknowledged + corrected path authorized (UART7 PE7/PE8)
+
+---
+
+## Original USART1 PB14/PB15 proposal (PRESERVED FOR TRACEABILITY — DO NOT EXECUTE)
+
+# Original (incorrect) proposal — USART1 PB14/PB15
 
 > Master 2026-06-02 authorization after worker's pin-escape geometry analysis.
 > 7 prior re-route attempts walled at MCU east edge pad-level constraint
