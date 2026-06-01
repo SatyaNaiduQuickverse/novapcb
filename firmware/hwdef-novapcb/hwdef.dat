@@ -107,11 +107,22 @@ define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
 
 # order of UARTs (and USB)
-SERIAL_ORDER OTG1 USART1 USART2 USART3 UART8 UART4 OTG2
+# SERIAL1 (telem2 / J3) moved 2026-06-02: USART1 → UART7. PA9/PA10 east-edge
+# pin escape was structurally walled by SDMMC1_CLK via + USB diff-pair density
+# (7 independent attempts incl. 4-pin manual + scoped Freerouting + board-grow
+# 105x85->105x100). PB14/15 + PB6/7 USART1 alternates are taken by SPI2 (IMU2)
+# and I2C1 (baros) — hands-off buses per CLAUDE.md §3.7. UART7 PE7/PE8 are
+# south-side LQFP-100 pins (U1.37/U1.38) → clean B.Cu south escape into the
+# freed Y=85-100 area (board-grow benefit realized here). ArduPilot
+# SERIAL_ORDER preserves SERIAL1 semantics. See
+# docs/USART1_TO_UART7_REPIN_PROPOSAL.md.
+SERIAL_ORDER OTG1 UART7 USART2 USART3 UART8 UART4 OTG2
 
-# USART1 (telem2)
-PA10 USART1_RX USART1
-PA9  USART1_TX USART1
+# USART1 — REMOVED 2026-06-02 (Telem2/J3 → UART7 PE7/PE8). PA9/PA10
+# revert to free GPIOs. Original entries retained as comments for
+# git-history clarity:
+#   PA10 USART1_RX USART1
+#   PA9  USART1_TX USART1
 
 # USART2 (GPS1)
 # GPS1_TX repinned PD5->PA2 (2026-05-26, task #47): PD5 N-edge pad boxed by
@@ -142,9 +153,14 @@ PD8 USART3_TX USART3
 PA0 UART4_TX UART4
 PA1 UART4_RX UART4
 
-# UART7 — REMOVED 2026-05-24: PE9 now MOT3 (TIM1_CH1); PE7/PE8/PE10
-# free. TELEM1 is on USART1 (PA9/PA10); UART7 was unconnected on the
-# board (no SKiDL sheet references). Per docs/MCU_PIN_MAP_AUDIT.md.
+# UART7 (telem2 / J3) — RE-INTRODUCED 2026-06-02. SERIAL1 moved from
+# USART1 PA9/PA10 due to east-edge pin escape wall (SDMMC1_CLK via +
+# USB diff pair density). PE7/PE8 = U1.37/U1.38 south-side LQFP-100 pins,
+# AF7 = UART7. Clean B.Cu south escape to J3 in freed Y=85-100 area
+# (post board-grow 105x85->105x100). DMA preserved on UART7_TX where
+# ArduPilot defaults allow it.
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
 
 # UART8 (spare)
 PE0 UART8_RX UART8 NODMA

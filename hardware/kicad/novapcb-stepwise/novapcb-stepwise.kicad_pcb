@@ -167,8 +167,8 @@
 	(net 83 "SPI3_SCK")
 	(net 84 "SWCLK")
 	(net 85 "SWDIO")
-	(net 86 "USART1_RX")
-	(net 87 "USART1_TX")
+	(net 86 "UART7_RX")
+	(net 87 "UART7_TX")
 	(net 88 "USART6_RX")
 	(net 89 "USART6_TX")
 	(net 90 "USBC_CC1")
@@ -2767,7 +2767,7 @@
 			(at 0.53 0.4)
 			(size 0.489 0.294)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 86 "USART1_RX")
+			(net 86 "UART7_RX")
 			(uuid "4ee85384-0dc1-4611-9e14-9e103389177f")
 		)
 		(pad "2" smd rect
@@ -3861,7 +3861,7 @@
 			(at 0.53 0.4)
 			(size 0.489 0.294)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 87 "USART1_TX")
+			(net 87 "UART7_TX")
 			(uuid "04c8ca5f-b6f9-43e9-a76e-7db107ec04fa")
 		)
 		(pad "2" smd rect
@@ -10201,128 +10201,6 @@
 		)
 		(embedded_fonts no)
 	)
-	(footprint ""
-		(layer "F.Cu")
-		(uuid "a5000001-b500-0000-0000-000000000005")
-		(at 3.25 96.75)
-		(property "Reference" "H5"
-			(at 0 -4.2562 0)
-			(layer "F.SilkS")
-			(uuid "a5000001-b500-0000-0001-000000000005")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Value" "M3"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(uuid "a5000001-b500-0000-0002-000000000005")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "a5000001-b500-0000-0003-000000000005")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "a5000001-b500-0000-0004-000000000005")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(pad "1" thru_hole circle
-			(at 0 0)
-			(size 5.5 5.5)
-			(drill 3.2)
-			(layers "*.Cu" "*.Mask")
-			(net 29 "GND")
-			(zone_connect 2)
-			(uuid "a5000001-b500-0000-0005-000000000005")
-		)
-		(embedded_fonts no)
-	)
-	(footprint ""
-		(layer "F.Cu")
-		(uuid "a5000001-b600-0000-0000-000000000006")
-		(at 101.75 96.75)
-		(property "Reference" "H6"
-			(at 0 -4.2562 0)
-			(layer "F.SilkS")
-			(uuid "a5000001-b600-0000-0001-000000000006")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Value" "M3"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(uuid "a5000001-b600-0000-0002-000000000006")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "a5000001-b600-0000-0003-000000000006")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "a5000001-b600-0000-0004-000000000006")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(pad "1" thru_hole circle
-			(at 0 0)
-			(size 5.5 5.5)
-			(drill 3.2)
-			(layers "*.Cu" "*.Mask")
-			(net 29 "GND")
-			(zone_connect 2)
-			(uuid "a5000001-b600-0000-0005-000000000006")
-		)
-		(embedded_fonts no)
-	)
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "4ff07a3c-8642-46f6-99d9-5b88d787e672")
@@ -13288,7 +13166,7 @@
 	(footprint "Connector_JST:JST_GH_SM06B-GHS-TB_1x06-1MP_P1.25mm_Horizontal"
 		(layer "F.Cu")
 		(uuid "79a52a7c-332c-402f-8497-a7eef7e43ef9")
-		(at 95 38)
+		(at 54 95)
 		(descr "JST GH series connector, SM06B-GHS-TB (http://www.jst-mfg.com/product/pdf/eng/eGH.pdf), generated with kicad-footprint-generator")
 		(tags "connector JST GH horizontal")
 		(property "Reference" "J3"
@@ -13523,7 +13401,7 @@
 			(size 0.6 1.7)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 87 "USART1_TX")
+			(net 87 "UART7_TX")
 			(uuid "d8d2da80-ef90-4442-8e29-f6970167fc5f")
 		)
 		(pad "3" smd roundrect
@@ -13531,7 +13409,7 @@
 			(size 0.6 1.7)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 86 "USART1_RX")
+			(net 86 "UART7_RX")
 			(uuid "a5a7705e-2fb3-4e7b-bfef-aa897538e5f0")
 		)
 		(pad "4" smd roundrect
@@ -17410,6 +17288,130 @@
 			)
 		)
 	)
+	(footprint ""
+		(layer "F.Cu")
+		(uuid "a5000001-b500-0000-0000-000000000005")
+		(at 3.25 96.75)
+		(property "Reference" "H5"
+			(at 0 -4.2562 0)
+			(layer "F.SilkS")
+			(uuid "a5000001-b500-0000-0001-000000000005")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Value" "M3"
+			(at 0 0 0)
+			(layer "F.Fab")
+			(uuid "a5000001-b500-0000-0002-000000000005")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a5000001-b500-0000-0003-000000000005")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a5000001-b500-0000-0004-000000000005")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(pad "1" thru_hole circle
+			(at 0 0)
+			(size 5.5 5.5)
+			(drill 3.2)
+			(layers "*.Cu" "*.Mask")
+			(remove_unused_layers no)
+			(net 29 "GND")
+			(zone_connect 2)
+			(uuid "a5000001-b500-0000-0005-000000000005")
+		)
+		(embedded_fonts no)
+	)
+	(footprint ""
+		(layer "F.Cu")
+		(uuid "a5000001-b600-0000-0000-000000000006")
+		(at 101.75 96.75)
+		(property "Reference" "H6"
+			(at 0 -4.2562 0)
+			(layer "F.SilkS")
+			(uuid "a5000001-b600-0000-0001-000000000006")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Value" "M3"
+			(at 0 0 0)
+			(layer "F.Fab")
+			(uuid "a5000001-b600-0000-0002-000000000006")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a5000001-b600-0000-0003-000000000006")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a5000001-b600-0000-0004-000000000006")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(pad "1" thru_hole circle
+			(at 0 0)
+			(size 5.5 5.5)
+			(drill 3.2)
+			(layers "*.Cu" "*.Mask")
+			(remove_unused_layers no)
+			(net 29 "GND")
+			(zone_connect 2)
+			(uuid "a5000001-b600-0000-0005-000000000006")
+		)
+		(embedded_fonts no)
+	)
 	(footprint "bmi088:LGA-16_L4.5-W3.0-P0.50-BL"
 		(layer "F.Cu")
 		(uuid "a5a0d382-b82b-4fb8-9011-c6ae63f3abcc")
@@ -20572,6 +20574,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 86 "UART7_RX")
 			(uuid "b42b405a-93c3-4104-81a8-958317f284f9")
 		)
 		(pad "38" smd roundrect
@@ -20579,6 +20582,7 @@
 			(size 0.3 1.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 87 "UART7_TX")
 			(uuid "44029ea3-14c0-438e-a83e-f279a8db2561")
 		)
 		(pad "39" smd roundrect
@@ -20806,7 +20810,6 @@
 			(size 1.6 0.3)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 87 "USART1_TX")
 			(uuid "e4767262-9c53-4d5c-9616-703feeaec9c8")
 		)
 		(pad "69" smd roundrect
@@ -20814,7 +20817,6 @@
 			(size 1.6 0.3)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 86 "USART1_RX")
 			(uuid "5cf42947-26ce-4afd-b680-732eaa0f453e")
 		)
 		(pad "70" smd roundrect

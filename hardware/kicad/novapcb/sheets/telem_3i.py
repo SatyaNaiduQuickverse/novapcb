@@ -1,11 +1,21 @@
 """
-novapcb Phase 3i — telemetry UART connector sheet (USART1 on JST-GH 6P).
+novapcb Phase 3i — telemetry UART connector sheet (UART7 on JST-GH 6P).
 
 Phase 3-exit A2 hwdef-completeness check (2026-05-20) caught that USART1
 TX/RX (PA9/PA10) was defined in hwdef.dat:113-114 but had no novapcb
 connector — the Phase 3 8-sheet breakdown (3a-3h) missed it. Master
 adjudication: NEEDS-FIX, add as Phase 3i (separate small sub-phase
 following the CRSF sheet pattern).
+
+2026-06-02 RE-PIN: USART1 → UART7. PA9/PA10 east-edge pin escape proven
+structurally walled by SDMMC1_CLK via + USB diff-pair density (7 attempts,
+incl. 4-pin manual + scoped Freerouting + board-grow 105×85→105×100).
+USART1 alternates PB14/15 (SPI2) and PB6/7 (I2C1) are hands-off buses
+per CLAUDE.md §3.7. UART7 PE7/PE8 = U1.37/U1.38 south-side LQFP-100 pins
+give a clean B.Cu south escape into the freed Y=85-100 area (board-grow
+benefit). ArduPilot SERIAL_ORDER preserves SERIAL1 semantics (J3 still
+appears as SERIAL1 from firmware POV). See
+docs/USART1_TO_UART7_REPIN_PROPOSAL.md.
 
 Telem is a standard Pixhawk-class port + the conventional GCS-attach
 point for Phase 9 bring-up (independent of the USB-CDC primary link).
@@ -14,8 +24,8 @@ novapcb's identity as a functional Pixhawk/CubeOrange+ drop-in
 
 ## Authority for this sheet
 
-  - `firmware/hwdef-novapcb/hwdef.dat:113-114` — USART1 TX/RX
-    (PA9/PA10). AUTHORITATIVE per hwdef-cited discipline.
+  - `firmware/hwdef-novapcb/hwdef.dat` — UART7 TX/RX (PE8/PE7) lines
+    after 2026-06-02 re-pin. AUTHORITATIVE per hwdef-cited discipline.
   - Pixhawk Connector Standard DS-009 (`pixhawk/Pixhawk-Standards`
     GitHub, canonical) — TELEM JST-GH 6-pin connector pinout
     (web-confirmed 2026-05-20).
@@ -23,13 +33,13 @@ novapcb's identity as a functional Pixhawk/CubeOrange+ drop-in
 
 ## hwdef.dat-cited authoritative pin map
 
-| Net | MCU pin | Source line |
+| Net | MCU pin | Source (post 2026-06-02 re-pin) |
 |---|---|---|
-| USART1_TX (FC → peripheral) | PA9 | 114: `PA9  USART1_TX USART1` |
-| USART1_RX (peripheral → FC) | PA10 | 113: `PA10 USART1_RX USART1` |
+| UART7_TX (FC → peripheral) | PE8 | hwdef.dat `PE8 UART7_TX UART7` |
+| UART7_RX (peripheral → FC) | PE7 | hwdef.dat `PE7 UART7_RX UART7` |
 
-USART1 CTS/RTS hardware flow control: NOT defined in hwdef.dat (grep
-empty for `USART1_CTS` / `USART1_RTS`). Per master's `telem-connector`
+UART7 CTS/RTS hardware flow control: NOT defined in hwdef.dat (grep
+empty for `UART7_CTS` / `UART7_RTS`). Per master's `telem-connector`
 fork pre_recommendation, the 6-pin Pixhawk-standard footprint is still
 used (for mechanical compatibility with standard Pixhawk telem cables),
 with CTS/RTS pins as NC on the FC side. Software flow control is
@@ -40,10 +50,10 @@ sufficient for telem-radio + GCS use cases.
 | Pin | Signal | Voltage | Wiring |
 |---|---|---|---|
 | 1 | VCC | +5V | → +5V rail |
-| 2 | TX (from FC) | +3V3 logic | USART1_TX → MCU PA9 |
-| 3 | RX (to FC) | +3V3 logic | USART1_RX → MCU PA10 |
-| 4 | CTS (Clear to Send) | +3V3 logic | NC (hwdef does not assign USART1_CTS) |
-| 5 | RTS (Request to Send) | +3V3 logic | NC (hwdef does not assign USART1_RTS) |
+| 2 | TX (from FC) | +3V3 logic | UART7_TX → MCU PE8 |
+| 3 | RX (to FC) | +3V3 logic | UART7_RX → MCU PE7 |
+| 4 | CTS (Clear to Send) | +3V3 logic | NC (hwdef does not assign UART7_CTS) |
+| 5 | RTS (Request to Send) | +3V3 logic | NC (hwdef does not assign UART7_RTS) |
 | 6 | GND | — | GND |
 
 Standard Pixhawk telem cable will work — peripheral side (e.g. SiK
@@ -68,16 +78,16 @@ setup()
 
 
 # ---- shared nets ----
-GND       = n("GND")
-P5V       = n("+5V")
-USART1_TX = n("USART1_TX")   # MCU PA9 → telem peripheral (RX side)
-USART1_RX = n("USART1_RX")   # telem peripheral (TX side) → MCU PA10
+GND      = n("GND")
+P5V      = n("+5V")
+UART7_TX = n("UART7_TX")   # MCU PE8 → telem peripheral (RX side)
+UART7_RX = n("UART7_RX")   # telem peripheral (TX side) → MCU PE7
 
 
-# ---- MCU side: wire USART1 TX/RX to shared nets ----
-# hwdef.dat:113-114 — USART1 RX/TX
-USART1_TX += mcu["PA9"]
-USART1_RX += mcu["PA10"]
+# ---- MCU side: wire UART7 TX/RX to shared nets ----
+# hwdef.dat — UART7 RX/TX (PE7/PE8) post 2026-06-02 re-pin
+UART7_TX += mcu["PE8"]
+UART7_RX += mcu["PE7"]
 
 
 # ---- Telem JST-GH 6-pin connector (Pixhawk DS-009 TELEM standard) ----
@@ -89,12 +99,12 @@ telem_conn = Part(
 telem_conn.ref = "J3"   # J3 reserved per Phase 2.5 sketch for the telem connector
 
 # Pin assignments per DS-009 TELEM 6-pin standard.
-P5V       += telem_conn[1]   # VCC +5V (peripheral supply)
-USART1_TX += telem_conn[2]   # FC TX → peripheral RX (cable crosses)
-USART1_RX += telem_conn[3]   # peripheral TX → FC RX
-# Pin 4 CTS: NC (USART1 CTS not assigned in hwdef.dat — software flow control)
-# Pin 5 RTS: NC (USART1 RTS not assigned in hwdef.dat)
-GND       += telem_conn[6]   # GND
+P5V      += telem_conn[1]   # VCC +5V (peripheral supply)
+UART7_TX += telem_conn[2]   # FC TX → peripheral RX (cable crosses)
+UART7_RX += telem_conn[3]   # peripheral TX → FC RX
+# Pin 4 CTS: NC (UART7 CTS not assigned in hwdef.dat — software flow control)
+# Pin 5 RTS: NC (UART7 RTS not assigned in hwdef.dat)
+GND      += telem_conn[6]   # GND
 
 
 # ---- ESD on telem TX/RX (v1.1 redundancy re-spin) ----
@@ -113,12 +123,12 @@ esd_tx = Part("Device", "D_TVS",
               value="ESD7L5.0DT5G",
               footprint="esd7l50:SOT-723_L1.2-W0.8-P0.40-LS1.2-BR")
 esd_tx.ref = "D11"
-USART1_TX += esd_tx[1]
-GND       += esd_tx[2]
+UART7_TX += esd_tx[1]
+GND      += esd_tx[2]
 
 esd_rx = Part("Device", "D_TVS",
               value="ESD7L5.0DT5G",
               footprint="esd7l50:SOT-723_L1.2-W0.8-P0.40-LS1.2-BR")
 esd_rx.ref = "D12"
-USART1_RX += esd_rx[1]
-GND       += esd_rx[2]
+UART7_RX += esd_rx[1]
+GND      += esd_rx[2]
