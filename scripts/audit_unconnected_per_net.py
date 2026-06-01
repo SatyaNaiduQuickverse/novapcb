@@ -42,7 +42,7 @@ PCB = ROOT / "hardware/kicad/novapcb-stepwise/novapcb-stepwise.kicad_pcb"
 # decision was correct. v1: MAVLink via USB-CDC (canonical per CLAUDE.md §2.1);
 # J3 connector remains placed (BOM unchanged). See docs/TELEM_J3_STRUCTURAL_DIAGNOSIS.md
 # and docs/TELEM_V1_DEFER.md (status reinstated).
-INTENDED_DEFERRED = {"MOT7", "MOT8", "USART1_TX", "USART1_RX",
+INTENDED_DEFERRED = {"MOT7", "MOT8",  # USART1_TX/RX REMOVED — routed in T20 combined attack
                      "SWDIO", "SWCLK", "SWO", "NRST",
                      "EFUSE_FLT", "EFUSE_PGOOD",
                      "IMU3_INT1"}
