@@ -47,7 +47,7 @@
 - Target: drop-in replacement for the off-the-shelf autopilot (currently a Holybro Pixhawk 6X) used in the Nova drone.
 - Software contract: must speak ArduPilot MAVLink v2 over USB-CDC at 115200 baud and enumerate as `usb-ArduPilot_*` for udev pinning.
 - Tooling intent: code-driven PCB workflow — KiCad sources in git, exports automated, BOM diffable in PRs.
-- Form factor (v1 ACTUAL): **board outline 105 × 85 mm rectangular**, **mounting holes H1–H4 at 98.5 × 78.5 mm center-to-center, M3** (4 corner holes). NOT the Pixhawk-standard 30.5 × 30.5 mm pattern. The original 36×36 / 30.5×30.5 mini-FC ambition was set aside 2026-05-20 (Sai pivot, mid-Phase-4) after thermal sweeps showed the small envelope couldn't fit the H743 + 3 IMUs + sensors + Mauch ADC + power tree within the 80 °C Tj ceiling — board grew through 80×60 → 90×70 → 105×85 mm before locking 2026-05-23 with the TPS62177 buck architecture. The 105×85 board **requires a new airframe tray**; the 6X mounting pattern is gone in v1. **Functional** drop-in (electrical + software near-identical to the 6X, with the explicit cuts tabulated in §1.1 below). **FMUv6X mechanical drop-in is v2** (separate FMU + isolated-IMU boards, exact 6X mechanical match); deferred until v1 flies.
+- Form factor (v1 ACTUAL): **board outline 105 × 100 mm rectangular**, **mounting holes H1–H4 at 98.5 × 93.5 mm center-to-center, M3** (4 corner holes). NOT the Pixhawk-standard 30.5 × 30.5 mm pattern. The original 36×36 / 30.5×30.5 mini-FC ambition was set aside 2026-05-20 (Sai pivot, mid-Phase-4) after thermal sweeps showed the small envelope couldn't fit the H743 + 3 IMUs + sensors + Mauch ADC + power tree within the 80 °C Tj ceiling — board grew through 80×60 → 90×70 → 105×85 mm through 105×85 lock 2026-05-23 (TPS62177 buck architecture); grew further to 105×100 on 2026-06-02 after 7 independent empirical paths confirmed the 85mm-height structural saturation against the v1 Telem/SWD/T22 retrofit work. The 105×100 board **requires a new airframe tray**; the 6X mounting pattern is gone in v1. **Functional** drop-in (electrical + software near-identical to the 6X, with the explicit cuts tabulated in §1.1 below). **FMUv6X mechanical drop-in is v2** (separate FMU + isolated-IMU boards, exact 6X mechanical match); deferred until v1 flies.
 
 ### 1.1 What v1 does NOT deliver vs the 6X (honest scope)
 
@@ -77,7 +77,7 @@ What v1 GAINS over the 6X: 3 IMUs (vs 2), second baro (LPS22HB + DPS310), Mauch 
 
 - Last commit (as of 2026-05-18): `711c4d4` — added this CLAUDE.md on top of bootstrap `2bcdadc`.
 - No schematics, no PCB layout, no firmware.
-- All 9 v1 scoping decisions locked on 2026-05-18 — see `docs/DECISIONS.md`. MCU = STM32H743VIT6; form factor = **105 × 85 mm rectangular, 98.5 × 78.5 mm corner mounting M3** (the original 30.5 × 30.5 mm Pixhawk-standard pattern was set aside 2026-05-20 — see §1).
+- All 9 v1 scoping decisions locked on 2026-05-18 — see `docs/DECISIONS.md`. MCU = STM32H743VIT6; form factor = **105 × 100 mm rectangular, 98.5 × 93.5 mm corner mounting M3** (grown from 85mm 2026-06-02 for structural relief) (the original 30.5 × 30.5 mm Pixhawk-standard pattern was set aside 2026-05-20 — see §1).
 
 ---
 
@@ -614,7 +614,7 @@ These are *not* part of this repo but are referenced by docs. If you're on a dif
 Authoritative copy is `docs/DECISIONS.md`. Summarized here so a cold Claude doesn't have to context-switch. All 9 v1 scoping decisions signed off 2026-05-18.
 
 1. **MCU** — STM32H743VIT6.
-2. **Form factor** — v1 ACTUAL: **105 × 85 mm rectangular**, 4-corner M3 mounting at **98.5 × 78.5 mm c-to-c**, single-PCB. Functional drop-in (electrical/software near-6X-parity per §1.1; not mechanical). New airframe tray required. The original 36 × 36 / 30.5 × 30.5 mm Pixhawk-standard ambition was set aside 2026-05-20 after thermal sweeps demanded more area (`docs/DECISIONS.md §2`). v2: FMUv6X mechanical drop-in (deferred — see `docs/OPEN_QUESTIONS.md`).
+2. **Form factor** — v1 ACTUAL: **105 × 100 mm rectangular**, 4-corner M3 mounting at **98.5 × 93.5 mm c-to-c**, single-PCB. Functional drop-in (electrical/software near-6X-parity per §1.1; not mechanical). New airframe tray required. The original 36 × 36 / 30.5 × 30.5 mm Pixhawk-standard ambition was set aside 2026-05-20 after thermal sweeps demanded more area (`docs/DECISIONS.md §2`). v2: FMUv6X mechanical drop-in (deferred — see `docs/OPEN_QUESTIONS.md`).
 3. **ESC channels** — 8 (DShot300/600 preferred, PWM fallback).
 4. **ELRS RX integration** — external RX module + on-board CRSF UART; no on-board RF in v1.
 5. **Voltage / current monitoring** — external Mauch power module via FC ADC input.
