@@ -1,3 +1,21 @@
+# CORRECTION 2026-06-02 — drift is NAMING ONLY, NOT functional
+
+> **Master error #2 today + worker Rule-13 catch.** PR #179 (this doc) claimed CRSF was a fab-blocker functional bug. That was WRONG.
+>
+> Worker's deeper analysis: `crsf_usb_3g.py:142-143` shows SKiDL connects net `USART6_TX` to `mcu['PA0']` and net `USART6_RX` to `mcu['PA1']`. The COPPER physically connects pin 22 (PA0) and pin 23 (PA1) to J10 correctly. ArduPilot configures UART4 on PA0/PA1; the cable arrives at PA0/PA1; CRSF works.
+>
+> **What IS drifting: net LABELS.** The SKiDL author renamed CRSF from USART6 (PC6/PC7) to UART4 (PA0/PA1) for the MCU pin but kept the legacy net name `USART6_TX/RX`. Cosmetic, not functional.
+>
+> **Fix:** rename PCB nets `USART6_TX/RX` → `UART4_TX/RX` (cosmetic only; no copper change). Worker dispatched for this (c1) + the separate (c2-g) BATT2_SENS nudge for PE7/PE8 escape.
+>
+> **Master discipline note:** I called it a "fab-blocker bug" without verifying the SKiDL pin-bind line. Future error pattern to avoid: don't infer functional state from net names alone; verify against schematic-generation source.
+>
+> Original (incorrect-severity) text preserved below for traceability.
+
+---
+
+## Original (INCORRECT-SEVERITY) text — PRESERVED FOR TRACEABILITY
+
 # CRSF zombie drift — Rule-9 catch (2026-06-02 worker)
 
 > Worker session 2026-06-02 surfaced a critical fab-blocker bug while
