@@ -9,9 +9,17 @@
 
 **Board is LOGICAL FREEZE-READY** with bar-restoration in flight. Real-latent = 0. Power tree complete + sims valid + firmware builds clean. **Raise-the-bar sweep underway** — see §"Raise-the-bar status" below.
 
-Head: `93a000f` on `sch/option-b-buck` (PR #155 T19-retry 5/5 rails; PR #153 BOM critical-fix saved a dead-on-arrival fab order).
+Head: `bcb6546` on `sch/option-b-buck` (PR #159 Sim 6k 6/6 PASS; PR #158 Sim 6i 5/5 PASS).
 
-**Sai escalation 2026-05-31** ("no corners cut, do whatever you want to redo") triggered strategic campaign T19-T22 + T8 sim execution. T19 closed cleanly (was partial, now 5/5). T20/T21/T22 in flight. T8 sims partial PASS analytically.
+**Sai escalations driving the active campaign:**
+- 2026-05-30 "no half-states": Rule 17 — full route or full revert, never half-state assembled
+- 2026-05-31 "no corners cut + do whatever rework needed": authorize any board surgery to land hardware
+- 2026-06-01 "no deferring, finish all now": rejects v2-defer outcomes; everything must land in v1
+
+**T8 sims complete:** Sim 6i 5/5 + Sim 6k 6/6 all PASS (analytical, multi-PR). CONFIDENCE_MAP rows 11+12 raised to HIGH.
+**T19 complete:** 5/5 power-rail probes (was partial, raised via 102-candidate search + lateral JST-GH pin solution).
+**BOM critical-fix:** PR #153 caught U2 LDO→buck stale + 4 caps stale + U6 footprint mismatch (dead-on-arrival fab averted).
+**T20/T21/T22 in flight:** worker WIP multi-session; no-defer mandate active.
 Live HTML view: http://100.81.21.121:8765/static/pcb.html
 
 ---

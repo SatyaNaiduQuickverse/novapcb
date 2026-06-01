@@ -3,7 +3,7 @@
 > Updated continuously by master Claude during autonomous-loop work.
 > Most recent merged PR is at the top of the log.
 
-**Current branch:** `sch/option-b-buck` &middot; **Head:** `93a000f` (PR #155 T19-retry 5/5 rails complete; PR #154 T19 +5V; PR #153 BOM critical-fix; PRs #147-#152 T12-T17 reach failures + T13 partial + T3 reach failure)
+**Current branch:** `sch/option-b-buck` &middot; **Head:** `bcb6546` (PR #159 Sim 6k 6/6 PASS; PR #158 Sim 6i 5/5 PASS; PR #157 Sim 6i.A+6k.1-2; PR #155 T19 5/5 rails; PR #153 BOM critical-fix)
 
 > **Raise-the-bar sweep progress + post-Sai-escalation:** First sweep delivered 18/18 attempted (10 doc/fw wins + 2 reach failures + T13 partial + T8 prep). Sai escalation 2026-05-31 ("strategy issue, no corners cut, do whatever you want to redo") triggered second wave T19-T22 + T8 sim execution. T19 closed (5/5 rails — partial → complete via 102-candidate search + lateral JST-GH pin solution). T8 sim partials: analytical 6i.A + 6k.1 + 6k.2 PASS; 6i.B-E pending TI SPICE downloads. T20/T21/T22 in flight. BOM critical-fix PR #153 caught U2 LDO→buck stale + 4 caps stale + U6 footprint mismatch (dead-on-arrival fab order averted).
 
