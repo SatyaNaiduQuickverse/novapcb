@@ -208,3 +208,18 @@ for idx in range(1, 9):
 # If Sai ratifies (b) tie-to-GND: add `GND += esc_conn[9]` here.
 
 GND += esc_conn[10]   # pin 10 = GND return
+
+
+# ---- T22.4 ESC output TVS (γ re-try with 90° CCW rotation, 2026-06-02) ----
+# 6× ESD7L5.0DT5G on MOT1-6. Bidirectional 5V standoff TVS protects MCU GPIO
+# from motor back-EMF + ESD on long ESC cable. Same part as UART/CAN/Mauch ESD.
+# Placement Y=86/87 strip south of J11; TVS rotated 90° CCW so pin 3 NC pad
+# moves to SOUTH of body (out of MOT north-bound trace path). GND via-in-pad
+# on pin 2 to drop to In1.Cu/In4.Cu GND planes.
+for idx in range(1, 7):
+    esd_mot = Part("Device", "D_TVS",
+                   value="ESD7L5.0DT5G",
+                   footprint="esd7l50:SOT-723_L1.2-W0.8-P0.40-LS1.2-BR")
+    esd_mot.ref = f"D{14 + idx}"
+    mot_nets[idx] += esd_mot[1]
+    GND += esd_mot[2]
