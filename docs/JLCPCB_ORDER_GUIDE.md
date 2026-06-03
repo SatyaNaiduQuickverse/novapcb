@@ -30,7 +30,7 @@ BOM/CPL prep rules (JLCPCB): consistent units (mm), use `T`/`B` for layer, refde
 |---|---|---|
 | Base Material | **FR-4** | default |
 | Layers | **6** | DECISIONS.md #8 |
-| Dimensions | auto-detected (105 × 85 mm) | confirm matches `kicad-cli` board outline; CLAUDE.md §1 |
+| Dimensions | auto-detected (105 × 100 mm) | board grown 2026-06-02 from 85mm; confirm matches `kicad-cli` board outline; CLAUDE.md §1 |
 | PCB Qty | **5** | first article |
 | Product Type | **Industrial/Consumer electronics** | default |
 | Different Design | 1 | one design in panel |
@@ -119,7 +119,7 @@ Final page shows the line-item quote. **Verify in this order:**
 
 | Line | Cost (USD) |
 |---|---|
-| 6-layer PCB, 105×85 mm, 5 pcs, ENIG, POFV | ~$25–50 (larger board than original mini-FC; ENIG promo + free POFV) |
+| 6-layer PCB, 105×100 mm, 5 pcs, ENIG, POFV | ~$30–60 (grown 2026-06-02 to 100mm for T20/T21/T22 structural relief; ENIG promo + free POFV) |
 | SMT assembly, both sides, ~120 placements × 5 | ~$40–80 (setup) + ~$20–50 (parts, mostly Basic) |
 | Extended parts setup fee | $3 × N extended parts (aim for 0–3) |
 | **Conformal coating (recommended for outdoor/rain MTBF)** | **~$5–15 per board** |
