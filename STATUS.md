@@ -3,11 +3,11 @@
 > Updated continuously by master Claude during autonomous-loop work.
 > Most recent merged PR is at the top of the log.
 
-**Current branch:** `sch/option-b-buck` &middot; **Head:** `92ebfbc` (PR #187 HANDOFF refresh post-board-grow+T22.4)
+**Current branch:** `sch/option-b-buck` &middot; **Head:** `41087fa` (PR #197 FREEZE_READY 2026-06-04 doc)
 
-> **2026-06-02 STATE: Board grown 105×85→105×100mm, T20 Telem v2-defer (Sai α), T21 SWD v2-defer, T22.4 ESC TVS LANDED (+2 DRC, 6× ESD7L5.0DT5G on MOT1-6).**
-> Worker on hw/board-grow-105x100 @ 0946659 (Pi offline per Sai 2026-06-02). Master continuing burst doc work; 31 master PRs continuous this session.
-> **SIM CASCADE COMPLETE at 105×100** — Sim 1 thermal PASS (MCU Tj 61.40°C, +17.05°C margin) + Sim 5 PDN PASS (79.4 mΩ unchanged) + Sim 2/3/4/6h PASS by inspection (none touched). **T22 chain CLOSED.** **Worker running final freeze gate audit now** (audit_unconnected + DRC + BOM verify + net-RFC drift list). On PASS: BOARD LOGICALLY FREEZE-READY at 105×100, Sai-side bits remaining.
+> **2026-06-04 STATE: BOARD IS TRULY FREEZE-READY at 105×100mm.** Worker freeze-gate audit + orphan cleanup COMPLETE. **audit_unconnected_per_net: 0 real-latent ✓**. DRC 32 within scope-creep cap 4/4. Sim 1+5 PASS at 105×100. BOM 55 lines. AWAITING SAI freeze authorization.
+> Worker on hw/board-grow-105x100 @ 2eb92e2 (orphan cleanup HEAD). Master 41 PRs continuous.
+> **Worker layer-constant root-cause discovery** (informational, not freeze-blocking): historical T22 cascades partially attributable to layer=31 (F.Courtyard) vs layer=2 (B.Cu) constant confusion in earlier exploratory routes; all committed routes verified on correct layers.
 
 > **Bar-restoration + post-escalation campaign:** First sweep 18/18 (10 doc wins + reverts/reframes). Sai 2026-05-31 escalation → second wave T19-T22. Sai 2026-06-01 "no defers" → combined attack T20. Sai 2026-06-02 board grow 105×100 (c) + Telem v2-defer α (after 11 empirical paths). T8 sims 11/11 PASS (Sim 6i 5/5 + Sim 6k 6/6 analytical). T19 5/5 rails. BOM critical-fix saved 4 fab-order errors (#179 CRSF severity corrected per worker Rule-13). T22.4 ESC TVS landed.
 
@@ -98,9 +98,12 @@ J1 USB-C, J2 microSD, J3 Telem (placed; USART1 routes v2-deferred — 4-attempt 
 
 ## What's left to freeze-ready (Sai-bits)
 
-JLCPCB portal BOM sourcing (8 TBD items researched in `docs/BOM_LCSC_SOURCING.md`), fab spec options per `docs/JLCPCB_ORDER_GUIDE.md`, Phase 7a freeze trigger, Phase 7b fab order $.
+**1. Phase 7a freeze trigger** (your call): `git tag -a v1.0-fab-ready-frozen` on worker HEAD `2eb92e2`.
+**2. JLCPCB portal:** BOM sourcing per `docs/BOM_LCSC_SOURCING.md` (8 TBD + new D15-D20 TVS), form options per `docs/JLCPCB_ORDER_GUIDE.md`, **tick POFV** for 9 VIP pads (FREE on 6L).
+**3. Phase 7b fab order $** after freeze trigger.
+**4. New airframe tray** (one-time mech — 105×100 + 6-hole pattern).
 
-Master + worker continue raise-the-bar sweep until all Tier 1-5 tasks landed.
+See `docs/FREEZE_READY_2026_06_04.md` for the full freeze-ready one-shot brief.
 
 **Board:** 105×100 mm (grown 2026-06-02 from 85mm for T20/T21/T22 structural relief), 6-layer JLC06161H, STM32H743VIT6, Pixhawk 6X functional drop-in (electrical/software near-parity per CLAUDE.md §1.1).
 **Live HTML view:** http://100.81.21.121:8765/static/pcb.html
