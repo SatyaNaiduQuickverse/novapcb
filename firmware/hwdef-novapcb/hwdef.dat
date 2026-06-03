@@ -227,6 +227,13 @@ PC11 SDMMC1_D3 SDMMC1
 PC12 SDMMC1_CK SDMMC1
 PD2 SDMMC1_CMD SDMMC1
 
+# microSD card-detect (T22.1 added 2026-06-04 — Sai α no-defer via gate)
+# PD8 = STM32H743 LQFP-100 pin 55, AF for SDMMC1 not required (CD is GPIO).
+# Hirose DM3AT-SF-PEJM5 J2 pin 10 = mechanical switch (closes to GND on card
+# insert; open when no card). 47k pull-up to +3V3 (added on PCB side).
+PD8 SDMMC1_CD INPUT GPIO(99)
+define HAL_SDMMC1_CARD_DETECT_PIN 99
+
 # SDMMC clock cap lift 12.5MHz -> 50MHz (SDR25 target). The ArduPilot H7
 # global default (stm32h7_A3_mcuconf.h) caps SDMMC at 12.5MHz; Sim 3
 # (docs/SIM_3_SDMMC_SI_RESULT.md) verified the routed SDMMC1 length skew

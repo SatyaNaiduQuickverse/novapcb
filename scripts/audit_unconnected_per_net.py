@@ -50,6 +50,10 @@ INTENDED_DEFERRED = {"MOT7", "MOT8",
                      # column). hwdef + SKiDL + PCB pad assigns preserved as v2
                      # starting point. See docs/TELEM_FINAL_V2_DEFER.md.
                      "UART7_TX", "UART7_RX",
+                     # SDMMC1_CD: T22.1 v2-defer 2026-06-04 — PD8 east-side route to
+                     # J2.10 cascaded +25 DRC vs ≤+5 PASS gate. hwdef.dat PD8 SDMMC1_CD
+                     # preserved as v2 starting point; PCB routing inherits v2 work.
+                     "SDMMC1_CD",
                      "SWDIO", "SWCLK", "SWO", "NRST",
                      "EFUSE_FLT", "EFUSE_PGOOD",
                      "IMU3_INT1"}
