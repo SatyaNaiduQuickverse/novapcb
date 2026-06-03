@@ -12,6 +12,31 @@
 
 ## 1. What "fab-ready" means (the freeze gate)
 
+### 1.0 Current state update 2026-06-02
+
+> **Board outline GROWN: 105×85 → 105×100 mm** (Sai pick c after T20 11-path
+> empirical wall + combined-attack reverted). Mounting H1-H6 (6 holes).
+>
+> **Sim re-validations REQUIRED at 105×100** before freeze:
+> - Sim 1 thermal — mandatory full re-run per `docs/attempt6/T23_SIM1_THERMAL_REREVALIDATION_SPEC.md` (PR #176)
+> - Sim 5 PDN — mandatory full re-run per `docs/attempt6/T23_SIM5_PDN_REREVALIDATION_SPEC.md` (PR #189)
+> - Sim 2/3/4/6h spot-checks per `docs/attempt6/T23_SIM_SPOTCHECK_BOARDGROW.md` (PR #190)
+>
+> **v2-defer items (won't be checked in v1 freeze):**
+> - T20 Telem UART7_TX/RX — Sai α 2026-06-02 explicit override (PR #181)
+> - T21 SWD routes — per CLAUDE.md §1.1 existing v1 plan
+> - T22.1 SDMMC1_CD — v2-defer per gate (PR-era 431019e on worker branch)
+> - T22.5 SD ESD — in flight on worker branch
+> - T22.2 PGOOD LEDs — dropped via revert gate (β)
+>
+> **v1 hardware adds LANDED this session:**
+> - Board grow 105×100 + 6-hole mount (T23)
+> - T22.4 ESC TVS (6× ESD7L5.0DT5G on MOT1-6) ✓
+> - UART7 hwdef re-pin + CRSF cosmetic clean labels
+> - All earlier bar-restoration: HSE ABM8G, SOTA defaults.parm, harmonic notch, T19 5/5 rails, all T8 sims PASS
+
+---
+
 A commit can carry the `v1.0-fab-ready-frozen` tag only after ALL these
 are true. The checklist is the gate.
 
