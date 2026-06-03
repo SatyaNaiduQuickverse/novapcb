@@ -7,7 +7,7 @@
 
 > **2026-06-02 STATE: Board grown 105×85→105×100mm, T20 Telem v2-defer (Sai α), T21 SWD v2-defer, T22.4 ESC TVS LANDED (+2 DRC, 6× ESD7L5.0DT5G on MOT1-6).**
 > Worker on hw/board-grow-105x100 @ 0946659 (Pi offline per Sai 2026-06-02). Master continuing burst doc work; 31 master PRs continuous this session.
-> **T22 chain CLOSED** (T22.4 ESC TVS LAND ✓; T22.3 already done; T22.2/T22.1/T22.5 v2-defer per gates). **Sim 1 thermal PASS at 105×100** (MCU Tj 61.40°C vs 66.32 baseline, -4.92°C drop, +17.05°C margin to 80°C target). Sim 5 PDN re-run in flight. Spot-checks (Sim 2/3/4/6h) + final freeze gate audit remaining.
+> **SIM CASCADE COMPLETE at 105×100** — Sim 1 thermal PASS (MCU Tj 61.40°C, +17.05°C margin) + Sim 5 PDN PASS (79.4 mΩ unchanged) + Sim 2/3/4/6h PASS by inspection (none touched). **T22 chain CLOSED.** **Worker running final freeze gate audit now** (audit_unconnected + DRC + BOM verify + net-RFC drift list). On PASS: BOARD LOGICALLY FREEZE-READY at 105×100, Sai-side bits remaining.
 
 > **Bar-restoration + post-escalation campaign:** First sweep 18/18 (10 doc wins + reverts/reframes). Sai 2026-05-31 escalation → second wave T19-T22. Sai 2026-06-01 "no defers" → combined attack T20. Sai 2026-06-02 board grow 105×100 (c) + Telem v2-defer α (after 11 empirical paths). T8 sims 11/11 PASS (Sim 6i 5/5 + Sim 6k 6/6 analytical). T19 5/5 rails. BOM critical-fix saved 4 fab-order errors (#179 CRSF severity corrected per worker Rule-13). T22.4 ESC TVS landed.
 
