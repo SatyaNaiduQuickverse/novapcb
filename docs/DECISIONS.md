@@ -631,3 +631,42 @@ scripts/audit_layout_compliance.py check 9): zone GetFilledArea > 0
 confirms physical fill; pad-via overlap + via-on-zone HitTestFilledArea
 confirms electrical connection.
 
+
+
+---
+
+## 14. Sai 2026-06-02 final architectural picks (post-bar-restoration campaign)
+
+After the 24+ hour bar-restoration + post-Sai-escalation campaign (T19-T23 + T8 sims), three explicit Sai-decided architectural picks consolidate as v1 final state:
+
+### 14.1 Board grow (c) — 105×85 → 105×100 mm
+- Trigger: 7 empirical Telem-routing paths walled at 105×85 (T20 6f BATT2, 6e USB, 6c J3 re-place, T21 6a/6c, combined-attack 5-step)
+- Sai pick: 2026-06-02 over (a) combined-attack-retry, (b) cluster re-place, (d) v2-defer
+- Mounting: 6 holes (Sai delegated to master 2026-06-02 Option B; H1-H4 original + H5/H6 new S corners)
+- Mech: new airframe tray required (one-time Sai-side)
+- Sim re-validation: Sim 1 thermal + Sim 5 PDN mandatory (specs PR #176 + PR #189)
+
+### 14.2 Telem v2-defer (α) — ONE-ITEM override of no-defer mandate
+- Trigger: 11 empirical paths over 2 days all walled (PR #181 TELEM_FINAL_V2_DEFER.md)
+- Sai pick: 2026-06-02 explicit α (over β cascade nudges / γ MCU re-place / δ wire-tack)
+- Scope: USART1 → UART7 (PE7/PE8) hwdef + J3 (54, 95) placement PRESERVED for v2 inheritance; PCB routes deferred
+- v1 path: USB-CDC MAVLink canonical per CLAUDE.md §2.1
+- Industry-aligned: Holybro Kakute / MatekH743 mini-FCs ship same way
+
+### 14.3 SWD v2-defer (master autonomous per existing v1 plan)
+- Trigger: pin-level structural walls (NRST/SWDIO/SWCLK wedged between adjacent active nets)
+- Board-grow doesn't fix pad-pitch constraints (independent of board size)
+- Per existing CLAUDE.md §1.1 v1 plan: DFU first-flash via USB-CDC + wire-tack
+- Master autonomous: no new Sai-decision (consistent with prior documented v1 plan)
+
+## 15. T22 hardware-add chain final disposition
+
+Per campaign empirical results (each with explicit DRC cascade revert gate ≤+5 PASS / >+10 REVERT+v2-defer):
+
+| Sub-task | Outcome | Note |
+|---|---|---|
+| T22.4 ESC TVS | **LANDED v1** (+2 DRC, γ re-place + 90° rotation + via-in-pad GND) | 6× ESD7L5.0DT5G on MOT1-6, real protection |
+| T22.3 Buzzer | Already routed (Rule-13 worker verify-the-artifact catch) | No work needed; existing route + D9 ESD intact |
+| T22.2 PGOOD LEDs | β drop (+22 DRC revert gate triggered) | TP3/TP5 probe + USB-CDC console covers status |
+| T22.1 SD card-detect | v2-defer (+25 DRC revert gate triggered) | PD8 hwdef + INTENDED_DEFERRED preserved for v2 |
+| T22.5 SD ESD | In flight on worker branch | Pattern likely same |
