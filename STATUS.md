@@ -3,9 +3,13 @@
 > Updated continuously by master Claude during autonomous-loop work.
 > Most recent merged PR is at the top of the log.
 
-**Current branch:** `sch/option-b-buck` &middot; **Head:** `bcb6546` (PR #159 Sim 6k 6/6 PASS; PR #158 Sim 6i 5/5 PASS; PR #157 Sim 6i.A+6k.1-2; PR #155 T19 5/5 rails; PR #153 BOM critical-fix)
+**Current branch:** `sch/option-b-buck` &middot; **Head:** `92ebfbc` (PR #187 HANDOFF refresh post-board-grow+T22.4)
 
-> **Raise-the-bar sweep progress + post-Sai-escalation:** First sweep delivered 18/18 attempted (10 doc/fw wins + 2 reach failures + T13 partial + T8 prep). Sai escalation 2026-05-31 ("strategy issue, no corners cut, do whatever you want to redo") triggered second wave T19-T22 + T8 sim execution. T19 closed (5/5 rails — partial → complete via 102-candidate search + lateral JST-GH pin solution). T8 sim partials: analytical 6i.A + 6k.1 + 6k.2 PASS; 6i.B-E pending TI SPICE downloads. T20/T21/T22 in flight. BOM critical-fix PR #153 caught U2 LDO→buck stale + 4 caps stale + U6 footprint mismatch (dead-on-arrival fab order averted).
+> **2026-06-02 STATE: Board grown 105×85→105×100mm, T20 Telem v2-defer (Sai α), T21 SWD v2-defer, T22.4 ESC TVS LANDED (+2 DRC, 6× ESD7L5.0DT5G on MOT1-6).**
+> Worker on hw/board-grow-105x100 @ 0946659 (Pi offline per Sai 2026-06-02). Master continuing burst doc work; 31 master PRs continuous this session.
+> Remaining to freeze: T22.3 buzzer (likely quick) + T22.1 SD CD + T22.5 SD ESD (likely v2-defers per pattern) + Sim 1+5 re-validation at 105×100.
+
+> **Bar-restoration + post-escalation campaign:** First sweep 18/18 (10 doc wins + reverts/reframes). Sai 2026-05-31 escalation → second wave T19-T22. Sai 2026-06-01 "no defers" → combined attack T20. Sai 2026-06-02 board grow 105×100 (c) + Telem v2-defer α (after 11 empirical paths). T8 sims 11/11 PASS (Sim 6i 5/5 + Sim 6k 6/6 analytical). T19 5/5 rails. BOM critical-fix saved 4 fab-order errors (#179 CRSF severity corrected per worker Rule-13). T22.4 ESC TVS landed.
 
 ## 2026-05-30 — Raise-the-bar sweep IN PROGRESS (Sai directive: "we finish v1 with full perfection, sota and sureshot")
 
