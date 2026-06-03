@@ -669,4 +669,4 @@ Per campaign empirical results (each with explicit DRC cascade revert gate ≤+5
 | T22.3 Buzzer | Already routed (Rule-13 worker verify-the-artifact catch) | No work needed; existing route + D9 ESD intact |
 | T22.2 PGOOD LEDs | β drop (+22 DRC revert gate triggered) | TP3/TP5 probe + USB-CDC console covers status |
 | T22.1 SD card-detect | v2-defer (+25 DRC revert gate triggered) | PD8 hwdef + INTENDED_DEFERRED preserved for v2 |
-| T22.5 SD ESD | In flight on worker branch | Pattern likely same |
+| T22.5 SD ESD | **v2-defer** (placement-only +10 marginal at gate; routes would breach >+10) | Same pattern; nets stay routed without ESD (SDMMC1 still works; ESD tap-into deferred) |
